@@ -1645,7 +1645,7 @@ BO_ 768 MEB_ACC_01: 48 XXX
  SG_ Lead_Brightness : 269|4@1+ (1,0) [0|7] "" XXX
  SG_ Unknown_03 : 273|8@1+ (1,0) [0|7] "" XXX
  SG_ Lead_Type : 287|3@1+ (1,0) [0|3] "" XXX
- SG_ Lead_Distance : 290|10@1+ (0.15,0) [0|7] "Unit_Meter" XXX
+ SG_ Lead_Distance : 290|10@1+ (0.2,0) [0|7] "Unit_Meter" XXX
  SG_ ACC_Events : 332|4@0+ (1,0) [0|3] "Unit_Meter" XXX
  SG_ Zeitluecke_1 : 334|9@1+ (0.2,0) [0|100] "Unit_Meter" XXX
  SG_ Zeitluecke_2 : 344|9@1+ (0.2,0) [0|100] "Unit_Meter" XXX
