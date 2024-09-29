@@ -1693,6 +1693,18 @@ BO_ 619 MEB_Travel_Assist_01: 8 XXX
  SG_ Travel_Assist_Request : 19|3@1+ (1,0) [0|7] "" XXX
  SG_ Travel_Assist_Available : 23|1@1+ (1,0) [0|1] "" XXX
 
+BO_ 387 MEB_Camera_01: 64 XXX
+ SG_ NEW_SIGNAL_1 : 191|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_2 : 200|9@1+ (1,0) [0|255] "" XXX
+ SG_ NEW_SIGNAL_3 : 209|9@1+ (1,0) [0|127] "" XXX
+ SG_ NEW_SIGNAL_9 : 218|6@1+ (1,0) [0|63] "" XXX
+ SG_ NEW_SIGNAL_10 : 224|8@1+ (1,0) [0|127] "" XXX
+ SG_ NEW_SIGNAL_4 : 232|9@1+ (1,0) [0|255] "" XXX
+ SG_ NEW_SIGNAL_5 : 241|9@1+ (1,0) [0|127] "" XXX
+ SG_ NEW_SIGNAL_8 : 250|6@1+ (1,0) [0|63] "" XXX
+ SG_ Lane_Center_Offset : 256|12@1+ (0.001,-2.5) [0|255] "Unit_Meter" XXX
+ SG_ NEW_SIGNAL_6 : 268|12@1+ (1,0) [0|255] "" XXX
+
 
 VAL_ 159 EPS_HCA_Status 0 "disabled" 1 "initializing" 2 "fault" 3 "ready" 4 "rejected" 5 "active" 8 "preempted";
 VAL_ 173 GE_Fahrstufe 5 "P" 6 "R" 7 "N" 8 "D" 9 "D" 10 "E" 13 "T" 14 "T";
