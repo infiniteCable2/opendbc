@@ -1362,7 +1362,7 @@ BO_ 1440 RLS_01: 8 Gateway
 BO_ 294 HCA_01: 8 Frontsensorik
  SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" Vector__XXX
  SG_ COUNTER : 8|4@1+ (1,0) [0|15] "" Vector__XXX
- SG_ HCA_01_Vib_Freq : 12|4@1+ (1,15) [15|30] "Unit_Hertz" Vector__XXX
+ SG_ HCA_01_Vib_Freq : 12|4@1+ (1,15) [18|30] "Unit_Hertz" Vector__XXX
  SG_ HCA_01_LM_Offset : 16|9@1+ (1,0) [0|511] "Unit_centiNewtoMeter" Vector__XXX
  SG_ EA_ACC_Sollstatus : 25|2@1+ (1,0) [0|3] ""  Frontradar
  SG_ EA_Ruckprofil : 27|3@1+ (1,0) [0|7] "" Vector__XXX
