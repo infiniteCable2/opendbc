@@ -1553,7 +1553,7 @@ BO_ 771 HCA_03: 24 XXX
  SG_ Steering_Angle : 24|15@1+ (0.0174,0) [0|360] "Unit_DegreOfArc" XXX
  SG_ VZ : 39|1@1+ (1,0) [0|1] "" XXX
  SG_ Unknown_01 : 53|1@0+ (1,0) [0|1] "" XXX
- SG_ Unknown_02 : 56|1@0+ (1,0) [0|1] "" XXX
+ SG_ Vibration : 56|1@0+ (1,0) [0|1] "" XXX
  SG_ Active : 66|1@1+ (1,0) [0|1] "" XXX
 
 BO_ 267 MEB_Motor_01: 32 XXX
