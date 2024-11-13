@@ -1547,22 +1547,46 @@ BO_ 317 MEB_EPS_01: 32 XXX
  SG_ Steering_Angle : 76|17@1+ (0.00906,0) [0|32767] "" XXX
 
 BO_ 771 HCA_03: 24 XXX
- SG_ Test_8 : 12|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_1 : 12|1@0+ (1,0) [0|1] "" XXX
  SG_ Standby : 13|1@1+ (1,0) [0|1] "" XXX
  SG_ Request : 14|1@1+ (1,0) [0|1] "" XXX
- SG_ Test_1 : 15|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_2 : 15|1@0+ (1,0) [0|1] "" XXX
  SG_ Power : 16|7@1+ (1,0) [0|125] "" XXX
- SG_ Test_2 : 23|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_3 : 23|1@0+ (1,0) [0|1] "" XXX
  SG_ Steering_Angle : 24|15@1+ (0.0174,0) [0|360] "Unit_DegreOfArc" XXX
  SG_ VZ : 39|1@1+ (1,0) [0|1] "" XXX
- SG_ Test_3 : 40|8@1+ (1,0) [0|255] "" XXX
- SG_ Test_4 : 48|5@1+ (1,0) [0|31] "" XXX
+ SG_ NEW_SIGNAL_4 : 40|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_5 : 41|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_6 : 42|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_7 : 43|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_8 : 44|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_9 : 45|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_10 : 46|1@1+ (1,0) [0|3] "" XXX
+ SG_ NEW_SIGNAL_11 : 47|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_12 : 48|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_13 : 49|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_14 : 50|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_15 : 51|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_16 : 52|1@0+ (1,0) [0|1] "" XXX
  SG_ Unknown_01 : 53|1@0+ (1,0) [0|1] "" XXX
- SG_ Test_5 : 54|2@1+ (1,0) [0|3] "" XXX
+ SG_ NEW_SIGNAL_17 : 54|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_18 : 55|1@0+ (1,0) [0|1] "" XXX
  SG_ Vibration : 56|1@0+ (1,0) [0|1] "" XXX
- SG_ Test_6 : 57|9@1+ (1,0) [0|127] "" XXX
+ SG_ NEW_SIGNAL_19 : 57|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_20 : 58|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_21 : 59|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_22 : 60|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_23 : 61|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_24 : 62|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_25 : 63|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_26 : 64|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_27 : 65|1@0+ (1,0) [0|1] "" XXX
  SG_ Active : 66|1@1+ (1,0) [0|1] "" XXX
- SG_ Test_7 : 67|5@1+ (1,0) [0|31] "" XXX
+ SG_ NEW_SIGNAL_28 : 67|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_29 : 68|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_30 : 69|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_31 : 70|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_32 : 71|1@0+ (1,0) [0|1] "" XXX
 
 BO_ 267 MEB_Motor_01: 32 XXX
  SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
