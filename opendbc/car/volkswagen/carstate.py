@@ -43,7 +43,7 @@ class CarState(CarStateBase, MadsCarState):
     if self.CP.flags & VolkswagenFlags.PQ:
       return self.update_pq(pt_cp, cam_cp, ext_cp)
     elif self.CP.flags & VolkswagenFlags.MEB:
-      return self.update_meb(pt_cp, cam_cp, ext_cp)
+      return self.update_meb(can_parsers)
 
     ret = structs.CarState()
     # Update vehicle speed and acceleration from ABS wheel speeds.
