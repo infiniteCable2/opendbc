@@ -40,4 +40,3 @@ class MadsCarState(MadsCarStateBase):
     cp = can_parsers[Bus.pt]
 
     self.prev_lkas_button = self.lkas_button
-    self.lkas_button = cp.vl["Steering_Data_FD1"]["TjaButtnOnOffPress"]
