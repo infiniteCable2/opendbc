@@ -8,7 +8,7 @@ from opendbc.car.volkswagen.values import DBC, CANBUS, NetworkLocation, Transmis
                                                       CarControllerParams, VolkswagenFlags
 
 
-class CarState(CarStateBase):
+class CarState(CarStateBase, MadsCarState):
   def __init__(self, CP):
     super().__init__(CP)
     CarStateBase.__init__(self, CP)
