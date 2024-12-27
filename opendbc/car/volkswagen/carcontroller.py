@@ -14,14 +14,14 @@ class CarController(CarControllerBase):
   def __init__(self, dbc_names, CP):
     super().__init__(dbc_names, CP)
     self.CCP = CarControllerParams(CP)
-    self.CCS = pqcan if CP.flags & VolkswagenFlags.PQ else mqbcan
-    self.packer_pt = CANPacker(dbc_names[Bus.pt])
     if CP.flags & VolkswagenFlags.PQ:
       self.CCS = pqcan
     elif CP.flags & VolkswagenFlags.MEB:
       self.CCS = mebcan
     else:
       self.CCS = mqbcan
+    self.packer_pt = CANPacker(dbc_names[Bus.pt])
+    self.ext_bus = CANBUS.pt if CP.networkLocation == structs.CarParams.NetworkLocation.fwdCamera else CANBUS.cam
       
     self.apply_steer_last = 0
     self.apply_curvature_last = 0
