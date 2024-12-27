@@ -73,7 +73,9 @@ class CarController(CarControllerBase):
             else:
               steering_power = self.steering_power_last
 
-          steering_power_boost = True if steering_power == self.CCP.STEERING_POWER_MAX else False
+          #steering_power_boost = True if steering_power == self.CCP.STEERING_POWER_MAX else False
+          # reminder: boost slows down steering movement, only allow for movement up from zero
+          steering_power_boost = True if steering_power == self.CCP.STEERING_POWER_MAX and abs(apply_curvature) > abs(current_curvature) else False
           
         else:
           steering_power_boost = False
