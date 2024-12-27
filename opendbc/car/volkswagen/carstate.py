@@ -2,6 +2,7 @@ import numpy as np
 from opendbc.can.parser import CANParser
 from opendbc.car import Bus, structs
 from opendbc.car.interfaces import CarStateBase
+from opendbc.sunnypilot.car.volkswagen.mads import MadsCarState
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.volkswagen.values import DBC, CANBUS, NetworkLocation, TransmissionType, GearShifter, \
                                                       CarControllerParams, VolkswagenFlags
@@ -10,6 +11,8 @@ from opendbc.car.volkswagen.values import DBC, CANBUS, NetworkLocation, Transmis
 class CarState(CarStateBase):
   def __init__(self, CP):
     super().__init__(CP)
+    CarStateBase.__init__(self, CP)
+    MadsCarState.__init__(self, CP)
     self.frame = 0
     self.eps_init_complete = False
     self.CCP = CarControllerParams(CP)
@@ -260,7 +263,10 @@ class CarState(CarStateBase):
     self.frame += 1
     return ret
     
-  def update_meb(self, pt_cp, cam_cp, ext_cp) -> structs.CarState:
+  def update_meb(self, can_parsers) -> structs.CarState:
+    pt_cp = can_parsers[Bus.pt]
+    cam_cp = can_parsers[Bus.cam]
+    ext_cp = pt_cp if self.CP.networkLocation == NetworkLocation.fwdCamera else cam_cp
     ret = structs.CarState()
     # Update vehicle speed and acceleration from ABS wheel speeds.
     ret.wheelSpeeds = self.get_wheel_speeds(
@@ -351,6 +357,7 @@ class CarState(CarStateBase):
     # Update button states for turn signals and ACC controls, capture all ACC button state/config for passthrough
     ret.leftBlinker = bool(pt_cp.vl["Blinkmodi_02"]["BM_links"])
     ret.rightBlinker = bool(pt_cp.vl["Blinkmodi_02"]["BM_rechts"])
+    MadsCarState.update_mads(self, ret, can_parsers)
     ret.buttonEvents = self.create_button_events(pt_cp, self.CCP.BUTTONS)
     self.gra_stock_values = pt_cp.vl["GRA_ACC_01"]
 
