@@ -132,10 +132,10 @@ def create_acc_accel_control(packer, bus, acc_type, acc_enabled, accel, acc_cont
     "ACC_Status_ACC":             acc_control,
     "ACC_StartStopp_Info":        acc_enabled,
     "ACC_Sollbeschleunigung_02":  acceleration,
-    "ACC_zul_Regelabw_unten":     0.0 if acc_control == ACC_CTRL_ACTIVE else 0,
-    "ACC_zul_Regelabw_oben":      0.0 if acc_control == ACC_CTRL_ACTIVE else 0,
-    "ACC_neg_Sollbeschl_Grad_02": 4.0 if acc_control == ACC_CTRL_ACTIVE else 0,
-    "ACC_pos_Sollbeschl_Grad_02": 4.0 if acc_control == ACC_CTRL_ACTIVE else 0,
+    "ACC_zul_Regelabw_unten":     0.0, # synchronize car with OP accel 
+    "ACC_zul_Regelabw_oben":      0.0, # synchronize car with OP accel
+    "ACC_neg_Sollbeschl_Grad_02": 4.0 if acc_control == ACC_CTRL_ACTIVE else 0, # ToDo: dynamic jerk limits based on distance if distance is natively available in carcontroller
+    "ACC_pos_Sollbeschl_Grad_02": 4.0 if acc_control == ACC_CTRL_ACTIVE else 0, # ToDo: dynamic jerk limits based on distance if distance is natively available in carcontroller
     "ACC_Anfahren":               starting,
     "ACC_Anhalten":               stopping,
     "ACC_Anhalteweg":             20.46,
