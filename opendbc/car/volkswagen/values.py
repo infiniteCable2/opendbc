@@ -119,7 +119,8 @@ class CarControllerParams:
         0.195,  # Max curvature for steering command, m^-1
       )
 
-      self.shifter_values    = can_define.dv["Getriebe_11"]["GE_Fahrstufe"]
+      #self.shifter_values    = can_define.dv["Getriebe_11"]["GE_Fahrstufe"]
+      self.shifter_values    = can_define.dv["Gateway_73"]["GE_Fahrstufe"]
       self.hca_status_values = can_define.dv["QFK_01"]["LatCon_HCA_Status"]
 
       self.BUTTONS = [
