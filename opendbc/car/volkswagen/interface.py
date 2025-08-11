@@ -68,6 +68,9 @@ class CarInterface(CarInterfaceBase):
       if all(msg in fingerprint[1] for msg in (0x462, 0x463, 0x464)):  # PSD_04, PSD_05, PSD_06
         ret.flags |= VolkswagenFlags.STOCK_PSD_PRESENT.value
 
+      if 0x3DC in fingerprint[0]:  # Gatway_73
+       ret.flags |= VolkswagenFlags.ALT_GEAR.value
+
     else:
       # Set global MQB parameters
       safety_configs = [get_safety_config(structs.CarParams.SafetyModel.volkswagen)]
