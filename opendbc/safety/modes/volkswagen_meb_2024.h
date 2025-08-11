@@ -3,16 +3,15 @@
 #include "opendbc/safety/modes/volkswagen_meb_base.h"
 
 static uint32_t volkswagen_meb_2024_compute_crc(const CANPacket_t *msg) {
-  bool fallback_crc = false;
+  int len = GET_LEN(msg);
   if (msg->addr == MSG_QFK_01) {
-    int len = 28;
-  else if (msg->addr == MSG_ESC_51) {
+    len = 28;
+  } else if (msg->addr == MSG_ESC_51) {
     len = 60;
-  else if (msg->addr == MSG_Motor_51) {
+  } else if (msg->addr == MSG_Motor_51) {
     len = 44;
-  }
-  else {
-    return volkswagen_meb_compute_crc(*msg)
+  } else {
+    return volkswagen_meb_compute_crc(*msg);
   }
 
   uint8_t crc = 0xFFU;
