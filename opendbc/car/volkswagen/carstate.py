@@ -300,8 +300,8 @@ class CarState(CarStateBase):
     # Consume blind-spot monitoring info/warning LED states, if available.
     # Infostufe: BSM LED on, Warnung: BSM LED flashing
     if self.CP.enableBsm:
-      ret.leftBlindspot  = bool(ext_cp.vl["MEB_Side_Assist_01"]["Blind_Spot_Info_Left"]) or bool(ext_cp.vl["MEB_Side_Assist_01"]["Blind_Spot_Warn_Left"])
-      ret.rightBlindspot = bool(ext_cp.vl["MEB_Side_Assist_01"]["Blind_Spot_Info_Right"]) or bool(ext_cp.vl["MEB_Side_Assist_01"]["Blind_Spot_Warn_Right"])
+      ret.leftBlindspot  = bool(pt_cp.vl["MEB_Side_Assist_01"]["Blind_Spot_Info_Left"]) or bool(pt_cp.vl["MEB_Side_Assist_01"]["Blind_Spot_Warn_Left"])
+      ret.rightBlindspot = bool(pt_cp.vl["MEB_Side_Assist_01"]["Blind_Spot_Info_Right"]) or bool(pt_cp.vl["MEB_Side_Assist_01"]["Blind_Spot_Warn_Right"])
 
     # Consume factory LDW data relevant for factory SWA (Lane Change Assist)
     # and capture it for forwarding to the blind spot radar controller
