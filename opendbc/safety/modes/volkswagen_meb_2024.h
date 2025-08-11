@@ -11,7 +11,7 @@ static uint32_t volkswagen_meb_2024_compute_crc(const CANPacket_t *msg) {
   } else if (msg->addr == MSG_Motor_51) {
     len = 44;
   } else {
-    return volkswagen_meb_compute_crc(*msg);
+    return volkswagen_meb_compute_crc(msg);
   }
 
   uint8_t crc = 0xFFU;
