@@ -185,19 +185,6 @@ def volkswagen_mqb_meb_checksum(address: int, sig, d: bytearray) -> int:
   return crc ^ 0xFF
 
 
-def volkswagen_mqb_meb_checksum(address: int, sig, d: bytearray) -> int:
-  crc = 0xFF
-  for i in range(1, len(d)):
-    crc ^= d[i]
-    crc = CRC8H2F[crc]
-  counter = d[1] & 0x0F
-  const = VOLKSWAGEN_MQB_MEB_CONSTANTS.get(address)
-  if const:
-    crc ^= const[counter]
-    crc = CRC8H2F[crc]
-  return crc ^ 0xFF
-
-
 def volkswagen_mqb_meb_2024_checksum(address: int, sig, d: bytearray) -> int:
   entry = VOLKSWAGEN_MQB_MEB_2024_CONSTANTS.get(address)
 
