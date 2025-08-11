@@ -120,7 +120,11 @@ class CarControllerParams:
         0.195,  # Max curvature for steering command, m^-1
       )
 
-      self.shifter_values    = can_define.dv["Getriebe_11"]["GE_Fahrstufe"]
+      if CP.flags & VolkswagenFlags.MEB_2024:
+        self.shifter_values = can_define.dv["Gateway_73"]["GE_Fahrstufe"]
+      else:
+        self.shifter_values = can_define.dv["Getriebe_11"]["GE_Fahrstufe"]
+      
       self.hca_status_values = can_define.dv["QFK_01"]["LatCon_HCA_Status"]
 
       self.BUTTONS = [
@@ -214,7 +218,8 @@ class VolkswagenFlags(IntFlag):
 
   # Static flags
   PQ = 2
-  MEB = 4
+  MEB = 64
+  MEB_2024 = 128
 
 
 @dataclass
@@ -227,8 +232,7 @@ class VolkswagenMQBPlatformConfig(PlatformConfig):
 
 
 @dataclass
-class VolkswagenMEBPlatformConfig(PlatformConfig):
-  dbc_dict: DbcDict = field(default_factory=lambda: {Bus.pt: 'vw_meb', Bus.radar: 'vw_meb'})
+class VolkswagenMEBBasePlatformConfig(PlatformConfig):
   # Volkswagen uses the VIN WMI and chassis code to match in the absence of the comma power
   # on camera-integrated cars, as we lose too many ECUs to reliably identify the vehicle
   chassis_codes: set[str] = field(default_factory=set)
@@ -236,6 +240,19 @@ class VolkswagenMEBPlatformConfig(PlatformConfig):
 
   def init(self):
     self.flags |= VolkswagenFlags.MEB
+
+@dataclass
+class VolkswagenMEBPlatformConfig(VolkswagenMEBBasePlatformConfig):
+  dbc_dict: DbcDict = field(default_factory=lambda: {Bus.pt: 'vw_meb', Bus.radar: 'vw_meb'})
+  def init(self):
+    super().init()
+
+@dataclass
+class VolkswagenMEB2024PlatformConfig(VolkswagenMEBBasePlatformConfig):
+  dbc_dict: DbcDict = field(default_factory=lambda: {Bus.pt: 'vw_meb_2024', Bus.radar: 'vw_meb_2024'})
+  def init(self):
+    super().init()
+    self.flags |= VolkswagenFlags.MEB_2024
 
 
 @dataclass
@@ -492,13 +509,11 @@ class CAR(Platforms):
     chassis_codes={"K1"},
     wmis={WMI.SEAT},
   )
-  CUPRA_BORN_2024 = VolkswagenMEBPlatformConfig(
+  CUPRA_BORN_2024 = VolkswagenMEB2024PlatformConfig(
     [VWCarDocs("CUPRA Born 2024")],
-    # for CUPRA BORN 77kWh 170 kW, tireStiffnessFactor and centerToFrontRatio are approximations
-    VolkswagenCarSpecs(mass=1950, wheelbase=2.766, steerRatio=15.9, centerToFrontRatio=0.496, tireStiffnessFactor=1.0),
+    CUPRA_BORN_MK1.specs,
     chassis_codes={"K1"},
     wmis={WMI.SEAT},
-    dbc_dict={Bus.pt: "vw_meb_2024", Bus.radar: "vw_meb_2024"},
   )
   SKODA_FABIA_MK4 = VolkswagenMQBPlatformConfig(
     [VWCarDocs("Škoda Fabia 2022-23", footnotes=[Footnote.VW_MQB_A0])],
