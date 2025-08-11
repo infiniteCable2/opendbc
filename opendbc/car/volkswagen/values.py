@@ -210,6 +210,7 @@ class VolkswagenFlags(IntFlag):
   KOMBI_PRESENT = 4
   STOCK_KLR_PRESENT = 8
   STOCK_PSD_PRESENT = 16
+  ALT_GEARS = 32
 
   # Static flags
   PQ = 2
@@ -490,6 +491,14 @@ class CAR(Platforms):
     VolkswagenCarSpecs(mass=1950, wheelbase=2.766, steerRatio=15.9, centerToFrontRatio=0.496, tireStiffnessFactor=1.0),
     chassis_codes={"K1"},
     wmis={WMI.SEAT},
+  )
+  CUPRA_BORN_2024 = VolkswagenMEBPlatformConfig(
+    [VWCarDocs("CUPRA Born 2024")],
+    # for CUPRA BORN 77kWh 170 kW, tireStiffnessFactor and centerToFrontRatio are approximations
+    VolkswagenCarSpecs(mass=1950, wheelbase=2.766, steerRatio=15.9, centerToFrontRatio=0.496, tireStiffnessFactor=1.0),
+    chassis_codes={"K1"},
+    wmis={WMI.SEAT},
+    dbc_dict={Bus.pt: "vw_meb_2024", Bus.radar: "vw_meb_2024"},
   )
   SKODA_FABIA_MK4 = VolkswagenMQBPlatformConfig(
     [VWCarDocs("Škoda Fabia 2022-23", footnotes=[Footnote.VW_MQB_A0])],
