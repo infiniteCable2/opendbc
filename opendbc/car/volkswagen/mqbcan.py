@@ -1,8 +1,4 @@
-from opendbc.car.crc import CRC8H2F, 
-
-class CrcEntry(dict):
-    length: int
-    magic: list[int]
+from opendbc.car.crc import CRC8H2F
 
 
 def create_steering_control(packer, bus, apply_torque, lkas_enabled):
@@ -202,8 +198,8 @@ def volkswagen_mqb_meb_checksum(address: int, sig, d: bytearray) -> int:
   return crc ^ 0xFF
 
 
-def volkswagen_mqb_meb_dynlen_checksum(address: int, sig, d: bytearray) -> int:
-  entry = VOLKSWAGEN_MQB_MEB_V2_CONSTANTS.get(address)
+def volkswagen_mqb_meb_2024_checksum(address: int, sig, d: bytearray) -> int:
+  entry = VOLKSWAGEN_MQB_MEB_2024_CONSTANTS.get(address)
 
   if entry:
     const  = entry["magic"]
@@ -297,7 +293,7 @@ VOLKSWAGEN_MQB_MEB_CONSTANTS: dict[int, list[int]] = {
             0x7B, 0xD6, 0x41, 0x39, 0x76, 0xB6, 0xD7, 0x35],  # KLR_01
 }
 
-VOLKSWAGEN_MQB_MEB_DYNLEN_CONSTANTS: dict[int, list[int]] = {
+VOLKSWAGEN_MQB_MEB_2024_CONSTANTS: dict[int, list[int]] = {
   0x0DB: { "length": 41,
            "magic": [0x09, 0xFA, 0xCA, 0x8E, 0x62, 0xD5, 0xD1, 0xF0, 0x31, 0xA0, 0xAF, 0xDA, 0x4D, 0x1A, 0x0A, 0x97] }, # AWV_03
   0xFC:  { "length": 59,
