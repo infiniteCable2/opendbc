@@ -1,7 +1,5 @@
 #pragma once
 
-#include "opendbc/safety/safety_declarations.h"
-#include "opendbc/safety/modes/volkswagen_common.h"
 #include "opendbc/safety/modes/volkswagen_meb_base.h"
 
 static uint32_t volkswagen_meb_2024_compute_crc(const CANPacket_t *msg) {
