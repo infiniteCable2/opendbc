@@ -18,7 +18,7 @@ BO_ 258 ESC_50: 48 XXX
  SG_ NEW_SIGNAL_2 : 236|9@1+ (1,0) [0|7] "" XXX
  SG_ NEW_SIGNAL_1 : 248|4@1+ (1,0) [0|15] "" XXX
 
-BO_ 252 ESC_51: 48 XXX
+BO_ 252 ESC_51: 64 XXX
  SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
  SG_ COUNTER : 8|4@1+ (1,0) [0|15] "" XXX
  SG_ NEW_SIGNAL_2 : 14|6@1+ (1,0) [0|3] "" XXX
@@ -47,7 +47,7 @@ BO_ 219 AWV_03: 48 XXX
  SG_ Pre_FCW : 64|1@0+ (1,0) [0|1] "" XXX
  SG_ FCW_Active : 76|1@0+ (1,0) [0|1] "" XXX
 
-BO_ 267 Motor_51: 32 XXX
+BO_ 267 Motor_51: 48 XXX
  SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
  SG_ COUNTER : 8|4@1+ (1,0) [0|15] "" XXX
  SG_ Accel_Pedal_Pressure : 12|9@1+ (0.4,0) [0|255] "" XXX
@@ -75,7 +75,7 @@ BO_ 317 QFK_01: 32 XXX
  SG_ NEW_SIGNAL_4 : 63|1@0+ (1,0) [0|1] "" XXX
  SG_ Steering_Angle : 76|17@1+ (0.00906,0) [0|32767] "" XXX
 
-BO_ 389241616 MEB_Camera_09: 8 XXX
+BO_ 389241616 MEB_Camera_09: 3 XXX
 
 VAL_ 267 TSK_Status 0 "init" 1 "disabled" 2 "enabled" 3 "regulating" 4 "accel_pedal_override" 5 "brake_only" 6 "temp_fault" 7 "perm_fault";
 VAL_ 317 LatCon_HCA_Status 0 "disabled" 1 "initializing" 2 "ready" 3 "fault" 4 "active" 5 "preempted" 6 "fault" 7 "rejected";
