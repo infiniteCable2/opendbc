@@ -120,7 +120,7 @@ class CarControllerParams:
         0.195,  # Max curvature for steering command, m^-1
       )
 
-      if CP.flags & VolkswagenFlags.MEB_2024:
+      if CP.flags & VolkswagenFlags.ALT_GEAR:
         self.shifter_values = can_define.dv["Gateway_73"]["GE_Fahrstufe"]
       else:
         self.shifter_values = can_define.dv["Getriebe_11"]["GE_Fahrstufe"]
@@ -214,7 +214,7 @@ class VolkswagenFlags(IntFlag):
   KOMBI_PRESENT = 4
   STOCK_KLR_PRESENT = 8
   STOCK_PSD_PRESENT = 16
-  ALT_GEARS = 32
+  ALT_GEAR = 32
 
   # Static flags
   PQ = 2
