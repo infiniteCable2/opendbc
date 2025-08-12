@@ -1,4 +1,3 @@
-from collections import defaultdict
 from opendbc.can import CANParser
 from opendbc.car import Bus, structs
 from opendbc.car.interfaces import CarStateBase
@@ -30,29 +29,6 @@ class CarState(CarStateBase):
         if b.type in (ButtonType.setCruise, ButtonType.resumeCruise) and not b.pressed:
           return True
     return False
-
-  def create_button_events_multi(self, pt_cp, buttons):
-    # multiple buttons for same events / OR combination
-    combined = defaultdict(lambda: False)
-    touched_types = set()
-  
-    for button in buttons:
-      state = pt_cp.vl[button.can_addr][button.can_msg] in button.values
-      combined[button.event_type] = combined[button.event_type] or state
-      touched_types.add(button.event_type)
-  
-    button_events = []
-    for event_type in touched_types:
-      prev = self.button_states.get(event_type, False)
-      curr = combined[event_type]
-      if prev != curr:
-        event = structs.CarState.ButtonEvent()
-        event.type = event_type
-        event.pressed = curr
-        button_events.append(event)
-      self.button_states[event_type] = curr
-  
-    return button_events
 
   def create_button_events(self, pt_cp, buttons):
     button_events = []
@@ -378,7 +354,7 @@ class CarState(CarStateBase):
     # turn signal cause
     ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_stalk(240, pt_cp.vl["SMLS_01"]["BH_Blinker_li"],
                                                                             pt_cp.vl["SMLS_01"]["BH_Blinker_re"])
-    ret.buttonEvents = self.create_button_events_multi(pt_cp, self.CCP.BUTTONS)
+    ret.buttonEvents = self.create_button_events(pt_cp, self.CCP.BUTTONS)
     
     self.gra_stock_values = pt_cp.vl["GRA_ACC_01"]
     
