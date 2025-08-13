@@ -247,6 +247,7 @@ class CarState(CarStateBase):
   def update_meb(self, pt_cp, main_cp, cam_cp, ext_cp) -> tuple[structs.CarState, structs.CarStateSP]:
     ret = structs.CarState()
     ret_sp = structs.CarStateSP()
+    
     # Update vehicle speed and acceleration from ABS wheel speeds.
     self.parse_wheel_speeds(ret,
       pt_cp.vl["ESC_51"]["VL_Radgeschw"],
@@ -356,7 +357,13 @@ class CarState(CarStateBase):
     # turn signal cause
     ret.leftBlinker, ret.rightBlinker = self.update_blinker_from_stalk(240, pt_cp.vl["SMLS_01"]["BH_Blinker_li"],
                                                                             pt_cp.vl["SMLS_01"]["BH_Blinker_re"])
-    ret.buttonEvents = self.create_button_events(pt_cp, self.CCP.BUTTONS)
+
+    # detect button configuration
+    # for latched main cruise button (or no main button present), there is probably a physical cancel button
+    # existing main cruise push button is probably used as cancel button if present
+    main_cruise_latching = not bool(pt_cp.vl["GRA_ACC_01"]["GRA_Typ_Hauptschalter"])
+    buttons = self.CCP.BUTTONS_ALT if main_cruise_latching else self.CCP.BUTTONS
+    ret.buttonEvents = self.create_button_events(pt_cp, buttons)
     
     self.gra_stock_values = pt_cp.vl["GRA_ACC_01"]
     
