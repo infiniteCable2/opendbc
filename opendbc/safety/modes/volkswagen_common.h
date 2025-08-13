@@ -21,6 +21,14 @@ bool volkswagen_set_button_prev = false;
 extern bool volkswagen_resume_button_prev;
 bool volkswagen_resume_button_prev = false;
 
+extern bool volkswagen_alt_crc_variant_1;
+extern bool volkswagen_alt_cancel_button;
+extern bool volkswagen_no_cruise_state;
+
+bool volkswagen_alt_crc_variant_1 = false;
+bool volkswagen_alt_cancel_button = false;
+bool volkswagen_no_cruise_state = false;
+
 
 #define MSG_LH_EPS_03        0x09FU   // RX from EPS, for driver steering torque
 #define MSG_ESP_19           0x0B2U   // RX from ABS, for wheel speeds
