@@ -90,5 +90,15 @@ BO_ 313 VMM_02: 32 XXX
  SG_ Brake_Pressure : 76|11@1+ (1,0) [0|100] "" XXX
  SG_ FCW_Reaction_3 : 88|5@1+ (1,0) [0|31] "" XXX
 
+BO_ 619 TA_01: 8 XXX
+ SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
+ SG_ COUNTER : 8|4@1+ (1,0) [0|15] "" XXX
+ SG_ Travel_Assist_Status : 13|3@1+ (1,0) [0|3] "" XXX
+ SG_ Travel_Assist_Request : 19|3@1+ (1,0) [0|7] "" XXX
+ SG_ Travel_Assist_Available : 23|1@1+ (1,0) [0|1] "" XXX
+
 VAL_ 267 TSK_Status 0 "init" 1 "disabled" 2 "enabled" 3 "regulating" 4 "accel_pedal_override" 5 "brake_only" 6 "temp_fault" 7 "perm_fault";
 VAL_ 317 LatCon_HCA_Status 0 "disabled" 1 "initializing" 2 "ready" 3 "fault" 4 "active" 5 "preempted" 6 "fault" 7 "rejected";
+VAL_ 619 Travel_Assist_Status 4 "enabled" 0 "disabled" 2 "ready" 3 "pre_ready";
+VAL_ 619 Travel_Assist_Request 4 "enable" 3 "disable" 0 "no_request" 1 "error";
+VAL_ 619 Travel_Assist_Available 0 "not_available" 1 "available";
