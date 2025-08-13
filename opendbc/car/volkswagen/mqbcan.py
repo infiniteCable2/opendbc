@@ -172,38 +172,32 @@ def create_aeb_hud(packer, aeb_supported, fcw_active):
   return packer.make_can_msg("ACC_15", 0, values)
 
 
-def volkswagen_mqb_meb_checksum(address: int, sig, d: bytearray) -> int:
+def volkswagen_mqb_meb_checksum(address: int, sig, d: bytearray, const: list[int] | None = None) -> int:
   crc = 0xFF
   for i in range(1, len(d)):
     crc ^= d[i]
     crc = CRC8H2F[crc]
   counter = d[1] & 0x0F
-  const = VOLKSWAGEN_MQB_MEB_CONSTANTS.get(address)
+  if const is None:
+    const = VOLKSWAGEN_MQB_MEB_CONSTANTS.get(address)
   if const:
     crc ^= const[counter]
     crc = CRC8H2F[crc]
   return crc ^ 0xFF
 
 
-def volkswagen_mqb_meb_2024_checksum(address: int, sig, d: bytearray) -> int:
-  entry = VOLKSWAGEN_MQB_MEB_2024_CONSTANTS.get(address)
-
+def volkswagen_mqb_meb_dyn_len_checksum(address: int, sig, d: bytearray, entry: dict | None = None) -> int:
+  const = None
   if entry:
-    const  = entry["magic"]
     length = entry["length"] + 1
-  else: # fallback
-    const  = VOLKSWAGEN_MQB_MEB_CONSTANTS.get(address)
-    length = len(d)
+    d = d[:length]
+    const = entry["magic"]
+  return volkswagen_mqb_meb_checksum(address, sig, d, const)
 
-  crc = 0xFF
-  for i in range(1, length):
-    crc ^= d[i]
-    crc = CRC8H2F[crc]
-  counter = d[1] & 0x0F
-  if const:
-    crc ^= const[counter]
-    crc = CRC8H2F[crc]
-  return crc ^ 0xFF
+
+def volkswagen_mqb_meb_gen2_checksum(address: int, sig, d: bytearray) -> int:
+  entry = VOLKSWAGEN_MQB_MEB_GEN2_CONSTANTS.get(address)
+  return volkswagen_mqb_meb_dyn_len_checksum(address, sig, d, entry)
 
 
 def xor_checksum(address: int, sig, d: bytearray) -> int:
@@ -280,7 +274,7 @@ VOLKSWAGEN_MQB_MEB_CONSTANTS: dict[int, list[int]] = {
             0x7B, 0xD6, 0x41, 0x39, 0x76, 0xB6, 0xD7, 0x35],  # KLR_01
 }
 
-VOLKSWAGEN_MQB_MEB_2024_CONSTANTS: dict[int, list[int]] = {
+VOLKSWAGEN_MQB_MEB_GEN2_CONSTANTS: dict[int, list[int]] = {
   0x0DB: { "length": 41,
            "magic": [0x09, 0xFA, 0xCA, 0x8E, 0x62, 0xD5, 0xD1, 0xF0, 0x31, 0xA0, 0xAF, 0xDA, 0x4D, 0x1A, 0x0A, 0x97] }, # AWV_03
   0xFC:  { "length": 59,
