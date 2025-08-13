@@ -127,7 +127,7 @@ class CarControllerParams:
       
       self.hca_status_values = can_define.dv["QFK_01"]["LatCon_HCA_Status"]
 
-      self.BASE_BUTTONS = [
+      BASE_BUTTONS = [
         Button(structs.CarState.ButtonEvent.Type.setCruise, "GRA_ACC_01", "GRA_Tip_Setzen", [1]),
         Button(structs.CarState.ButtonEvent.Type.resumeCruise, "GRA_ACC_01", "GRA_Tip_Wiederaufnahme", [1]),
         Button(structs.CarState.ButtonEvent.Type.accelCruise, "GRA_ACC_01", "GRA_Tip_Hoch", [1]),
