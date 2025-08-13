@@ -1032,6 +1032,16 @@ FW_VERSIONS = {
       b'\xf1\x871EA907572H \xf1\x890234',
     ],
   },
+  CAR.CUPRA_BORN_GEN2: {
+    (Ecu.engine, 0x7e0, None): [
+    ],
+    (Ecu.srs, 0x715, None): [
+    ],
+    (Ecu.eps, 0x712, None): [
+    ],
+    (Ecu.fwdRadar, 0x757, None): [
+    ],
+  },
   CAR.SKODA_FABIA_MK4: {
     (Ecu.engine, 0x7e0, None): [
       b'\xf1\x8705C906032L \xf1\x891701',
