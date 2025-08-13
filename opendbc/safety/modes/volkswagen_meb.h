@@ -55,11 +55,11 @@ static uint32_t volkswagen_meb_compute_crc(const CANPacket_t *msg) {
 
   if (volkswagen_alt_crc_variant_1) {
     if (msg->addr == MSG_QFK_01) {
-      len = 27 + 1;
+      len = 28;
     } else if (msg->addr == MSG_ESC_51) {
-      len = 59 + 1;
+      len = 60;
     } else if (msg->addr == MSG_Motor_51) {
-      len = 44 + 1;
+      len = 44;
     }
   }
 
