@@ -140,7 +140,7 @@ class CarControllerParams:
       ]
 
       self.BUTTONS_ALT = BASE_BUTTONS + [
-        Button(structs.CarState.ButtonEvent.Type.cancel, "GRA_ACC_01", "GRA_Abbrechen", [1]), # there is no physical cancel button
+        Button(structs.CarState.ButtonEvent.Type.cancel, "GRA_ACC_01", "GRA_Abbrechen", [1]), # there is a physical cancel button
       ]
 
       self.LDW_MESSAGES = {
