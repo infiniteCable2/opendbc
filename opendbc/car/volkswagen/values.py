@@ -225,7 +225,6 @@ class VolkswagenFlags(IntFlag):
   PQ = 2
   MEB = 64
   MEB_GEN2 = 128
-  ALT_CRC_VARIANT_1 = 1024
   
 
 
@@ -247,7 +246,7 @@ class VolkswagenMEBPlatformConfig(PlatformConfig):
   def init(self):
     self.flags |= VolkswagenFlags.MEB
     if self.flags & VolkswagenFlag.MEB_GEN2:
-      self.dbc_dict = {Bus.pt: 'vw_meb', Bus.radar: 'vw_meb'}
+      self.dbc_dict = {Bus.pt: 'vw_meb_2024', Bus.radar: 'vw_meb_2024'}
 
 
 @dataclass
@@ -507,7 +506,7 @@ class CAR(Platforms):
     CUPRA_BORN_MK1.specs,
     chassis_codes={"K1"},
     wmis={WMI.SEAT},
-    flags=VolkswagenFlag.MEB_GEN2 | VolkswagenFlag.ALT_CRC_VARIANT_1,
+    flags=VolkswagenFlag.MEB_GEN2,
   )
   SKODA_FABIA_MK4 = VolkswagenMQBPlatformConfig(
     [VWCarDocs("Škoda Fabia 2022-23", footnotes=[Footnote.VW_MQB_A0])],
