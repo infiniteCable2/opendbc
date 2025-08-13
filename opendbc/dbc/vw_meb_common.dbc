@@ -574,13 +574,6 @@ BO_ 605 KLR_01: 8 Gateway
  SG_ KLR_Touchintensitaet_3 : 32|8@1+ (1,0) [0|250] "Unit_None" Vector__XXX
  SG_ KLR_Touchauswertung : 40|4@1+ (1,0) [0|15] "" ZR_High
 
-BO_ 619 TA_01: 8 XXX
- SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
- SG_ COUNTER : 8|4@1+ (1,0) [0|15] "" XXX
- SG_ Travel_Assist_Status : 13|3@1+ (1,0) [0|3] "" XXX
- SG_ Travel_Assist_Request : 19|3@1+ (1,0) [0|7] "" XXX
- SG_ Travel_Assist_Available : 23|1@1+ (1,0) [0|1] "" XXX
-
 BO_ 695 RCTA_01: 8 XXX
  SG_ RCTA_01_CRC : 0|8@1+ (1,0) [0|255] "" XXX
  SG_ RCTA_01_BZ : 8|4@1+ (1,0) [0|15] "" XXX
@@ -2359,9 +2352,6 @@ VAL_ 496 STP_Primaeranz 0 "keine_Anzeige" 1 "Verfuegbar" 2 "Aktiv" 3 "Uebernahme
 VAL_ 496 EA_Bremslichtblinken 0 "kein_Blinken" 1 "Anforderung_Bremslichtblinken";
 VAL_ 496 EA_Blinken 0 "Kein_Blinken" 1 "Wechselblinken_links" 2 "Wechselblinken_rechts" 3 "Warnblinken" 4 "Warnblinken_Taster";
 VAL_ 591 Distance_Status 0 "Valid" 3 "Invalid";
-VAL_ 619 Travel_Assist_Status 4 "enabled" 0 "disabled" 2 "ready" 3 "pre_ready";
-VAL_ 619 Travel_Assist_Request 4 "enable" 3 "disable" 0 "no_request" 1 "error";
-VAL_ 619 Travel_Assist_Available 0 "not_available" 1 "available";
 VAL_ 706 MO_Anzeige_StSt_Text 0 "keine_Anzeige" 1 "Systemfehler" 2 "Motor_manuell_starten" 3 "Rueckmeldung_durch_Fahrstufe_einlegen" 4 "Zuendungsabschaltwarnung_Timerstart" 5 "Zum_Motorstart_Bremse_treten" 6 "StSt_Aktivierung_nicht_moeglich_auf_Grund_Fahrprogramm";
 VAL_ 706 MO_Anzeige_StSt_Symbol 0 "keine_Anzeige" 1 "StSt_aktiv" 2 "Motorlauf_noetig" 3 "Fahrer_temporaer_abwesend" 4 "Fahrer_vielleicht_anwesend";
 VAL_ 706 MO_ADR_Status 0 "nicht_aktiv" 1 "ADR_angefordert" 2 "ADR_aktiv" 3 "ADR_Fehler";
