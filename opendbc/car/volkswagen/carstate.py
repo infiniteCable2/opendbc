@@ -284,7 +284,7 @@ class CarState(CarStateBase):
     ret.parkingBrake = pt_cp.vl["Gateway_73"]["EPB_Status"] in (1, 4) # EPB closing or closed
 
     # Update gear and/or clutch position data.
-    if CP.flags & VolkswagenFlags.ALT_GEAR:
+    if self.CP.flags & VolkswagenFlags.ALT_GEAR:
       ret.gearShifter = self.parse_gear_shifter(self.CCP.shifter_values.get(pt_cp.vl["Gateway_73"]["GE_Fahrstufe"], None))
     else:
       ret.gearShifter = self.parse_gear_shifter(self.CCP.shifter_values.get(pt_cp.vl["Getriebe_11"]["GE_Fahrstufe"], None))
