@@ -18,7 +18,7 @@ extern bool volkswagen_resume_button_prev;
 bool volkswagen_resume_button_prev = false;
 
 extern bool volkswagen_alt_crc_variant_1;
-bool volkswagen_no_cruise_state = false;
+bool volkswagen_alt_crc_variant_1 = false;
 
 
 #define MSG_LH_EPS_03        0x09FU   // RX from EPS, for driver steering torque
