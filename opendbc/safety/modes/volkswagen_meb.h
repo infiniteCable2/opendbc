@@ -55,11 +55,11 @@ static uint32_t volkswagen_meb_compute_crc(const CANPacket_t *msg) {
 
   if (volkswagen_alt_crc_variant_1) {
     if (msg->addr == MSG_QFK_01) {
-      len = 28;
+      len = 27 + 1;
     } else if (msg->addr == MSG_ESC_51) {
-      len = 60;
+      len = 59 + 1;
     } else if (msg->addr == MSG_Motor_51) {
-      len = 44;
+      len = 44 + 1;
     }
   }
 
@@ -121,17 +121,27 @@ static safety_config volkswagen_meb_init(uint16_t param) {
                                                        {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},
                                                        {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true}};
 
-  static RxCheck volkswagen_meb_rx_checks[] = {
+  static RxCheck volkswagen_meb_rx_checks_variant_1[] = {
     {.msg = {{MSG_LH_EPS_03, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
     {.msg = {{MSG_MOTOR_14, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
-    {.msg = {{MSG_Motor_51, 0, 32, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
     {.msg = {{MSG_GRA_ACC_01, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
-    {.msg = {{MSG_QFK_01, 0, 32, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
-    {.msg = {{MSG_ESC_51, 0, 48, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
     {.msg = {{MSG_Motor_54, 0, 32, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
+    {.msg = {{MSG_QFK_01, 0, 32, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
+    {.msg = {{MSG_Motor_51, 0, 48, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
+    {.msg = {{MSG_ESC_51, 0, 64, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
   };
 
-  UNUSED(param);
+  static RxCheck volkswagen_meb_rx_checks_default[] = {
+    {.msg = {{MSG_LH_EPS_03, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
+    {.msg = {{MSG_MOTOR_14, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
+    {.msg = {{MSG_GRA_ACC_01, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
+    {.msg = {{MSG_Motor_54, 0, 32, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
+    {.msg = {{MSG_QFK_01, 0, 32, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
+    {.msg = {{MSG_Motor_51, 0, 32, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
+    {.msg = {{MSG_ESC_51, 0, 48, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
+  };
+
+  volkswagen_alt_crc_variant_1 = GET_FLAG(param, FLAG_VOLKSWAGEN_ALT_CRC_VARIANT_1);
 
   volkswagen_set_button_prev = false;
   volkswagen_resume_button_prev = false;
@@ -139,14 +149,22 @@ static safety_config volkswagen_meb_init(uint16_t param) {
 #ifdef ALLOW_DEBUG
   volkswagen_longitudinal = GET_FLAG(param, FLAG_VOLKSWAGEN_LONG_CONTROL);
 #endif
-
-  volkswagen_alt_crc_variant_1 = GET_FLAG(param, FLAG_VOLKSWAGEN_ALT_CRC_VARIANT_1);
-  volkswagen_alt_cancel_button = GET_FLAG(param, FLAG_VOLKSWAGEN_ALT_CANCEL_BUTTON);
-  volkswagen_no_cruise_state = GET_FLAG(param, FLAG_VOLKSWAGEN_NO_CRUISE_STATE);
   
   gen_crc_lookup_table_8(0x2F, volkswagen_crc8_lut_8h2f);
-  return volkswagen_longitudinal ? BUILD_SAFETY_CFG(volkswagen_meb_rx_checks, VOLKSWAGEN_MEB_LONG_TX_MSGS) : \
-                                   BUILD_SAFETY_CFG(volkswagen_meb_rx_checks, VOLKSWAGEN_MEB_STOCK_TX_MSGS);
+  
+  if (volkswagen_longitudinal) {
+    if (volkswagen_alt_crc_variant_1) {
+      BUILD_SAFETY_CFG(volkswagen_meb_rx_checks_variant_1, VOLKSWAGEN_MEB_STOCK_TX_MSGS)
+    } else {
+      BUILD_SAFETY_CFG(volkswagen_meb_rx_checks_default, VOLKSWAGEN_MEB_LONG_TX_MSGS)
+    }
+  } else {
+    if (volkswagen_alt_crc_variant_1) {
+      BUILD_SAFETY_CFG(volkswagen_meb_rx_checks_variant_1, VOLKSWAGEN_MEB_STOCK_TX_MSGS)
+    } else {
+      BUILD_SAFETY_CFG(volkswagen_meb_rx_checks_default, VOLKSWAGEN_MEB_STOCK_TX_MSGS)
+    }
+  }
 }
 
 // lateral limits for curvature
