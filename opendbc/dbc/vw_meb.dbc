@@ -77,5 +77,18 @@ BO_ 317 QFK_01: 32 XXX
 
 BO_ 389241616 MEB_Camera_09: 8 XXX
 
+BO_ 313 VMM_02: 32 XXX
+ SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
+ SG_ COUNTER : 8|4@1+ (1,0) [0|15] "" XXX
+ SG_ FCW_Reaction_1 : 12|1@0+ (1,0) [0|1] "" XXX
+ SG_ Brake_Pressed_1 : 16|1@0+ (1,0) [0|1] "" XXX
+ SG_ Brake_Pressed_2 : 27|1@0+ (1,0) [0|1] "" XXX
+ SG_ AEB_Active : 31|1@0+ (1,0) [0|1] "" XXX
+ SG_ ESP_Hold : 35|1@0+ (1,0) [0|1] "" XXX
+ SG_ Brake_Pressed_3 : 48|1@0+ (1,0) [0|1] "" XXX
+ SG_ FCW_Reaction_2 : 56|1@1+ (1,0) [0|1] "" XXX
+ SG_ Brake_Pressure : 76|11@1+ (1,0) [0|100] "" XXX
+ SG_ FCW_Reaction_3 : 88|5@1+ (1,0) [0|31] "" XXX
+
 VAL_ 267 TSK_Status 0 "init" 1 "disabled" 2 "enabled" 3 "regulating" 4 "accel_pedal_override" 5 "brake_only" 6 "temp_fault" 7 "perm_fault";
 VAL_ 317 LatCon_HCA_Status 0 "disabled" 1 "initializing" 2 "ready" 3 "fault" 4 "active" 5 "preempted" 6 "fault" 7 "rejected";
