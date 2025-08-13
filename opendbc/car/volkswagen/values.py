@@ -206,6 +206,9 @@ class WMI(StrEnum):
 
 class VolkswagenSafetyFlags(IntFlag):
   LONG_CONTROL = 1
+  ALT_CRC_VARIANT_1 = 2
+  ALT_CANCEL_BUTTON = 4
+  NO_CRUISE_STATE = 8
 
 
 class VolkswagenFlags(IntFlag):
@@ -215,11 +218,15 @@ class VolkswagenFlags(IntFlag):
   STOCK_KLR_PRESENT = 8
   STOCK_PSD_PRESENT = 16
   ALT_GEAR = 32
+  ALT_CANCEL_BUTTON = 256
+  NO_CRUISE_STATE = 512
 
   # Static flags
   PQ = 2
   MEB = 64
-  MEB_2024 = 128
+  MEB_GEN2 = 128
+  ALT_CRC_VARIANT_1 = 1024
+  
 
 
 @dataclass
@@ -232,27 +239,15 @@ class VolkswagenMQBPlatformConfig(PlatformConfig):
 
 
 @dataclass
-class VolkswagenMEBBasePlatformConfig(PlatformConfig):
-  # Volkswagen uses the VIN WMI and chassis code to match in the absence of the comma power
-  # on camera-integrated cars, as we lose too many ECUs to reliably identify the vehicle
+class VolkswagenMEBPlatformConfig(PlatformConfig):
+  dbc_dict: DbcDict = field(default_factory=lambda: {Bus.pt: 'vw_meb', Bus.radar: 'vw_meb'})
   chassis_codes: set[str] = field(default_factory=set)
   wmis: set[WMI] = field(default_factory=set)
 
   def init(self):
     self.flags |= VolkswagenFlags.MEB
-
-@dataclass
-class VolkswagenMEBPlatformConfig(VolkswagenMEBBasePlatformConfig):
-  dbc_dict: DbcDict = field(default_factory=lambda: {Bus.pt: 'vw_meb', Bus.radar: 'vw_meb'})
-  def init(self):
-    super().init()
-
-@dataclass
-class VolkswagenMEB2024PlatformConfig(VolkswagenMEBBasePlatformConfig):
-  dbc_dict: DbcDict = field(default_factory=lambda: {Bus.pt: 'vw_meb_2024', Bus.radar: 'vw_meb_2024'})
-  def init(self):
-    super().init()
-    self.flags |= VolkswagenFlags.MEB_2024
+    if self.flags & VolkswagenFlag.MEB_GEN2:
+      self.dbc_dict = {Bus.pt: 'vw_meb', Bus.radar: 'vw_meb'}
 
 
 @dataclass
@@ -501,19 +496,18 @@ class CAR(Platforms):
     wmis={WMI.SEAT},
   )
   CUPRA_BORN_MK1 = VolkswagenMEBPlatformConfig(
-    [
-      VWCarDocs("CUPRA Born 2021"),
-    ],
+    [VWCarDocs("CUPRA Born 2021"),],
     # for CUPRA BORN 77kWh 170 kW, tireStiffnessFactor and centerToFrontRatio are approximations
     VolkswagenCarSpecs(mass=1950, wheelbase=2.766, steerRatio=15.9, centerToFrontRatio=0.496, tireStiffnessFactor=1.0),
     chassis_codes={"K1"},
     wmis={WMI.SEAT},
   )
-  CUPRA_BORN_2024 = VolkswagenMEB2024PlatformConfig(
-    [VWCarDocs("CUPRA Born 2024")],
+  CUPRA_BORN_GEN2 = VolkswagenMEBPlatformConfig(
+    [VWCarDocs("CUPRA Born Gen 2")],
     CUPRA_BORN_MK1.specs,
     chassis_codes={"K1"},
     wmis={WMI.SEAT},
+    flags=VolkswagenFlag.MEB_GEN2 | VolkswagenFlag.ALT_CRC_VARIANT_1,
   )
   SKODA_FABIA_MK4 = VolkswagenMQBPlatformConfig(
     [VWCarDocs("Škoda Fabia 2022-23", footnotes=[Footnote.VW_MQB_A0])],
