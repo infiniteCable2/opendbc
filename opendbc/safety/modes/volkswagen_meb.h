@@ -53,8 +53,6 @@ static uint32_t volkswagen_meb_compute_crc(const CANPacket_t *msg) {
   // of this algorithm for a version with explanatory comments.
   // For newer variants the checksum is calculated over a specific signal length.
 
-  volkswagen_alt_crc_variant_1 = GET_FLAG(param, FLAG_VOLKSWAGEN_ALT_CRC_VARIANT_1);
-
   if (volkswagen_alt_crc_variant_1) {
     if (msg->addr == MSG_QFK_01) {
       len = 27 + 1;
@@ -145,6 +143,8 @@ static safety_config volkswagen_meb_init(uint16_t param) {
 
   volkswagen_set_button_prev = false;
   volkswagen_resume_button_prev = false;
+
+  volkswagen_alt_crc_variant_1 = GET_FLAG(param, FLAG_VOLKSWAGEN_ALT_CRC_VARIANT_1);
 
 #ifdef ALLOW_DEBUG
   volkswagen_longitudinal = GET_FLAG(param, FLAG_VOLKSWAGEN_LONG_CONTROL);
