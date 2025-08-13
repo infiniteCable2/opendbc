@@ -275,7 +275,7 @@ VOLKSWAGEN_MQB_MEB_CONSTANTS: dict[int, list[int]] = {
 }
 
 VOLKSWAGEN_MQB_MEB_GEN2_CONSTANTS: dict[int, list[int]] = {
-  0x0DB: { "length": 41,
+  0x0DB: { "length": 41, # length of signal to check (without checksum byte)
            "magic": [0x09, 0xFA, 0xCA, 0x8E, 0x62, 0xD5, 0xD1, 0xF0,
                      0x31, 0xA0, 0xAF, 0xDA, 0x4D, 0x1A, 0x0A, 0x97] }, # AWV_03
   0xFC:  { "length": 59,
