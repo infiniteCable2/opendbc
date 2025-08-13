@@ -213,8 +213,6 @@ class WMI(StrEnum):
 class VolkswagenSafetyFlags(IntFlag):
   LONG_CONTROL = 1
   ALT_CRC_VARIANT_1 = 2
-  ALT_CANCEL_BUTTON = 4
-  NO_CRUISE_STATE = 8
 
 
 class VolkswagenFlags(IntFlag):
@@ -224,8 +222,6 @@ class VolkswagenFlags(IntFlag):
   STOCK_KLR_PRESENT = 8
   STOCK_PSD_PRESENT = 16
   ALT_GEAR = 32
-  ALT_CANCEL_BUTTON = 256
-  NO_CRUISE_STATE = 512
 
   # Static flags
   PQ = 2
