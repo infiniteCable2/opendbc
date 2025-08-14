@@ -1018,18 +1018,27 @@ FW_VERSIONS = {
       b'\xf1\x875Q0907572R \xf1\x890771',
     ],
   },
-  CAR.CUPRA_BORN_MK1: {
+  CAR.CUPRA_BORN_MK1: { # (n) numbering firmwares as per car of same model
     (Ecu.engine, 0x7e0, None): [
-      b'\xf1\x870EA906012EC\xf1\x892855',
+      b'\xf1\x870EA906012EC\xf1\x892855', # CUPRA Born 2023 (1)
     ],
     (Ecu.srs, 0x715, None): [
-      b'\xf1\x871EA959655EH\xf1\x890381',
+      b'\xf1\x871EA959655EH\xf1\x890381', # CUPRA Born 2023 (1)
+      b'\xf1\x871EA959655EA\xf1\x890376', # VW ID.4 2021 (1)
+      b'\xf1\x871EA959655CD\xf1\x890366', # VW ID.3 older model (1)
     ],
     (Ecu.eps, 0x712, None): [
-      b'\xf1\x871EA907144AQ\xf1\x895033',
+      b'\xf1\x871EA907144AQ\xf1\x895033', # CUPRA Born 2023 (1)
+      b'\xf1\x871EA907144AQ\xf1\x895033\xf1\x82\x000_BH0A0_ON', # VW ID.4 2021 (1)
+    ],
+    (Ecu.fwdCamera, 0x74f, None): [
+      b'\xf1\x871EA980654L \xf1\x895332', # VW ID.4 2021 (1)
+      #b'\xf1\x871EA980654L \xf1\x895332', # VW ID.3 older model (1)
     ],
     (Ecu.fwdRadar, 0x757, None): [
-      b'\xf1\x871EA907572H \xf1\x890234',
+      b'\xf1\x871EA907572H \xf1\x890234', # CUPRA Born 2023 (1)
+      #b'\xf1\x871EA907572H \xf1\x890234', # VW ID.4 2021 (1)
+      #b'\xf1\x871EA907572H \xf1\x890234', # VW ID.3 older model (1)
     ],
   },
   CAR.CUPRA_BORN_GEN2: {
@@ -1039,7 +1048,13 @@ FW_VERSIONS = {
     ],
     (Ecu.eps, 0x712, None): [
     ],
+    (Ecu.fwdCamera, 0x74f, None): [
+      b'\xf1\x871EA980653G \xf1\x895570', # VW ID.4 newer gen 2024? (1)
+      b'\xf1\x871EA980653B \xf1\x895510', # VW ID.4 2024 (2)
+    ],
     (Ecu.fwdRadar, 0x757, None): [
+      b'\xf1\x871EA907567D \xf1\x890250', # VW ID.4 newer gen 2024? (1)
+      b'\xf1\x871EA907567C \xf1\x890099', # VW ID.4 2024 (2)
     ],
   },
   CAR.SKODA_FABIA_MK4: {
