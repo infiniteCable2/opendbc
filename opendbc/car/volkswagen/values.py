@@ -2,7 +2,8 @@ from collections import defaultdict, namedtuple
 from dataclasses import dataclass, field
 from enum import Enum, IntFlag, StrEnum
 
-from opendbc.car import CurvatureSteeringLimits, Bus, CanBusBase, CarSpecs, DbcDict, PlatformConfig, Platforms, structs, uds
+from opendbc.car import Bus, CanBusBase, CarSpecs, DbcDict, PlatformConfig, Platforms, structs, uds
+from opendbc.car.lateral import CurvatureSteeringLimits
 from opendbc.can import CANDefine
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.docs_definitions import CarFootnote, CarHarness, CarDocs, CarParts, Column, \

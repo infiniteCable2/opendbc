@@ -335,8 +335,8 @@ BO_ 299 GRA_ACC_01: 8 Gateway
 BO_ 312 IPA_01: 32 XXX
 
 BO_ 313 VMM_02: 32 XXX
- SG_ CHK : 0|8@1+ (1,0) [0|255] "" XXX
- SG_ CNT : 8|4@1+ (1,0) [0|15] "" XXX
+ SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
+ SG_ COUNTER : 8|4@1+ (1,0) [0|15] "" XXX
  SG_ FCW_Reaction_1 : 12|1@0+ (1,0) [0|1] "" XXX
  SG_ Brake_Pressed_1 : 16|1@0+ (1,0) [0|1] "" XXX
  SG_ Brake_Pressed_2 : 27|1@0+ (1,0) [0|1] "" XXX

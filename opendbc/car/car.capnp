@@ -182,7 +182,6 @@ struct CarState {
   regenBraking @45 :Bool; # this is user pedal only
   parkingBrake @39 :Bool;
   brakeHoldActive @38 :Bool;
-  brakeHoldConfirmation @63 :Bool;
 
   # steering wheel
   steeringCurvature @62 :Float32;  # EPS steering curvature equivalent in radiant
