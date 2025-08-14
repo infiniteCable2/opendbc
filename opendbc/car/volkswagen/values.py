@@ -506,8 +506,8 @@ class CAR(Platforms):
   CUPRA_BORN_GEN2 = VolkswagenMEBPlatformConfig(
     [VWCarDocs("CUPRA Born Gen 2")],
     CUPRA_BORN_MK1.specs,
-    chassis_codes={"E8"}, # ID.4 newer gen and 2024
-    wmis={WMI.SEAT, WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR},
+    chassis_codes={"E8", "NY"}, # ID.4 newer gen and 2024, skoda enyaq
+    wmis={WMI.SEAT, WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR, WMI.SKODA},
     flags=VolkswagenFlags.MEB_GEN2,
   )
   SKODA_FABIA_MK4 = VolkswagenMQBPlatformConfig(
