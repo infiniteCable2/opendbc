@@ -1026,6 +1026,7 @@ FW_VERSIONS = {
       b'\xf1\x871EA959655EH\xf1\x890381', # CUPRA Born 2023 (1)
       b'\xf1\x871EA959655EA\xf1\x890376', # VW ID.4 2021 (1)
       b'\xf1\x871EA959655CD\xf1\x890366', # VW ID.3 older model (1)
+      b'\xf1\x875WA959655R \xf1\x890717', # VW ID.4 older model (2)
     ],
     (Ecu.eps, 0x712, None): [
       b'\xf1\x871EA907144AQ\xf1\x895033', # CUPRA Born 2023 (1)
@@ -1037,6 +1038,7 @@ FW_VERSIONS = {
     ],
     (Ecu.fwdRadar, 0x757, None): [
       b'\xf1\x871EA907572H \xf1\x890234', # CUPRA Born 2023 (1)
+      #b'\xf1\x871EA907572H \xf1\x890234', # VW ID.4 older model (2)
       #b'\xf1\x871EA907572H \xf1\x890234', # VW ID.4 2021 (1)
       #b'\xf1\x871EA907572H \xf1\x890234', # VW ID.3 older model (1)
     ],
@@ -1055,6 +1057,7 @@ FW_VERSIONS = {
     (Ecu.fwdRadar, 0x757, None): [
       b'\xf1\x871EA907567D \xf1\x890250', # VW ID.4 newer gen 2024? (1)
       b'\xf1\x871EA907567C \xf1\x890099', # VW ID.4 2024 (2)
+      b'\xf1\x871EA907567B \xf1\x890232', # Skoda Enyaq newer model (1)
     ],
   },
   CAR.SKODA_FABIA_MK4: {
