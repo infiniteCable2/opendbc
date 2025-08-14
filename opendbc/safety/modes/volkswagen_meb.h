@@ -154,7 +154,7 @@ static safety_config volkswagen_meb_init(uint16_t param) {
   
   if (volkswagen_longitudinal) {
     if (volkswagen_alt_crc_variant_1) {
-      return BUILD_SAFETY_CFG(volkswagen_meb_rx_checks_variant_1, VOLKSWAGEN_MEB_STOCK_TX_MSGS);
+      return BUILD_SAFETY_CFG(volkswagen_meb_rx_checks_variant_1, VOLKSWAGEN_MEB_LONG_TX_MSGS);
     } else {
       return BUILD_SAFETY_CFG(volkswagen_meb_rx_checks_default, VOLKSWAGEN_MEB_LONG_TX_MSGS);
     }
