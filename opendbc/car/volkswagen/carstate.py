@@ -268,8 +268,12 @@ class CarState(CarStateBase):
     
     ret.yawRate = pt_cp.vl["ESC_50"]["Yaw_Rate"] * (1, -1)[int(pt_cp.vl["ESC_50"]["Yaw_Rate_Sign"])] * CV.DEG_TO_RAD
     
+    # Update gear and/or clutch position data.
+    ret.gearShifter = self.parse_gear_shifter(self.CCP.shifter_values.get(pt_cp.vl["Getriebe_11"]["GE_Fahrstufe"], None))
+    drive_mode = ret.gearShifter == GearShifter.drive
+    
     hca_status = self.CCP.hca_status_values.get(pt_cp.vl["QFK_01"]["LatCon_HCA_Status"])
-    ret.steerFaultTemporary, ret.steerFaultPermanent = self.update_hca_state(hca_status)
+    ret.steerFaultTemporary, ret.steerFaultPermanent = self.update_hca_state(hca_status, drive_mode=drive_mode)
 
     # VW Emergency Assist status tracking and mitigation
     self.eps_stock_values = pt_cp.vl["LH_EPS_03"]
@@ -281,10 +285,6 @@ class CarState(CarStateBase):
     ret.brakePressed = bool(pt_cp.vl["Motor_14"]["MO_Fahrer_bremst"]) # includes regen braking by user
     ret.brake        = pt_cp.vl["ESC_51"]["Brake_Pressure"]
     ret.parkingBrake = pt_cp.vl["Gateway_73"]["EPB_Status"] in (1, 4) # EPB closing or closed
-
-    # Update gear and/or clutch position data.
-    ret.gearShifter = self.parse_gear_shifter(self.CCP.shifter_values.get(pt_cp.vl["Getriebe_11"]["GE_Fahrstufe"], None))
-    drive_mode = ret.gearShifter == GearShifter.drive
 
     # Update door and trunk/hatch lid open status.
     ret.doorOpen = any([pt_cp.vl["ZV_02"]["ZV_FT_offen"],
@@ -395,7 +395,7 @@ class CarState(CarStateBase):
     temp_fault = drive_mode and hca_status in ("REJECTED", "PREEMPTED") or not self.eps_init_complete
     return temp_fault, perm_fault
     
-  def update_acc_fault(self, acc_fault, parking_brake=True, drive_mode=True):
+  def update_acc_fault(self, acc_fault, parking_brake=False, drive_mode=False):
     # Ignore FAULT when not in drive mode and parked
     # do not show misleading error during ignition in parked state
     fault = False if parking_brake and drive_mode else acc_fault
