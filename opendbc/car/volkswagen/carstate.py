@@ -284,6 +284,7 @@ class CarState(CarStateBase):
 
     # Update gear and/or clutch position data.
     ret.gearShifter = self.parse_gear_shifter(self.CCP.shifter_values.get(pt_cp.vl["Getriebe_11"]["GE_Fahrstufe"], None))
+    drive_mode = ret.gearShifter == GearShifter.drive
 
     # Update door and trunk/hatch lid open status.
     ret.doorOpen = any([pt_cp.vl["ZV_02"]["ZV_FT_offen"],
@@ -322,7 +323,8 @@ class CarState(CarStateBase):
       # Speed limiter mode; ECM faults if we command ACC while not pcmCruise
       ret.cruiseState.nonAdaptive = bool(pt_cp.vl["Motor_51"]["TSK_Limiter_ausgewaehlt"])
 
-    ret.accFaulted = pt_cp.vl["Motor_51"]["TSK_Status"] in (6, 7)
+    accFaulted = pt_cp.vl["Motor_51"]["TSK_Status"] in (6, 7)
+    ret.accFaulted = self.update_acc_fault(accFaulted, parking_brake=ret.parkingBrake, drive_mode=drive_mode)
 
     self.esp_hold_confirmation = bool(pt_cp.vl["VMM_02"]["ESP_Hold"])
     ret.cruiseState.standstill = self.CP.pcmCruise and self.esp_hold_confirmation
@@ -392,6 +394,12 @@ class CarState(CarStateBase):
     perm_fault = drive_mode and hca_status == "DISABLED" or (self.eps_init_complete and hca_status == "FAULT")
     temp_fault = drive_mode and hca_status in ("REJECTED", "PREEMPTED") or not self.eps_init_complete
     return temp_fault, perm_fault
+    
+  def update_acc_fault(self, acc_fault, parking_brake=True, drive_mode=True):
+    # Ignore FAULT when not in drive mode and parked
+    # do not show misleading error during ignition in parked state
+    fault = False if parking_brake and drive_mode else acc_fault
+    return fault
 
   @staticmethod
   def get_can_parsers(CP, CP_SP):
