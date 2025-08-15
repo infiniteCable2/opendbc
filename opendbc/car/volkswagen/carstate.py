@@ -293,9 +293,6 @@ class CarState(CarStateBase):
     else:
       ret.gearShifter = self.parse_gear_shifter(self.CCP.shifter_values.get(pt_cp.vl["Getriebe_11"]["GE_Fahrstufe"], None))
 
-    # Update gear and/or clutch position data.
-    ret.gearShifter = self.parse_gear_shifter(self.CCP.shifter_values.get(pt_cp.vl["Getriebe_11"]["GE_Fahrstufe"], None))
-
     # Update door and trunk/hatch lid open status.
     ret.doorOpen = any([pt_cp.vl["ZV_02"]["ZV_FT_offen"],
                         pt_cp.vl["ZV_02"]["ZV_BT_offen"],
