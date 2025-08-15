@@ -395,10 +395,10 @@ class CarState(CarStateBase):
     temp_fault = drive_mode and hca_status in ("REJECTED", "PREEMPTED") or not self.eps_init_complete
     return temp_fault, perm_fault
     
-  def update_acc_fault(self, acc_fault, parking_brake=False, drive_mode=False):
+  def update_acc_fault(self, acc_fault, parking_brake=False, drive_mode=True):
     # Ignore FAULT when not in drive mode and parked
     # do not show misleading error during ignition in parked state
-    fault = False if parking_brake and drive_mode else acc_fault
+    fault = False if parking_brake and not drive_mode else acc_fault
     return fault
 
   @staticmethod
