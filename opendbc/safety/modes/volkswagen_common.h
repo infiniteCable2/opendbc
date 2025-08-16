@@ -2,11 +2,9 @@
 
 extern const uint16_t FLAG_VOLKSWAGEN_LONG_CONTROL;
 extern const uint16_t FLAG_VOLKSWAGEN_ALT_CRC_VARIANT_1;
-extern const uint16_t FLAG_VOLKSWAGEN_ALT_CRC_VARIANT_2;
 
 const uint16_t FLAG_VOLKSWAGEN_LONG_CONTROL = 1;
 const uint16_t FLAG_VOLKSWAGEN_ALT_CRC_VARIANT_1 = 2;
-const uint16_t FLAG_VOLKSWAGEN_ALT_CRC_VARIANT_2 = 4;
 
 static uint8_t volkswagen_crc8_lut_8h2f[256]; // Static lookup table for CRC8 poly 0x2F, aka 8H2F/AUTOSAR
 
@@ -21,9 +19,6 @@ bool volkswagen_resume_button_prev = false;
 
 extern bool volkswagen_alt_crc_variant_1;
 bool volkswagen_alt_crc_variant_1 = false;
-
-extern bool volkswagen_alt_crc_variant_2;
-bool volkswagen_alt_crc_variant_2 = false;
 
 
 #define MSG_LH_EPS_03        0x09FU   // RX from EPS, for driver steering torque
