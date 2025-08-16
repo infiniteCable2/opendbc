@@ -30,6 +30,7 @@ class SignalType:
   FCA_GIORGIO_CHECKSUM = 10
   TESLA_CHECKSUM = 11
   VOLKSWAGEN_MQB_MEB_GEN2_CHECKSUM = 12
+  VOLKSWAGEN_MQB_MEB_GEN2_2_CHECKSUM = 13
 
 
 @dataclass
@@ -183,6 +184,8 @@ def get_checksum_state(dbc_name: str) -> ChecksumState | None:
     return ChecksumState(8, -1, 7, -1, False, SignalType.TOYOTA_CHECKSUM, toyota_checksum)
   elif dbc_name.startswith("hyundai_canfd_generated"):
     return ChecksumState(16, -1, 0, -1, True, SignalType.HKG_CAN_FD_CHECKSUM, hkg_can_fd_checksum)
+  elif dbc_name.startswith("vw_meb_2024_2"):
+    return ChecksumState(8, 4, 0, 0, True, SignalType.VOLKSWAGEN_MQB_MEB_GEN2_2_CHECKSUM, volkswagen_mqb_meb_gen2_2_checksum)
   elif dbc_name.startswith("vw_meb_2024"):
     return ChecksumState(8, 4, 0, 0, True, SignalType.VOLKSWAGEN_MQB_MEB_GEN2_CHECKSUM, volkswagen_mqb_meb_gen2_checksum)
   elif dbc_name.startswith(("vw_mqb", "vw_mqbevo", "vw_meb")):
