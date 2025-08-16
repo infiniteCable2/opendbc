@@ -289,7 +289,7 @@ class CarState(CarStateBase):
     ret.brakePressed = bool(pt_cp.vl["Motor_14"]["MO_Fahrer_bremst"]) # includes regen braking by user
     ret.brake        = pt_cp.vl["ESC_51"]["Brake_Pressure"]
 
-    if self.CP.flags & VolkswagenFlags.MEB_GEN2 or self.CP.flags & VolkswagenFlags.MEB_GEN2_2:
+    if self.CP.flags & (VolkswagenFlags.MEB_GEN2 | VolkswagenFlags.MEB_GEN2_2):
       ret.parkingBrake = pt_cp.vl["ESC_50"]["EPB_Status"] in (1, 4) # EPB closing or closed (candidate for all plattforms)
     else:
       ret.parkingBrake = pt_cp.vl["Gateway_73"]["EPB_Status"] in (1, 4) # this signal is not working for newer models
@@ -307,7 +307,7 @@ class CarState(CarStateBase):
     # Consume blind-spot monitoring info/warning LED states, if available.
     # Infostufe: BSM LED on, Warnung: BSM LED flashing
     if self.CP.enableBsm:
-      bsm_bus = pt_cp if self.CP.flags & VolkswagenFlags.MEB_GEN2 or self.CP.flags & VolkswagenFlags.MEB_GEN2_2 else ext_cp
+      bsm_bus = pt_cp if self.CP.flags & (VolkswagenFlags.MEB_GEN2 | VolkswagenFlags.MEB_GEN2_2) else ext_cp
       ret.leftBlindspot  = bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Info_Left"]) or bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Warn_Left"])
       ret.rightBlindspot = bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Info_Right"]) or bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Warn_Right"])
 
