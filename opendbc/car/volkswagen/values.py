@@ -213,6 +213,7 @@ class WMI(StrEnum):
 class VolkswagenSafetyFlags(IntFlag):
   LONG_CONTROL = 1
   ALT_CRC_VARIANT_1 = 2
+  ALT_CRC_VARIANT_2 = 4
 
 
 class VolkswagenFlags(IntFlag):
@@ -227,6 +228,7 @@ class VolkswagenFlags(IntFlag):
   PQ = 2
   MEB = 64
   MEB_GEN2 = 128
+  MEB_GEN2_2 = 256
   
 
 
@@ -509,6 +511,13 @@ class CAR(Platforms):
     chassis_codes={"E8", "NY"}, # ID.4 newer gen and 2024, skoda enyaq
     wmis={WMI.SEAT, WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR, WMI.SKODA},
     flags=VolkswagenFlags.MEB_GEN2,
+  )
+  CUPRA_BORN_GEN2_2 = VolkswagenMEBPlatformConfig(
+    [VWCarDocs("CUPRA Born Gen 2.2")],
+    CUPRA_BORN_MK1.specs,
+    chassis_codes={"E8"}, # ID.4 newer gen crc subvariant
+    wmis={WMI.VOLKSWAGEN_USA_SUV},
+    flags=VolkswagenFlags.MEB_GEN2_2,
   )
   SKODA_FABIA_MK4 = VolkswagenMQBPlatformConfig(
     [VWCarDocs("Škoda Fabia 2022-23", footnotes=[Footnote.VW_MQB_A0])],
