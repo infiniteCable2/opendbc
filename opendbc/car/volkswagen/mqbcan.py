@@ -195,9 +195,15 @@ def volkswagen_mqb_meb_dyn_len_checksum(address: int, sig, d: bytearray, entry: 
   return volkswagen_mqb_meb_checksum(address, sig, d, const)
 
 
-def volkswagen_mqb_meb_gen2_checksum(address: int, sig, d: bytearray) -> int:
-  entry = VOLKSWAGEN_MQB_MEB_GEN2_CONSTANTS.get(address)
+def volkswagen_mqb_meb_gen2_checksum(address: int, sig, d: bytearray, entry: dict | None = None) -> int:
+  if entry is None:
+    entry = VOLKSWAGEN_MQB_MEB_GEN2_CONSTANTS.get(address)
   return volkswagen_mqb_meb_dyn_len_checksum(address, sig, d, entry)
+
+
+def volkswagen_mqb_meb_gen2_2_checksum(address: int, sig, d: bytearray) -> int:
+  entry = VOLKSWAGEN_MQB_MEB_GEN2_2_CONSTANTS.get(address)
+  return volkswagen_mqb_meb_gen2_checksum(address, sig, d, entry)
 
 
 def xor_checksum(address: int, sig, d: bytearray) -> int:
@@ -290,4 +296,10 @@ VOLKSWAGEN_MQB_MEB_GEN2_CONSTANTS: dict[int, list[int]] = {
   0x13D: { "length": 28,
            "magic": [0x18, 0x71, 0x10, 0x8D, 0xD7, 0xAA, 0xB0, 0x78,
                      0xAC, 0x12, 0xAE, 0x0C, 0xDD, 0xF1, 0x85, 0x68] }  # QFK_01
+}
+
+VOLKSWAGEN_MQB_MEB_GEN2_2_CONSTANTS: dict[int, list[int]] = {
+  0x139: { "length": 28,
+           "magic": [0x96, 0x92, 0x95, 0xB5, 0x6E, 0xE3, 0xBD, 0xB4,
+                     0xFA, 0xAE, 0xBE, 0xCB, 0xCF, 0xA5, 0x77, 0xEF] }  # VMM_02
 }
