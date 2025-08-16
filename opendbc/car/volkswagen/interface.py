@@ -44,8 +44,6 @@ class CarInterface(CarInterfaceBase):
       safety_configs = [get_safety_config(structs.CarParams.SafetyModel.volkswagenMeb)]
       if ret.flags & VolkswagenFlags.MEB_GEN2:
         safety_configs[0].safetyParam |= VolkswagenSafetyFlags.ALT_CRC_VARIANT_1.value
-      elif ret.flags & VolkswagenFlags.MEB_GEN2_2:
-        safety_configs[0].safetyParam |= VolkswagenSafetyFlags.ALT_CRC_VARIANT_2.value
       
       ret.enableBsm = 0x24C in fingerprint[0]  # MEB_Side_Assist_01
       ret.transmissionType = TransmissionType.direct
