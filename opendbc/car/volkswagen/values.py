@@ -213,7 +213,6 @@ class WMI(StrEnum):
 class VolkswagenSafetyFlags(IntFlag):
   LONG_CONTROL = 1
   ALT_CRC_VARIANT_1 = 2
-  ALT_CRC_VARIANT_2 = 4
 
 
 class VolkswagenFlags(IntFlag):
@@ -251,6 +250,8 @@ class VolkswagenMEBPlatformConfig(PlatformConfig):
     self.flags |= VolkswagenFlags.MEB
     if self.flags & VolkswagenFlags.MEB_GEN2:
       self.dbc_dict = {Bus.pt: 'vw_meb_2024', Bus.radar: 'vw_meb_2024'}
+    elif self.flags & VolkswagenFlags.MEB_GEN2_2:
+      self.dbc_dict = {Bus.pt: 'vw_meb_2024_2', Bus.radar: 'vw_meb_2024_2'}
 
 
 @dataclass
