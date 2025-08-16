@@ -1060,6 +1060,20 @@ FW_VERSIONS = {
       b'\xf1\x871EA907567B \xf1\x890232', # Skoda Enyaq newer model (1)
     ],
   },
+  CAR.CUPRA_BORN_GEN2_2: {
+    (Ecu.engine, 0x7e0, None): [
+    ],
+    (Ecu.srs, 0x715, None): [
+    ],
+    (Ecu.eps, 0x712, None): [
+    ],
+    (Ecu.fwdCamera, 0x74f, None): [
+      b'\xf1\x871EA980653B \xf1\x895510', # VW ID.4 2024 (1)
+    ],
+    (Ecu.fwdRadar, 0x757, None): [
+      b'\xf1\x871EA907567C \xf1\x890099', # VW ID.4 2024 (1)
+    ],
+  },
   CAR.SKODA_FABIA_MK4: {
     (Ecu.engine, 0x7e0, None): [
       b'\xf1\x8705C906032L \xf1\x891701',
