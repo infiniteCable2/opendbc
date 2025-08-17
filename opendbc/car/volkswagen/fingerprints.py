@@ -1069,9 +1069,11 @@ FW_VERSIONS = {
     ],
     (Ecu.fwdCamera, 0x74f, None): [
       b'\xf1\x871EA980653B \xf1\x895510', # VW ID.4 2024 (1)
+      b'\xf1\x871EA980654P \xf1\x895570', # VW ID.3 2025 Pro (1)
     ],
     (Ecu.fwdRadar, 0x757, None): [
       b'\xf1\x871EA907567C \xf1\x890099', # VW ID.4 2024 (1)
+      b'\xf1\x871EA907567D \xf1\x890250', # VW ID.3 2025 Pro (1)
     ],
   },
   CAR.SKODA_FABIA_MK4: {
