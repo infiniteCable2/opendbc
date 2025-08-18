@@ -192,18 +192,18 @@ def volkswagen_mqb_meb_dyn_len_checksum(address: int, sig, d: bytearray, entry: 
     length = entry["length"]
     d = d[:length]
     const = entry["magic"]
+      
   return volkswagen_mqb_meb_checksum(address, sig, d, const)
 
 
-def volkswagen_mqb_meb_gen2_checksum(address: int, sig, d: bytearray, entry: dict | None = None) -> int:
-  if entry is None:
-    entry = VOLKSWAGEN_MQB_MEB_GEN2_CONSTANTS.get(address)
-  return volkswagen_mqb_meb_dyn_len_checksum(address, sig, d, entry)
-
-
-def volkswagen_mqb_meb_gen2_2_checksum(address: int, sig, d: bytearray) -> int:
-  entry = VOLKSWAGEN_MQB_MEB_GEN2_2_CONSTANTS.get(address)
-  return volkswagen_mqb_meb_gen2_checksum(address, sig, d, entry)
+def volkswagen_mqb_meb_gen2_checksum(address: int, sig, d: bytearray) -> int:
+  entry = VOLKSWAGEN_MQB_MEB_GEN2_CONSTANTS.get(address)
+  if entry:
+    checksum = volkswagen_mqb_meb_dyn_len_checksum(address, sig, d, entry)
+    if checksum == d[0]:
+      return checksum
+    
+  return volkswagen_mqb_meb_checksum(address, sig, d)
 
 
 def xor_checksum(address: int, sig, d: bytearray) -> int:
@@ -281,6 +281,11 @@ VOLKSWAGEN_MQB_MEB_CONSTANTS: dict[int, list[int]] = {
 }
 
 VOLKSWAGEN_MQB_MEB_GEN2_CONSTANTS: dict[int, list[int]] = {
+  # we do not enough enough data to differentiate this automatically
+  # it is unclear, if firmware changes result in signals implementing new checksums via OTA updates
+  # the checksum calculation should check by itself and fallback
+  # if different lengths + magics are detected -> make it list in list per signal
+  # model year around 2024?
   0x0DB: { "length": 42, # length of signal to check
            "magic": [0x09, 0xFA, 0xCA, 0x8E, 0x62, 0xD5, 0xD1, 0xF0,
                      0x31, 0xA0, 0xAF, 0xDA, 0x4D, 0x1A, 0x0A, 0x97] }, # AWV_03
@@ -295,10 +300,8 @@ VOLKSWAGEN_MQB_MEB_GEN2_CONSTANTS: dict[int, list[int]] = {
                      0x81, 0x2B, 0xCC, 0x96, 0x17, 0xDB, 0xC0, 0x94] }, # Motor_51
   0x13D: { "length": 28,
            "magic": [0x18, 0x71, 0x10, 0x8D, 0xD7, 0xAA, 0xB0, 0x78,
-                     0xAC, 0x12, 0xAE, 0x0C, 0xDD, 0xF1, 0x85, 0x68] }  # QFK_01
-}
-
-VOLKSWAGEN_MQB_MEB_GEN2_2_CONSTANTS: dict[int, list[int]] = {
+                     0xAC, 0x12, 0xAE, 0x0C, 0xDD, 0xF1, 0x85, 0x68] }, # QFK_01
+  # model year > 2024?
   0x139: { "length": 28,
            "magic": [0x96, 0x92, 0x95, 0xB5, 0x6E, 0xE3, 0xBD, 0xB4,
                      0xFA, 0xAE, 0xBE, 0xCB, 0xCF, 0xA5, 0x77, 0xEF] }  # VMM_02

@@ -1052,28 +1052,14 @@ FW_VERSIONS = {
     ],
     (Ecu.fwdCamera, 0x74f, None): [
       b'\xf1\x871EA980653G \xf1\x895570', # VW ID.4 newer gen 2024? (1)
-      b'\xf1\x871EA980653B \xf1\x895510', # VW ID.4 2024 (2)
+      b'\xf1\x871EA980654P \xf1\x895570', # VW ID.3 2025 Pro (1) gen 2.2
+      b'\xf1\x871EA980653B \xf1\x895510', # VW ID.4 2024 (2) (same model probably also as gen2 not differentiatable)
     ],
     (Ecu.fwdRadar, 0x757, None): [
       b'\xf1\x871EA907567D \xf1\x890250', # VW ID.4 newer gen 2024? (1)
-      b'\xf1\x871EA907567C \xf1\x890099', # VW ID.4 2024 (2)
+      #b'\xf1\x871EA907567D \xf1\x890250', # VW ID.3 2025 Pro (1) gen 2.2
+      b'\xf1\x871EA907567C \xf1\x890099', # VW ID.4 2024 (2) (same model probably also as gen2 not differentiatable)
       b'\xf1\x871EA907567B \xf1\x890232', # Skoda Enyaq newer model (1)
-    ],
-  },
-  CAR.CUPRA_BORN_GEN2_2: {
-    (Ecu.engine, 0x7e0, None): [
-    ],
-    (Ecu.srs, 0x715, None): [
-    ],
-    (Ecu.eps, 0x712, None): [
-    ],
-    (Ecu.fwdCamera, 0x74f, None): [
-      b'\xf1\x871EA980653B \xf1\x895510', # VW ID.4 2024 (1)
-      b'\xf1\x871EA980654P \xf1\x895570', # VW ID.3 2025 Pro (1)
-    ],
-    (Ecu.fwdRadar, 0x757, None): [
-      b'\xf1\x871EA907567C \xf1\x890099', # VW ID.4 2024 (1)
-      b'\xf1\x871EA907567D \xf1\x890250', # VW ID.3 2025 Pro (1)
     ],
   },
   CAR.SKODA_FABIA_MK4: {

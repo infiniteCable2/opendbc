@@ -227,7 +227,6 @@ class VolkswagenFlags(IntFlag):
   PQ = 2
   MEB = 64
   MEB_GEN2 = 128
-  MEB_GEN2_2 = 256
   
 
 
@@ -250,8 +249,6 @@ class VolkswagenMEBPlatformConfig(PlatformConfig):
     self.flags |= VolkswagenFlags.MEB
     if self.flags & VolkswagenFlags.MEB_GEN2:
       self.dbc_dict = {Bus.pt: 'vw_meb_2024', Bus.radar: 'vw_meb_2024'}
-    elif self.flags & VolkswagenFlags.MEB_GEN2_2:
-      self.dbc_dict = {Bus.pt: 'vw_meb_2024_2', Bus.radar: 'vw_meb_2024_2'}
 
 
 @dataclass
@@ -509,16 +506,9 @@ class CAR(Platforms):
   CUPRA_BORN_GEN2 = VolkswagenMEBPlatformConfig(
     [VWCarDocs("CUPRA Born Gen 2")],
     CUPRA_BORN_MK1.specs,
-    chassis_codes={"E8", "NY"}, # ID.4 newer gen and 2024, skoda enyaq
+    chassis_codes={"E8", "NY", "E1"}, # ID.4 newer gen and 2024 (gen 2), skoda enyaq (probably gen 2), ID.3 Pro 2025 (gen 2.2)
     wmis={WMI.SEAT, WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR, WMI.SKODA},
     flags=VolkswagenFlags.MEB_GEN2,
-  )
-  CUPRA_BORN_GEN2_2 = VolkswagenMEBPlatformConfig(
-    [VWCarDocs("CUPRA Born Gen 2.2")],
-    CUPRA_BORN_MK1.specs,
-    chassis_codes={"E8", "E1"}, # ID.4 newer gen crc subvariant, ID.3 Pro 2025
-    wmis={WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR},
-    flags=VolkswagenFlags.MEB_GEN2_2,
   )
   SKODA_FABIA_MK4 = VolkswagenMQBPlatformConfig(
     [VWCarDocs("Škoda Fabia 2022-23", footnotes=[Footnote.VW_MQB_A0])],
