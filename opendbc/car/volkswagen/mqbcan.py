@@ -281,10 +281,11 @@ VOLKSWAGEN_MQB_MEB_CONSTANTS: dict[int, list[int]] = {
 }
 
 VOLKSWAGEN_MQB_MEB_GEN2_CONSTANTS: dict[int, list[int]] = {
-  # we do not enough enough data to differentiate this automatically
-  # it is unclear, if firmware changes result in signals implementing new checksums via OTA updates
-  # the checksum calculation should check by itself and fallback
-  # if different lengths + magics are detected -> make it list in list per signal
+  # We do not have enough data from firmware detection without OBD to explicitly differentiate everything.
+  # It is unclear if firmware changes result in more and more signals implementing new checksums via OTA updates.
+  # The corresponding calculation checks checksum correctness by itself and falls back if neccessary.
+  # If different lengths and/or magics are detected, make it list in list per signal and iterate.
+  
   # model year around 2024?
   0x0DB: { "length": 42, # length of signal to check
            "magic": [0x09, 0xFA, 0xCA, 0x8E, 0x62, 0xD5, 0xD1, 0xF0,
