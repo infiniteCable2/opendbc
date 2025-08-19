@@ -19,6 +19,22 @@
 #define MSG_KLR_01           0x25DU   // TX, for capacitive steering wheel
 #define MSG_Panda_Data_01    0x50A6EDAU   // internal use, data for panda from OP sensors
 
+#define VW_MEB_COMMON_RX_CHECKS                                                                     \
+  {.msg = {{MSG_LH_EPS_03, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
+  {.msg = {{MSG_MOTOR_14, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},   \
+  {.msg = {{MSG_GRA_ACC_01, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}}, \
+  {.msg = {{MSG_Motor_54, 0, 32, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
+  
+#define VW_MEB_RX_CHECKS                                                                            \
+  {.msg = {{MSG_QFK_01, 0, 32, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
+  {.msg = {{MSG_Motor_51, 0, 32, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
+  {.msg = {{MSG_ESC_51, 0, 48, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
+  
+#define VW_MEB_GEN2_RX_CHECKS                                                                       \
+  {.msg = {{MSG_QFK_01, 0, 32, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
+  {.msg = {{MSG_Motor_51, 0, 48, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
+  {.msg = {{MSG_ESC_51, 0, 64, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
+
 static uint8_t volkswagen_crc8_lut_8h2f[256]; // Static lookup table for CRC8 poly 0x2F, aka 8H2F/AUTOSAR
 
 static bool vw_meb_get_longitudinal_allowed_override(void) {
@@ -46,22 +62,55 @@ static uint8_t volkswagen_meb_get_counter(const CANPacket_t *msg) {
   return (uint8_t)msg->data[1] & 0xFU;
 }
 
+static uint32_t volkswagen_meb_compute_crc_gen2(const CANPacket_t *msg) {
+  // For newer variants the checksum is calculated over a specific signal length.
+  if (!volkswagen_alt_crc_variant_1) {
+	return volkswagen_meb_compute_crc(msg); // fallback
+  }
+  
+  int len = GET_LEN(msg);
+  
+  if (msg->addr == MSG_QFK_01) {
+    len = 28;
+  } else if (msg->addr == MSG_ESC_51) {
+    len = 60;
+  } else if (msg->addr == MSG_Motor_51) {
+    len = 44;
+  } else {
+	return volkswagen_meb_compute_crc(msg); // fallback
+  }
+  
+  uint8_t crc = 0xFFU;
+  for (int i = 1; i < len; i++) {
+    crc ^= (uint8_t)msg->data[i];
+    crc = volkswagen_crc8_lut_8h2f[crc];
+  }
+  
+  uint8_t counter = volkswagen_meb_get_counter(msg);
+  if (msg->addr == MSG_QFK_01) {
+	crc ^= (uint8_t[]){0x18,0x71,0x10,0x8D,0xD7,0xAA,0xB0,0x78,0xAC,0x12,0xAE,0x0C,0xDD,0xF1,0x85,0x68}[counter];
+  } else if (msg->addr == MSG_ESC_51) {
+	crc ^= (uint8_t[]){0x69,0xDC,0xF9,0x64,0x6A,0xCE,0x55,0x2C,0xC4,0x38,0x8F,0xD1,0xC6,0x43,0xB4,0xB1}[counter];
+  } else if (msg->addr == MSG_Motor_51) {
+	crc ^= (uint8_t[]){0x2C,0xB1,0x1A,0x75,0xBB,0x65,0x79,0x47,0x81,0x2B,0xCC,0x96,0x17,0xDB,0xC0,0x94}[counter];
+  } else {
+	return volkswagen_meb_compute_crc(msg); // fallback
+  }
+
+  crc = (uint8_t)(volkswagen_crc8_lut_8h2f[crc] ^ 0xFFU);
+  
+  if (crc != msg->data[0]) {
+	return volkswagen_meb_compute_crc(msg); // fallback
+  }
+  
+  return (uint8_t)(crc);
+}
+
 static uint32_t volkswagen_meb_compute_crc(const CANPacket_t *msg) {
   int len = GET_LEN(msg);
 
   // This is CRC-8H2F/AUTOSAR with a twist. See the OpenDBC implementation
   // of this algorithm for a version with explanatory comments.
-  // For newer variants the checksum is calculated over a specific signal length.
-
-  if (volkswagen_alt_crc_variant_1) {
-    if (msg->addr == MSG_QFK_01) {
-      len = 28;
-    } else if (msg->addr == MSG_ESC_51) {
-      len = 60;
-    } else if (msg->addr == MSG_Motor_51) {
-      len = 44;
-    }
-  }
 
   uint8_t crc = 0xFFU;
   for (int i = 1; i < len; i++) {
@@ -75,25 +124,13 @@ static uint32_t volkswagen_meb_compute_crc(const CANPacket_t *msg) {
   } else if (msg->addr == MSG_GRA_ACC_01) {
     crc ^= (uint8_t[]){0x6A,0x38,0xB4,0x27,0x22,0xEF,0xE1,0xBB,0xF8,0x80,0x84,0x49,0xC7,0x9E,0x1E,0x2B}[counter];
   } else if (msg->addr == MSG_QFK_01) {
-    if (volkswagen_alt_crc_variant_1) {
-      crc ^= (uint8_t[]){0x18,0x71,0x10,0x8D,0xD7,0xAA,0xB0,0x78,0xAC,0x12,0xAE,0x0C,0xDD,0xF1,0x85,0x68}[counter];
-    } else {
-      crc ^= (uint8_t[]){0x20,0xCA,0x68,0xD5,0x1B,0x31,0xE2,0xDA,0x08,0x0A,0xD4,0xDE,0x9C,0xE4,0x35,0x5B}[counter];
-    }
+    crc ^= (uint8_t[]){0x20,0xCA,0x68,0xD5,0x1B,0x31,0xE2,0xDA,0x08,0x0A,0xD4,0xDE,0x9C,0xE4,0x35,0x5B}[counter];
   } else if (msg->addr == MSG_ESC_51) {
-    if (volkswagen_alt_crc_variant_1) {
-      crc ^= (uint8_t[]){0x69,0xDC,0xF9,0x64,0x6A,0xCE,0x55,0x2C,0xC4,0x38,0x8F,0xD1,0xC6,0x43,0xB4,0xB1}[counter];
-    } else {
-      crc ^= (uint8_t[]){0x77,0x5C,0xA0,0x89,0x4B,0x7C,0xBB,0xD6,0x1F,0x6C,0x4F,0xF6,0x20,0x2B,0x43,0xDD}[counter];
-    }
+    crc ^= (uint8_t[]){0x77,0x5C,0xA0,0x89,0x4B,0x7C,0xBB,0xD6,0x1F,0x6C,0x4F,0xF6,0x20,0x2B,0x43,0xDD}[counter];
   } else if (msg->addr == MSG_Motor_54) {
     crc ^= (uint8_t[]){0x16,0x35,0x59,0x15,0x9A,0x2A,0x97,0xB8,0x0E,0x4E,0x30,0xCC,0xB3,0x07,0x01,0xAD}[counter];
   } else if (msg->addr == MSG_Motor_51) {
-    if (volkswagen_alt_crc_variant_1) {
-      crc ^= (uint8_t[]){0x2C,0xB1,0x1A,0x75,0xBB,0x65,0x79,0x47,0x81,0x2B,0xCC,0x96,0x17,0xDB,0xC0,0x94}[counter];
-    } else {
-      crc ^= (uint8_t[]){0x77,0x5C,0xA0,0x89,0x4B,0x7C,0xBB,0xD6,0x1F,0x6C,0x4F,0xF6,0x20,0x2B,0x43,0xDD}[counter];
-    }
+    crc ^= (uint8_t[]){0x77,0x5C,0xA0,0x89,0x4B,0x7C,0xBB,0xD6,0x1F,0x6C,0x4F,0xF6,0x20,0x2B,0x43,0xDD}[counter];
   } else if (msg->addr == MSG_MOTOR_14) {
     crc ^= (uint8_t[]){0x1F,0x28,0xC6,0x85,0xE6,0xF8,0xB0,0x19,0x5B,0x64,0x35,0x21,0xE4,0xF7,0x9C,0x24}[counter];
   } else if (msg->addr == MSG_KLR_01) {
@@ -116,29 +153,20 @@ static safety_config volkswagen_meb_init(uint16_t param) {
                                                        {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},
                                                        {MSG_GRA_ACC_01, 2, 8, .check_relay = false}, {MSG_LDW_02, 0, 8, .check_relay = true}};
   
-  static const CanMsg VOLKSWAGEN_MEB_LONG_TX_MSGS[] = {{MSG_MEB_ACC_01, 0, 48, .check_relay = true}, {MSG_ACC_18, 0, 32, .check_relay = true}, {MSG_HCA_03, 0, 24, .check_relay = true},
+  static const CanMsg VOLKSWAGEN_MEB_LONG_TX_MSGS[] = {{MSG_HCA_03, 0, 24, .check_relay = true},
+													   {MSG_MEB_ACC_01, 0, 48, .check_relay = true}, {MSG_ACC_18, 0, 32, .check_relay = true},
                                                        {MSG_EA_01, 0, 8, .check_relay = false}, {MSG_EA_02, 0, 8, .check_relay = true},
                                                        {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},
                                                        {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true}};
 
-  static RxCheck volkswagen_meb_rx_checks_variant_1[] = {
-    {.msg = {{MSG_LH_EPS_03, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
-    {.msg = {{MSG_MOTOR_14, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
-    {.msg = {{MSG_GRA_ACC_01, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
-    {.msg = {{MSG_Motor_54, 0, 32, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
-    {.msg = {{MSG_QFK_01, 0, 32, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
-    {.msg = {{MSG_Motor_51, 0, 48, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
-    {.msg = {{MSG_ESC_51, 0, 64, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
+  static RxCheck volkswagen_meb_rx_checks[] = {
+    VW_MEB_COMMON_RX_CHECKS
+	VW_MEB_RX_CHECKS
   };
 
-  static RxCheck volkswagen_meb_rx_checks_default[] = {
-    {.msg = {{MSG_LH_EPS_03, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
-    {.msg = {{MSG_MOTOR_14, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
-    {.msg = {{MSG_GRA_ACC_01, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
-    {.msg = {{MSG_Motor_54, 0, 32, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
-    {.msg = {{MSG_QFK_01, 0, 32, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
-    {.msg = {{MSG_Motor_51, 0, 32, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
-    {.msg = {{MSG_ESC_51, 0, 48, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},
+  static RxCheck volkswagen_meb_gen2_rx_checks[] = {
+    VW_MEB_COMMON_RX_CHECKS
+	VW_MEB_GEN2_RX_CHECKS
   };
 
   volkswagen_set_button_prev = false;
@@ -152,19 +180,21 @@ static safety_config volkswagen_meb_init(uint16_t param) {
   
   gen_crc_lookup_table_8(0x2F, volkswagen_crc8_lut_8h2f);
   
+  safety_config ret;
+  
   if (volkswagen_longitudinal) {
-    if (volkswagen_alt_crc_variant_1) {
-      return BUILD_SAFETY_CFG(volkswagen_meb_rx_checks_variant_1, VOLKSWAGEN_MEB_LONG_TX_MSGS);
-    } else {
-      return BUILD_SAFETY_CFG(volkswagen_meb_rx_checks_default, VOLKSWAGEN_MEB_LONG_TX_MSGS);
-    }
+    SET_TX_MSGS(VOLKSWAGEN_MEB_LONG_TX_MSGS, ret);
   } else {
-    if (volkswagen_alt_crc_variant_1) {
-      return BUILD_SAFETY_CFG(volkswagen_meb_rx_checks_variant_1, VOLKSWAGEN_MEB_STOCK_TX_MSGS);
-    } else {
-      return BUILD_SAFETY_CFG(volkswagen_meb_rx_checks_default, VOLKSWAGEN_MEB_STOCK_TX_MSGS);
-    }
+	SET_TX_MSGS(VOLKSWAGEN_MEB_STOCK_TX_MSGS, ret);
   }
+  
+  if (volkswagen_alt_crc_variant_1) {
+	SET_RX_CHECKS(volkswagen_meb_gen2_rx_checks, ret);
+  } else {
+	SET_RX_CHECKS(volkswagen_meb_rx_checks, ret);
+  }
+  
+  return ret;
 }
 
 // lateral limits for curvature
@@ -339,5 +369,5 @@ const safety_hooks volkswagen_meb_hooks = {
   .tx = volkswagen_meb_tx_hook,
   .get_counter = volkswagen_meb_get_counter,
   .get_checksum = volkswagen_meb_get_checksum,
-  .compute_checksum = volkswagen_meb_compute_crc,
+  .compute_checksum = volkswagen_meb_compute_crc_gen2,
 };
