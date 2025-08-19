@@ -19,6 +19,7 @@
 #define MSG_KLR_01           0x25DU   // TX, for capacitive steering wheel
 #define MSG_Panda_Data_01    0x50A6EDAU   // internal use, data for panda from OP sensors
 
+// PANDA SAFETY SHOULD INTRODUCE A .ignore_length flag (ALLOWED ONLY IF CHECKSUM CHECK IS REQUIRED TO BE SAFE)
 #define VW_MEB_COMMON_RX_CHECKS                                                                     \
   {.msg = {{MSG_LH_EPS_03, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
   {.msg = {{MSG_MOTOR_14, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},   \
@@ -102,16 +103,16 @@ static uint32_t volkswagen_meb_compute_crc(const CANPacket_t *msg) {
   return (uint8_t)(crc ^ 0xFFU);
 }
 
-static uint32_t volkswagen_meb_compute_crc_gen2(const CANPacket_t *msg) {
+static uint32_t volkswagen_meb_gen2_compute_crc(const CANPacket_t *msg) {
   // For newer variants the checksum is calculated over a specific signal length.
-  //if (!volkswagen_alt_crc_variant_1) {
-	//return volkswagen_meb_compute_crc(msg); // fallback
-  //}
+  if (!volkswagen_alt_crc_variant_1) {
+	return volkswagen_meb_compute_crc(msg); // fallback
+  }
   
   int len = GET_LEN(msg);
   
   if (msg->addr == MSG_QFK_01) {
-    len = len; //28;
+    len = 28;
   } else if (msg->addr == MSG_ESC_51) {
     len = 60;
   } else if (msg->addr == MSG_Motor_51) {
@@ -128,8 +129,7 @@ static uint32_t volkswagen_meb_compute_crc_gen2(const CANPacket_t *msg) {
   
   uint8_t counter = volkswagen_meb_get_counter(msg);
   if (msg->addr == MSG_QFK_01) {
-	crc ^= (uint8_t[]){0x20,0xCA,0x68,0xD5,0x1B,0x31,0xE2,0xDA,0x08,0x0A,0xD4,0xDE,0x9C,0xE4,0x35,0x5B}[counter];
-	// crc ^= (uint8_t[]){0x18,0x71,0x10,0x8D,0xD7,0xAA,0xB0,0x78,0xAC,0x12,0xAE,0x0C,0xDD,0xF1,0x85,0x68}[counter];
+	crc ^= (uint8_t[]){0x18,0x71,0x10,0x8D,0xD7,0xAA,0xB0,0x78,0xAC,0x12,0xAE,0x0C,0xDD,0xF1,0x85,0x68}[counter];
   } else if (msg->addr == MSG_ESC_51) {
 	crc ^= (uint8_t[]){0x69,0xDC,0xF9,0x64,0x6A,0xCE,0x55,0x2C,0xC4,0x38,0x8F,0xD1,0xC6,0x43,0xB4,0xB1}[counter];
   } else if (msg->addr == MSG_Motor_51) {
@@ -141,9 +141,6 @@ static uint32_t volkswagen_meb_compute_crc_gen2(const CANPacket_t *msg) {
   crc = (uint8_t)(volkswagen_crc8_lut_8h2f[crc] ^ 0xFFU);
   
   if (crc != msg->data[0]) {
-	if (msg->addr == MSG_QFK_01) {
-	  return (uint8_t)(crc);
-	}
 	return volkswagen_meb_compute_crc(msg); // fallback
   }
   
@@ -373,5 +370,5 @@ const safety_hooks volkswagen_meb_hooks = {
   .tx = volkswagen_meb_tx_hook,
   .get_counter = volkswagen_meb_get_counter,
   .get_checksum = volkswagen_meb_get_checksum,
-  .compute_checksum = volkswagen_meb_compute_crc_gen2,
+  .compute_checksum = volkswagen_meb_gen2_compute_crc,
 };
