@@ -11,6 +11,7 @@ from opendbc.car import Bus,structs
 
 from opendbc.sunnypilot.mads_base import MadsCarStateBase
 from opendbc.can.parser import CANParser
+from opendbc.car.volkswagen.values import GearShifter
 
 ButtonType = structs.CarState.ButtonEvent.Type
 
@@ -18,18 +19,15 @@ ButtonType = structs.CarState.ButtonEvent.Type
 class MadsCarState(MadsCarStateBase):
   def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP):
     super().__init__(CP, CP_SP)
-    self.cruise_initialized = False
 
   def update_mads(self, ret: structs.CarState, can_parser_pt: CANParser) -> None:
     self.prev_lkas_button = self.lkas_button
     user_enable = False
     user_disable = False
     
-    # initially block temp fault when parked to prevent mads self activation when car removes the temp fault by switching into a drive mode
-    if not self.cruise_initialized and ret.cruiseState.available or not ret.parkingBrake:
-      self.cruise_initialized = True
-      
-    if not self.cruise_initialized:
+    # block temp fault when parked to prevent mads self activation when car removes the temp fault by switching into a drive mode
+    cruise_temp_fault = can_parser_pt.vl["Motor_51"]["TSK_Status"] == 6
+    if cruise_temp_fault and ret.parkingBrake and ret.gearShifter != GearShifter.drive:
       ret.cruiseState.available = True
       
     # some newer gen MEB cars do not have a main cruise button and a native cancel button is present      
