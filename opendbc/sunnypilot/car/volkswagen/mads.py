@@ -32,7 +32,7 @@ class MadsCarState(MadsCarStateBase):
       
     # some newer gen MEB cars do not have a main cruise button and a native cancel button is present      
     for b in ret.buttonEvents:
-      if b.type == ButtonType.cancel and not b.pressed: # on rising edge
+      if b.type == ButtonType.cancel and b.pressed: # on rising edge
         user_disable = True
       elif b.type in (ButtonType.setCruise, ButtonType.resumeCruise) and not b.pressed: # on falling edge
         user_enable = True
