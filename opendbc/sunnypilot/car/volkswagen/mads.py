@@ -22,7 +22,7 @@ class MadsCarState(MadsCarStateBase):
     super().__init__(CP, CP_SP)
     self.tolerance_counter = TOLERANCE_MAX
 
-  def update_mads(self, ret: structs.CarState, can_parser_pt: CANParser) -> None:
+  def update_mads(self, ret: structs.CarState, can_parser_pt: CANParser, hca_status) -> None:
     self.prev_lkas_button = self.lkas_button
 
     # safely block MADS from detecting a cruise state transition from parked mode while cruise is temporary not available
@@ -47,5 +47,6 @@ class MadsCarState(MadsCarStateBase):
         user_disable = True
         break
     
-    steering_enabled = can_parser_pt.vl["QFK_01"]["LatCon_HCA_Status"] == "ACTIVE" # assume mads is actively steering
+    steering_enabled = hca_status == "ACTIVE" # assume mads is actively steering
+    
     self.lkas_button = steering_enabled and user_disable
