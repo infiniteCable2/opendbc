@@ -19,13 +19,12 @@ ButtonType = structs.CarState.ButtonEvent.Type
 class MadsCarState(MadsCarStateBase):
   def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP):
     super().__init__(CP, CP_SP)
-    self.prev_cruise_fault = False
 
   def update_mads(self, ret: structs.CarState, can_parser_pt: CANParser) -> None:
     self.prev_lkas_button = self.lkas_button
 
-    # block mads from detecting a cruise state transition at standstill while cruise is temporary not available
-    if can_parser_pt.vl["Motor_51"]["TSK_Status"] == 6 and ret.standstill:
+    # block mads from detecting a cruise state transition in park or not in drive mode while cruise is temporary not available
+    if can_parser_pt.vl["Motor_51"]["TSK_Status"] == 6 and (ret.gearShifter != GearShifter.drive or ret.parkingBrake):
       ret.cruiseState.available = True
     
     # some newer gen MEB cars do not have a main cruise button and a native cancel button is present   
