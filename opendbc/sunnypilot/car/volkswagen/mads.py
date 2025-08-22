@@ -11,7 +11,6 @@ from opendbc.car import Bus,structs
 
 from opendbc.sunnypilot.mads_base import MadsCarStateBase
 from opendbc.can.parser import CANParser
-from opendbc.car.volkswagen.values import GearShifter
 
 ButtonType = structs.CarState.ButtonEvent.Type
 
@@ -23,8 +22,8 @@ class MadsCarState(MadsCarStateBase):
   def update_mads(self, ret: structs.CarState, can_parser_pt: CANParser) -> None:
     self.prev_lkas_button = self.lkas_button
 
-    # block mads from detecting a cruise state transition in park or not in drive mode while cruise is temporary not available
-    if can_parser_pt.vl["Motor_51"]["TSK_Status"] == 6 and (ret.gearShifter != GearShifter.drive or ret.parkingBrake):
+    # block mads from detecting a cruise state transition in parked mode while cruise is temporary not available
+    if can_parser_pt.vl["Motor_51"]["TSK_Status"] == 6 and ret.parkingBrake:
       ret.cruiseState.available = True
     
     # some newer gen MEB cars do not have a main cruise button and a native cancel button is present   
