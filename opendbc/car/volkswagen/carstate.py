@@ -6,12 +6,15 @@ from opendbc.car.volkswagen.values import DBC, CanBus, NetworkLocation, Transmis
                                                       CarControllerParams, VolkswagenFlags
 from opendbc.car.volkswagen.speed_limit_manager import SpeedLimitManager
 
+from opendbc.sunnypilot.car.volkswagen.mads import MadsCarState
+
 ButtonType = structs.CarState.ButtonEvent.Type
 
 
-class CarState(CarStateBase):
+class CarState(CarStateBase, MadsCarState):
   def __init__(self, CP, CP_SP):
     super().__init__(CP, CP_SP)
+    MadsCarState.__init__(self, CP, CP_SP)
     self.frame = 0
     self.eps_init_complete = False
     self.CCP = CarControllerParams(CP)
@@ -391,6 +394,8 @@ class CarState(CarStateBase):
       ret.batteryDetails.soc          = ret.batteryDetails.charge / ret.batteryDetails.capacity * 100 if ret.batteryDetails.capacity > 0 else 0 # battery SoC in percent
       ret.batteryDetails.power        = main_cp.vl["MEB_HVEM_01"]["Engine_Power"] # engine power output
       ret.batteryDetails.temperature  = main_cp.vl["DCDC_03"]["DC_Temperatur"] # dcdc converter temperature
+      
+    MadsCarState.update_mads(self, ret, can_parsers)
 
     self.frame += 1
     return ret, ret_sp

@@ -4,33 +4,42 @@ Copyright (c) 2021-, Haibin Wen, sunnypilot, and a number of other contributors.
 This file is part of sunnypilot and is licensed under the MIT License.
 See the LICENSE.md file in the root directory for more details.
 """
-from collections import namedtuple
 
-from opendbc.car import structs
-from opendbc.car.interfaces import CarStateBase
+from enum import StrEnum
 
-MAX_STEERING_ANGLE = 90.0
+from opendbc.car import Bus,structs
 
-MadsDataSP = namedtuple("MadsDataSP",
-                        ["lka_icon_states", "lat_active"])
+from opendbc.sunnypilot.mads_base import MadsCarStateBase
+from opendbc.can.parser import CANParser
+
+ButtonType = structs.CarState.ButtonEvent.Type
 
 
-class MadsCarController:
-  def __init__(self):
-    self.mads = MadsDataSP(False, False)
+class MadsCarState(MadsCarStateBase):
+  def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP):
+    super().__init__(CP, CP_SP)
 
-    self.lka_icon_states = False
-    self.lat_active = False
-
-  def mads_status_update(self, CC: structs.CarControl, CC_SP: structs.CarControlSP, CS: CarStateBase) -> MadsDataSP:
-    if CC_SP.mads.available:
-      self.lka_icon_states = self.lat_active
-      self.lat_active = CC.latActive and abs(CS.out.steeringAngleDeg) < MAX_STEERING_ANGLE
-    else:
-      self.lka_icon_states = CC.enabled
-      self.lat_active = CC.latActive
-
-    return MadsDataSP(self.lka_icon_states, self.lat_active)
-
-  def update(self, CC: structs.CarControl, CC_SP: structs.CarControlSP, CS: CarStateBase) -> None:
-    self.mads = self.mads_status_update(CC, CC_SP, CS)
+  def update_mads(self, ret: structs.CarState, can_parsers: dict[StrEnum, CANParser]) -> None:
+    self.prev_lkas_button = self.lkas_button
+    user_enable = False
+    user_disable = False
+    
+    cp = can_parsers[Bus.pt]
+    
+    # block temp fault when parked to prevent mads self activation when car removes the temp fault by switching into a drive mode
+    if pt_cp.vl["Motor_51"]["TSK_Status"] == 6 and ret.parkingBrake:
+      ret.cruiseState.available = True
+      
+    # some newer gen MEB cars do not have a main cruise button and a native cancel button is present      
+    for b in ret.buttonEvents:
+      if b.type == ButtonType.cancel and not b.pressed: # on rising edge
+        user_disable = True
+      elif b.type in (ButtonType.setCruise, ButtonType.resumeCruise) and not b.pressed: # on falling edge
+        user_enable = True
+    
+    steering_enabled = pt_cp.vl["QFK_01"]["LatCon_HCA_Status"] == "ACTIVE" # presume mads is actively steering
+    
+    lat_cancel_action = steering_enabled and user_disable
+    lat_enable_action = not steering_enabled and user_enable
+    
+    self.lkas_button = True if lat_cancel_action or lat_enable_action else False # switch mads state
