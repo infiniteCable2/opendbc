@@ -395,7 +395,7 @@ class CarState(CarStateBase, MadsCarState):
       ret.batteryDetails.power        = main_cp.vl["MEB_HVEM_01"]["Engine_Power"] # engine power output
       ret.batteryDetails.temperature  = main_cp.vl["DCDC_03"]["DC_Temperatur"] # dcdc converter temperature
       
-    MadsCarState.update_mads(self, ret, pt_cp)
+    MadsCarState.update_mads(self, ret, ret_sp, pt_cp)
 
     self.frame += 1
     return ret, ret_sp
