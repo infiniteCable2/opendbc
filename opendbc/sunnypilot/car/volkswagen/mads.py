@@ -24,8 +24,6 @@ class MadsCarState(MadsCarStateBase):
     user_enable = False
     user_disable = False
     
-    cp = can_parsers[Bus.pt]
-    
     # block temp fault when parked to prevent mads self activation when car removes the temp fault by switching into a drive mode
     if can_parser_pt.vl["Motor_51"]["TSK_Status"] == 6 and ret.parkingBrake:
       ret.cruiseState.available = True
