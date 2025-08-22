@@ -23,10 +23,13 @@ class MadsCarState(MadsCarStateBase):
     self.prev_lkas_button = self.lkas_button
 
     # block mads from detecting a cruise state transition in parked mode while cruise is temporary not available
-    if can_parser_pt.vl["Motor_51"]["TSK_Status"] == 6 and ret.parkingBrake:
+    parking_brake_not_fully_open = can_parser_pt.vl["ESC_50"]["EPB_Status"] in (1, 3, 4)
+    temp_cruise_fault = can_parser_pt.vl["Motor_51"]["TSK_Status"] == 6
+    if temp_cruise_fault and parking_brake_not_fully_open:
       ret.cruiseState.available = True
     
-    # some newer gen MEB cars do not have a main cruise button and a native cancel button is present   
+    # some newer gen MEB cars do not have a main cruise button and a native cancel button is present
+    # cruise state can not be fully toggled off for these cars!    
     user_disable = False
          
     for b in ret.buttonEvents:
