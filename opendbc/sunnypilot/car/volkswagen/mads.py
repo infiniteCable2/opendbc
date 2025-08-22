@@ -21,28 +21,20 @@ class MadsCarState(MadsCarStateBase):
     super().__init__(CP, CP_SP)
     self.prev_cruise_fault = False
 
-  def update_mads(self, ret: structs.CarState, ret_sp: structs.CarStateSP, can_parser_pt: CANParser) -> None:
+  def update_mads(self, ret: structs.CarState, can_parser_pt: CANParser) -> None:
     self.prev_lkas_button = self.lkas_button
 
-    # disable mads for a frame when entering enabled state to block non user controlled mads enable
-    cruise_temp_fault = can_parser_pt.vl["Motor_51"]["TSK_Status"] == 6
-    if not cruise_temp_fault and self.prev_cruise_fault:
-      ret_sp.mads.enabled = False
-    self.prev_cruise_fault = cruise_temp_fault
+    # block mads from detecting a cruise state transition at standstill while cruise is temporary not available
+    if can_parser_pt.vl["Motor_51"]["TSK_Status"] == 6 and ret.standstill:
+      ret.cruiseState.available = True
     
-    user_enable  = False
+    # some newer gen MEB cars do not have a main cruise button and a native cancel button is present   
     user_disable = False
-      
-    # some newer gen MEB cars do not have a main cruise button and a native cancel button is present      
+         
     for b in ret.buttonEvents:
       if b.type == ButtonType.cancel and b.pressed: # on rising edge
         user_disable = True
-      elif b.type in (ButtonType.setCruise, ButtonType.resumeCruise) and not b.pressed: # on falling edge
-        user_enable = True
+        break
     
     steering_enabled = can_parser_pt.vl["QFK_01"]["LatCon_HCA_Status"] == "ACTIVE" # presume mads is actively steering
-    
-    lat_cancel_action = steering_enabled and user_disable
-    lat_enable_action = not steering_enabled and user_enable
-    
-    self.lkas_button = True if lat_cancel_action or lat_enable_action else False # switch mads state
+    self.lkas_button = steering_enabled and user_disable
