@@ -19,7 +19,7 @@ class MadsCarState(MadsCarStateBase):
   def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP):
     super().__init__(CP, CP_SP)
 
-  def update_mads(self, ret: structs.CarState, can_parsers: dict[StrEnum, CANParser]) -> None:
+  def update_mads(self, ret: structs.CarState, can_parser_pt: CANParser) -> None:
     self.prev_lkas_button = self.lkas_button
     user_enable = False
     user_disable = False
@@ -27,7 +27,7 @@ class MadsCarState(MadsCarStateBase):
     cp = can_parsers[Bus.pt]
     
     # block temp fault when parked to prevent mads self activation when car removes the temp fault by switching into a drive mode
-    if pt_cp.vl["Motor_51"]["TSK_Status"] == 6 and ret.parkingBrake:
+    if can_parser_pt.vl["Motor_51"]["TSK_Status"] == 6 and ret.parkingBrake:
       ret.cruiseState.available = True
       
     # some newer gen MEB cars do not have a main cruise button and a native cancel button is present      
@@ -37,7 +37,7 @@ class MadsCarState(MadsCarStateBase):
       elif b.type in (ButtonType.setCruise, ButtonType.resumeCruise) and not b.pressed: # on falling edge
         user_enable = True
     
-    steering_enabled = pt_cp.vl["QFK_01"]["LatCon_HCA_Status"] == "ACTIVE" # presume mads is actively steering
+    steering_enabled = can_parser_pt.vl["QFK_01"]["LatCon_HCA_Status"] == "ACTIVE" # presume mads is actively steering
     
     lat_cancel_action = steering_enabled and user_disable
     lat_enable_action = not steering_enabled and user_enable
