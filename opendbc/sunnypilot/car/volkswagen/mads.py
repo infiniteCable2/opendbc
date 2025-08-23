@@ -42,13 +42,19 @@ class MadsCarState(MadsCarStateBase):
     # WARNING: cruise state can not be fully toggled off for these cars!    
     user_disable = False
          
-    for b in ret.buttonEvents:
-      if b.type == ButtonType.cancel and b.pressed: # on rising edge
-        user_disable = True
-        break
+    # get cancel button press
+    user_disable = any(b.type == ButtonType.cancel and b.pressed for b in ret.buttonEvents)
     
+    # get states
     steering_enabled = hca_status == "ACTIVE" # assume mads is actively steering
     cruise_standby   = not ret.cruiseState.enabled
     
-    # disable MADS if user cancels while cruise not enabled
+    # set button to disable MADS if user cancels while cruise not enabled
     self.lkas_button = steering_enabled and user_disable and cruise_standby
+    
+    # translate into lkas button event for MADS disable
+    if self.prev_lkas_button != self.lkas_button:
+      ev = structs.CarState.ButtonEvent()
+      ev.type = ButtonType.lkas
+      ev.pressed = self.lkas_button
+      ret.buttonEvents.append(ev)
