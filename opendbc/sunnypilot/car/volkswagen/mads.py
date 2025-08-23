@@ -43,8 +43,7 @@ class MadsCarState(MadsCarStateBase):
     self.prev_lkas_button = self.lkas_button
     
     # get cancel button press
-    user_disable = any(b.type == ButtonType.accelCruise and b.pressed for b in ret.buttonEvents) # for testing
-    #user_disable = any(b.type == ButtonType.cancel and b.pressed for b in ret.buttonEvents)
+    user_disable = any(b.type == ButtonType.cancel and b.pressed for b in ret.buttonEvents)
     
     # get states
     steering_enabled = hca_status == "ACTIVE" # assume mads is actively steering
