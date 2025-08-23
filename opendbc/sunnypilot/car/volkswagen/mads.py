@@ -48,5 +48,7 @@ class MadsCarState(MadsCarStateBase):
         break
     
     steering_enabled = hca_status == "ACTIVE" # assume mads is actively steering
+    cruise_standby   = not ret.cruiseState.enabled
     
-    self.lkas_button = steering_enabled and user_disable
+    # disable MADS if user cancels while cruise not enabled
+    self.lkas_button = steering_enabled and user_disable and cruise_standby
