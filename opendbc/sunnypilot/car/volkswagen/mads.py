@@ -55,7 +55,8 @@ class MadsCarState(MadsCarStateBase):
     
     # translate into lkas button event for MADS disable
     if self.prev_lkas_button != self.lkas_button:
+      # generate event
       ev = structs.CarState.ButtonEvent()
       ev.type = ButtonType.lkas
       ev.pressed = self.lkas_button
-      ret.buttonEvents.append(ev)
+      ret.buttonEvents = list(ret.buttonEvents) + [ev]

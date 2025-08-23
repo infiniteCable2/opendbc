@@ -134,18 +134,12 @@ class CarControllerParams:
         Button(structs.CarState.ButtonEvent.Type.decelCruise, "GRA_ACC_01", "GRA_Tip_Runter", [1]),
         Button(structs.CarState.ButtonEvent.Type.gapAdjustCruise, "GRA_ACC_01", "GRA_Verstellung_Zeitluecke", [3]),
       ]
-      
-      # !!! this is sunnypilot MADS only !!!
-      MADS_BUTTON = [
-        Button(structs.CarState.ButtonEvent.Type.lkas, "", "", [0]),
-      ]
-      # !!! this is sunnypilot MADS only !!!
 
-      self.BUTTONS = BASE_BUTTONS + MADS_BUTTON + [
+      self.BUTTONS = BASE_BUTTONS + [
         Button(structs.CarState.ButtonEvent.Type.cancel, "GRA_ACC_01", "GRA_Hauptschalter", [1]), # main button cancels ACC operation when ACC active
       ]
 
-      self.BUTTONS_ALT = BASE_BUTTONS + MADS_BUTTON + [
+      self.BUTTONS_ALT = BASE_BUTTONS + [
         Button(structs.CarState.ButtonEvent.Type.cancel, "GRA_ACC_01", "GRA_Abbrechen", [1]), # there is a physical cancel button
       ]
 
