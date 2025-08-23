@@ -23,10 +23,9 @@ class MadsCarState(MadsCarStateBase):
     self.tolerance_counter = TOLERANCE_MAX
 
   def update_mads(self, ret: structs.CarState, can_parser_pt: CANParser, hca_status) -> None:
-    self.prev_lkas_button = self.lkas_button
 
-    # safely block MADS from detecting a cruise state transition from parked mode while cruise is temporary not available
-    # (blocking user unintended MADS enablement via main cruise state mechanism)
+    # Block user unintended MADS enablement
+    # Safely block MADS from detecting a cruise state transition from parked mode while cruise is temporary not available
     temp_cruise_fault = can_parser_pt.vl["Motor_51"]["TSK_Status"] == TEMP_CRUISE_FAULT
     drive_mode        = ret.gearShifter == GearShifter.drive
     
@@ -37,11 +36,12 @@ class MadsCarState(MadsCarStateBase):
     elif self.tolerance_counter < TOLERANCE_MAX: # grant a little bit of time for the car doing its state transition
       ret.cruiseState.available = True
       self.tolerance_counter    = min(self.tolerance_counter + 1, TOLERANCE_MAX)
+
+    # MADS disable via virtual lkas button press
+    # Some newer gen MEB cars do not have a main cruise button and a native cancel button is present.
+    # WARNING: Cruise state can not be fully toggled off for these cars!
+    self.prev_lkas_button = self.lkas_button
     
-    # some newer gen MEB cars do not have a main cruise button and a native cancel button is present
-    # WARNING: cruise state can not be fully toggled off for these cars!    
-    user_disable = False
-         
     # get cancel button press
     user_disable = any(b.type == ButtonType.cancel and b.pressed for b in ret.buttonEvents)
     
