@@ -1997,6 +1997,9 @@ BO_ 1716 VIN_01: 8 Gateway_MQB
  SG_ VIN_15 m2 : 40|8@1+ (1,0) [0|255] "" Airbag_MQB
  SG_ VIN_16 m2 : 48|8@1+ (1,0) [0|255] "" Airbag_MQB
  SG_ VIN_17 m2 : 56|8@1+ (1,0) [0|255] "" Airbag_MQB
+ 
+BO_ 316494998 MEB_Gateway_01: 24 XXX
+ SG_ Driver_Side : 64|1@0+ (1,0) [0|1] "" XXX
 
 BO_ 316495015 MEB_VZE_01: 32 XXX
  SG_ VZE_Anzeigemodus : 0|2@1+ (1,0) [0|3] "" ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
@@ -3383,6 +3386,7 @@ VAL_ 1714 UH_Monat 0 "Init" 14 "Relatives_Datum" 15 "Fehler";
 VAL_ 1714 UH_Tag 0 "Init";
 VAL_ 1714 Kombi_02_alt 0 "aktuell" 1 "veraltet";
 VAL_ 1714 Uhrzeit_01_alt 0 "aktuell" 1 "veraltet";
+VAL_ 316494998 Driver_Side 0 "Left" 1 "Right";
 VAL_ 316495015 VZE_Anzeigemodus 0 "EU_RDW" 1 "USA" 2 "Canada" 3 "China";
 VAL_ 316495015 VZE_Verkehrszeichen_Einheit 0 "mph" 1 "kmh";
 VAL_ 316495015 VZE_Anzeigeunterdrueck_Zeichen_3 0 "anzeigerelevant" 1 "nicht_anzeigerelevant";
