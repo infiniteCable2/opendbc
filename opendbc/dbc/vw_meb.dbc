@@ -3428,7 +3428,7 @@ BO_ 258 ESC_50: 48 XXX
  SG_ Brake_01 : 90|1@0+ (1,0) [0|1] "" XXX
  SG_ Regen_Braking : 123|1@1+ (1,0) [0|7] "" XXX
  SG_ Brake_02 : 125|1@0+ (1,0) [0|1] "" XXX
- SG_ Standstill : 171|1@0+ (1,0) [0|1] "" XXX
+ SG_ Motion_State : 171|2@0+ (1,0) [0|1] "" XXX
  SG_ NEW_SIGNAL_3 : 180|1@0+ (1,0) [0|1] "" XXX
  SG_ Longitudinal_Speed : 181|10@1+ (0.25,0) [0|255] "Unit_KilometerPerHour" XXX
  SG_ Brake_Power_02 : 226|8@1+ (1,-100) [0|63] "" XXX
@@ -3515,6 +3515,7 @@ BO_ 619 TA_01: 8 XXX
  SG_ Travel_Assist_Request : 19|3@1+ (1,0) [0|7] "" XXX
  SG_ Travel_Assist_Available : 23|1@1+ (1,0) [0|1] "" XXX
 
+VAL_ 258 Motion_State 1 "Forwards" 2 "Reversing" 3 "Stopped";
 VAL_ 258 EPB_Status 0 "offen" 1 "geschlossen_Parken" 2 "teilgespannt_Halten" 3 "im_Lauf_oeffnen" 4 "im_Lauf_schliessen" 5 "tbd" 6 "Init" 7 "unbekannt";
 VAL_ 267 TSK_Status 0 "init" 1 "disabled" 2 "enabled" 3 "regulating" 4 "accel_pedal_override" 5 "brake_only" 6 "temp_fault" 7 "perm_fault";
 VAL_ 317 LatCon_HCA_Status 0 "disabled" 1 "initializing" 2 "ready" 3 "fault" 4 "active" 5 "preempted" 6 "fault" 7 "rejected";

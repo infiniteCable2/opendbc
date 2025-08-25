@@ -1,5 +1,8 @@
 from opendbc.car.volkswagen.mebutils import map_speed_to_acc_tempolimit
 
+ACCEL_INACTIVE = 3.01
+ACCEL_OVERRIDE = 0.00
+
 ACC_CTRL_ERROR    = 6
 ACC_CTRL_OVERRIDE = 4
 ACC_CTRL_ACTIVE   = 3
@@ -178,24 +181,28 @@ def create_acc_accel_control(packer, bus, acc_type, acc_enabled, upper_jerk, low
 
   if acc_enabled:
     if override: # the car expects a non inactive accel while overriding
-      acceleration = 0.00 # original ACC still sends active accel in this case (seamless experience)
+      acceleration = ACCEL_OVERRIDE # original ACC still sends active accel in this case (seamless experience)
+    elif stopping and esp_hold:
+      acceleration = ACCEL_INACTIVE # inactive accel, newer gen >2024 error of not neutral value
     else:
       acceleration = accel
   else:
-    acceleration = 3.01 # inactive accel
+    acceleration = ACCEL_INACTIVE # inactive accel
+
+  full_stop_no_start = esp_hold and not starting # error mitigation for sensitive new gen cars, see usages, stock behaviour
 
   values = {
     "ACC_Typ":                    acc_type,
     "ACC_Status_ACC":             acc_control,
     "ACC_StartStopp_Info":        acc_enabled,
     "ACC_Sollbeschleunigung_02":  acceleration,
-    "ACC_zul_Regelabw_unten":     lower_control_limit if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) else 0,
-    "ACC_zul_Regelabw_oben":      upper_control_limit if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) else 0,
-    "ACC_neg_Sollbeschl_Grad_02": lower_jerk if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) else 0,
-    "ACC_pos_Sollbeschl_Grad_02": upper_jerk if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) else 0,
+    "ACC_zul_Regelabw_unten":     lower_control_limit if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) and not full_stop_no_start else 0,
+    "ACC_zul_Regelabw_oben":      upper_control_limit if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) and not full_stop_no_start else 0,
+    "ACC_neg_Sollbeschl_Grad_02": lower_jerk if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) and not full_stop_no_start else 0,
+    "ACC_pos_Sollbeschl_Grad_02": upper_jerk if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) and not full_stop_no_start else 0,
     "ACC_Anfahren":               starting,
-    "ACC_Anhalten":               stopping if not esp_hold else 0, # as long as we are actually stopping, newer models error if too long
-    "ACC_Anhalteweg":             20.46,
+    "ACC_Anhalten":               stopping if not esp_hold else 0, # as long as actually stopping (stock), error mitigation for sensitive new gen cars
+    "ACC_Anhalteweg":             20.46, #0 if acc_control == ACC_CTRL_ACTIVE and stopping else 20.46,
     "ACC_Anforderung_HMS":        acc_hold_type,
     "ACC_AKTIV_regelt":           1 if acc_control == ACC_CTRL_ACTIVE else 0,
     "Speed":                      speed,
