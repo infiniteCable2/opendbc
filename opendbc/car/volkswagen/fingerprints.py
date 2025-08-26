@@ -1024,15 +1024,15 @@ FW_VERSIONS = {
     (Ecu.hybrid,  0x70a, None): [], # PDC
     (Ecu.gateway, 0x74e, None): [], # bsm radar rear right
     (Ecu.hud,     0x769, None): [], # Rear Cam
-    (Ecu.unknown, 0x77f, None): [],
+    (Ecu.unknown, 0x77f, None): [], # electric engine ecu
     
-    (Ecu.combinationMeter,     0x17fc0076, None): [],
-    (Ecu.electricBrakeBooster, 0x17fc007c, None): [],
-    (Ecu.cornerRadar,          0x17fc0357, None): [],
+    (Ecu.combinationMeter,     0x17fc0076, None): [], # engine ecu
+    (Ecu.electricBrakeBooster, 0x17fc007c, None): [], # inverter
+    (Ecu.cornerRadar,          0x17fc0357, None): [], # ???
     (Ecu.telematics,           0x17fc034f, None): [], # no offset
     (Ecu.shiftByWire,          0x18da01f1, None): [],
     (Ecu.hvac,                 0x18daf101, None): [], # no offset
-    (Ecu.adas,                 0x18db33f1, None): [],
+    (Ecu.adas,                 0x18db33f1, None): [], # no offset
 
     (Ecu.engine, 0x7e0, None): [
       b'\xf1\x870EA906012EC\xf1\x892855', # CUPRA Born 2023 (1)
