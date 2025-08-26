@@ -1021,14 +1021,15 @@ FW_VERSIONS = {
     ],
   },
   CAR.CUPRA_BORN_MK1: { # (n) numbering firmwares as per car of same model
-    (Ecu.hybrid, 0x70a, None): [],
-    (Ecu.gateway, 0x74e, None): [],
-    (Ecu.hud, 0x769, None): [],
+    (Ecu.hybrid, 0x70a, None): [], # PDC
+    (Ecu.gateway, 0x74e, None): [], # bsm radar rear right
+    (Ecu.hud, 0x769, None): [], # Rear Cam
     
     (Ecu.combinationMeter, 0x17fc0076, None): [],
     (Ecu.electricBrakeBooster, 0x17fc007c, None): [],
     (Ecu.shiftByWire, 0x18da01f1, None): [],
     (Ecu.adas, 0x18db33f1, None): [],
+    (Ecu.unknown, 0x77f, None): [],
 
     (Ecu.engine, 0x7e0, None): [
       b'\xf1\x870EA906012EC\xf1\x892855', # CUPRA Born 2023 (1)
