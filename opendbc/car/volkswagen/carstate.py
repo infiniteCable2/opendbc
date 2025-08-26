@@ -17,6 +17,7 @@ class CarState(CarStateBase, MadsCarState):
     MadsCarState.__init__(self, CP, CP_SP)
     self.frame = 0
     self.eps_init_complete = False
+    self.cruise_recovery_timer = 0
     self.CCP = CarControllerParams(CP)
     self.button_states = {button.event_type: False for button in self.CCP.BUTTONS}
     self.esp_hold_confirmation = False
@@ -417,10 +418,16 @@ class CarState(CarStateBase, MadsCarState):
     temp_fault = drive_mode and hca_status in ("REJECTED", "PREEMPTED") or not self.eps_init_complete
     return temp_fault, perm_fault
     
-  def update_acc_fault(self, acc_fault, parking_brake=False, drive_mode=True):
+  def update_acc_fault(self, acc_fault, parking_brake=False, drive_mode=True, recovery_frames_max=100):
     # Ignore FAULT when not in drive mode and parked
     # do not show misleading error during ignition in parked state
-    fault = False if parking_brake and not drive_mode else acc_fault
+    # grant a short time to recover a normal cruise state
+    fault = acc_fault
+    if parking_brake and not drive_mode:
+      fault = False
+      self.cruise_recovery_timer = self.frame
+    elif self.frame - self.cruise_recovery_timer < recovery_frames_max:
+      fault = False
     return fault
 
   @staticmethod
