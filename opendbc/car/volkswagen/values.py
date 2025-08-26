@@ -613,7 +613,7 @@ VOLKSWAGEN_VERSION_REQUEST_MULTI = bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFI
 VOLKSWAGEN_VERSION_RESPONSE = bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER + 0x40])
 
 VOLKSWAGEN_RX_OFFSET = 0x6a
-VOLKSWAGEN_RX_OFFSET_CANFD = 0x0002
+VOLKSWAGEN_RX_OFFSET_CANFD = 0x2000
 
 FW_QUERY_CONFIG = FwQueryConfig(
   requests=[request for bus, obd_multiplexing in [(1, True), (1, False), (0, False)] for request in [
@@ -628,18 +628,18 @@ FW_QUERY_CONFIG = FwQueryConfig(
     Request(
       [VOLKSWAGEN_VERSION_REQUEST_MULTI],
       [VOLKSWAGEN_VERSION_RESPONSE],
-      whitelist_ecus=[Ecu.engine, Ecu.transmission, Ecu.unknown, Ecu.combinationMeter, Ecu.electricBrakeBooster, Ecu.shiftByWire, Ecu.adas],
+      whitelist_ecus=[Ecu.engine, Ecu.transmission, Ecu.hvac, Ecu.telematics],
       bus=bus,
       obd_multiplexing=obd_multiplexing,
     ),
-    #Request(
-    #  [VOLKSWAGEN_VERSION_REQUEST_MULTI],
-    #  [VOLKSWAGEN_VERSION_RESPONSE],
-    #  whitelist_ecus=[Ecu.combinationMeter, Ecu.electricBrakeBooster, Ecu.shiftByWire, Ecu.adas],
-    #  rx_offset=VOLKSWAGEN_RX_OFFSET_CANFD,
-    #  bus=bus,
-    #  obd_multiplexing=obd_multiplexing,
-    #),
+    Request(
+      [VOLKSWAGEN_VERSION_REQUEST_MULTI],
+      [VOLKSWAGEN_VERSION_RESPONSE],
+      whitelist_ecus=[Ecu.combinationMeter, Ecu.electricBrakeBooster, Ecu.shiftByWire, Ecu.adas, Ecu.cornerRadar],
+      rx_offset=VOLKSWAGEN_RX_OFFSET_CANFD,
+      bus=bus,
+      obd_multiplexing=obd_multiplexing,
+    ),
   ]],
   non_essential_ecus={Ecu.eps: list(CAR)},
   extra_ecus=[(Ecu.fwdCamera, 0x74f, None)],
