@@ -635,7 +635,7 @@ FW_QUERY_CONFIG = FwQueryConfig(
     Request(
       [VOLKSWAGEN_VERSION_REQUEST_MULTI],
       [VOLKSWAGEN_VERSION_RESPONSE],
-      whitelist_ecus=[Ecu.combinationMeter, Ecu.electricBrakeBooster, Ecu.shiftByWire, Ecu.cornerRadar],
+      whitelist_ecus=[Ecu.combinationMeter, Ecu.electricBrakeBooster, Ecu.shiftByWire, Ecu.cornerRadar, Ecu.fwdRadar, Ecu.fwdRadar],
       rx_offset=VOLKSWAGEN_RX_OFFSET_CANFD,
       bus=bus,
       obd_multiplexing=obd_multiplexing,
