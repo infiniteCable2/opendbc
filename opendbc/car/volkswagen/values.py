@@ -8,7 +8,7 @@ from opendbc.can import CANDefine
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.docs_definitions import CarFootnote, CarHarness, CarDocs, CarParts, Column, \
                                                      Device
-from opendbc.car.fw_query_definitions import EcuAddrSubAddr, FwQueryConfig, Request, p16
+from opendbc.car.fw_query_definitions import EcuAddrSubAddr, FwQueryConfig, Request, StdQueries, p16
 from opendbc.car.vin import Vin
 
 Ecu = structs.CarParams.Ecu
@@ -618,23 +618,23 @@ VOLKSWAGEN_RX_OFFSET_CANFD = 0x20000
 FW_QUERY_CONFIG = FwQueryConfig(
   requests=[request for bus, obd_multiplexing in [(1, True), (1, False), (0, False)] for request in [
     Request(
-      [VOLKSWAGEN_VERSION_REQUEST_MULTI],
-      [VOLKSWAGEN_VERSION_RESPONSE],
+      [StdQueries.EXTENDED_DIAGNOSTIC_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
+      [StdQueries.EXTENDED_DIAGNOSTIC_RESPONSE, VOLKSWAGEN_VERSION_RESPONSE],
       whitelist_ecus=[Ecu.srs, Ecu.eps, Ecu.fwdRadar, Ecu.fwdCamera, Ecu.hybrid, Ecu.gateway, Ecu.hud],
       rx_offset=VOLKSWAGEN_RX_OFFSET,
       bus=bus,
       obd_multiplexing=obd_multiplexing,
     ),
     Request(
-      [VOLKSWAGEN_VERSION_REQUEST_MULTI],
-      [VOLKSWAGEN_VERSION_RESPONSE],
+      [StdQueries.EXTENDED_DIAGNOSTIC_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
+      [StdQueries.EXTENDED_DIAGNOSTIC_RESPONSE, VOLKSWAGEN_VERSION_RESPONSE],
       whitelist_ecus=[Ecu.engine, Ecu.transmission, Ecu.hvac, Ecu.telematics, Ecu.adas, Ecu.unknown],
       bus=bus,
      obd_multiplexing=obd_multiplexing,
     ),
     Request(
-      [VOLKSWAGEN_VERSION_REQUEST_MULTI],
-      [VOLKSWAGEN_VERSION_RESPONSE],
+      [StdQueries.EXTENDED_DIAGNOSTIC_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
+      [StdQueries.EXTENDED_DIAGNOSTIC_RESPONSE, VOLKSWAGEN_VERSION_RESPONSE],
       whitelist_ecus=[Ecu.combinationMeter, Ecu.electricBrakeBooster, Ecu.shiftByWire, Ecu.cornerRadar],
       rx_offset=VOLKSWAGEN_RX_OFFSET_CANFD,
       bus=bus,
