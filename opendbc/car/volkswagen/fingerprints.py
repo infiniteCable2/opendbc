@@ -1027,8 +1027,12 @@ FW_VERSIONS = {
     #(Ecu.unknown,     , None): [], # electric engine ecu
     #(Ecu.parkingAdas, , None): [], # electric engine ecu
     
-    (Ecu.combinationMeter,     0x17fc0076, None): [], # electric engine ecu
-    (Ecu.electricBrakeBooster, 0x17fc007c, None): [], # inverter
+    (Ecu.combinationMeter,     0x17fc0076, None): [ # electric engine ecu
+      b'\xf1\x870EA906012EC\xf1\x892855',
+    ],
+    (Ecu.electricBrakeBooster, 0x17fc007c, None): [ # inverter
+      b'\xf1\x871EA907121AJ\xf1\x893510\xf1\x8201S\x00',
+    ],
     (Ecu.cornerRadar,          0x17fc0357, None): [], # 
     (Ecu.telematics,           0x17fc034f, None): [], # 
     (Ecu.hvac,                 0x18da01f1, None): [], # 
