@@ -633,6 +633,7 @@ for bus in [0, 1, 2]:
       rx_offset=VOLKSWAGEN_RX_OFFSET_CANFD,
       bus=bus,
       obd_multiplexing=False,
+      filter_mask=(0x1FFFFF00, 0x17FC0000),
     )
   ]
   
@@ -644,6 +645,7 @@ for bus in [0, 1, 2]:
       whitelist_ecus=[Ecu.hvac, Ecu.adas],
       bus=bus,
       obd_multiplexing=False,
+      filter_mask=(0x1FFF00FF, 0x18DA00F1),
     )
   ]
 
@@ -663,7 +665,7 @@ for bus, obd_multiplexing in [(1, True), (1, False), (0, False)]:
       [VOLKSWAGEN_VERSION_RESPONSE],
       whitelist_ecus=[Ecu.engine, Ecu.transmission],
       bus=bus,
-     obd_multiplexing=obd_multiplexing,
+      obd_multiplexing=obd_multiplexing,
     ),
   ]
   
