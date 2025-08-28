@@ -1024,8 +1024,8 @@ FW_VERSIONS = {
     (Ecu.hybrid,      0x70a, None): [], # PDC
     (Ecu.gateway,     0x74e, None): [], # bsm radar rear right
     (Ecu.hud,         0x769, None): [], # Rear Cam
-    (Ecu.unknown,     , None): [], # electric engine ecu
-    (Ecu.parkingAdas, , None): [], # electric engine ecu
+    #(Ecu.unknown,     , None): [], # electric engine ecu
+    #(Ecu.parkingAdas, , None): [], # electric engine ecu
     
     (Ecu.combinationMeter,     0x17fe0076, None): [], # engine ecu
     (Ecu.electricBrakeBooster, 0x17fe007c, None): [], # inverter
