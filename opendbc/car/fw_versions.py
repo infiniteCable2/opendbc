@@ -27,6 +27,15 @@ T = TypeVar('T')
 ObdCallback = Callable[[bool], None]
 
 
+def addr_matches_masks(addr: int, masks: list[Mask]) -> bool:
+  if not masks:
+    return True
+  for m, expected in masks:
+    if (addr & m) == expected:
+      return True
+  return False
+  
+
 def chunks(l: list[T], n: int = 128) -> Iterator[list[T]]:
   for i in range(0, len(l), n):
     yield l[i:i + n]
