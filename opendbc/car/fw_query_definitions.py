@@ -97,7 +97,7 @@ class Request:
   # pandad toggles OBD multiplexing on/off as needed
   obd_multiplexing: bool = True
   # can id filter (mask, expected_value)
-  filter_mask: tuple[int, int] | None = None
+  filter_mask: list[Mask] = field(default_factory=list)
 
 
 @dataclass
