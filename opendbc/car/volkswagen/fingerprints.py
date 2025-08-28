@@ -1031,8 +1031,8 @@ FW_VERSIONS = {
     (Ecu.electricBrakeBooster, 0x17fc007c, None): [], # inverter
     (Ecu.cornerRadar,          0x17fc0357, None): [], # 
     (Ecu.telematics,           0x17fc034f, None): [], # 
-    (Ecu.hvac,                 0x18daf101, None): [], # 
-    (Ecu.adas,                 0x18dbf133, None): [], # 
+    (Ecu.hvac,                 0x18da01f1, None): [], # 
+    (Ecu.adas,                 0x18db33f1, None): [], # 
 
     (Ecu.engine, 0x7e0, None): [
       b'\xf1\x870EA906012EC\xf1\x892855', # CUPRA Born 2023 (1)

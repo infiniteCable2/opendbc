@@ -618,8 +618,8 @@ VOLKSWAGEN_RX_OFFSET_CANFD = 0x20000
 FW_QUERY_CONFIG = FwQueryConfig(
   requests=[request for bus, obd_multiplexing in [(1, True), (1, False), (0, False)] for request in [
     Request(
-      [StdQueries.TESTER_PRESENT_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
-      [StdQueries.TESTER_PRESENT_RESPONSE, VOLKSWAGEN_VERSION_RESPONSE],
+      [VOLKSWAGEN_VERSION_REQUEST_MULTI],
+      [VOLKSWAGEN_VERSION_RESPONSE],
       whitelist_ecus=[Ecu.srs, Ecu.eps, Ecu.fwdRadar, Ecu.fwdCamera, Ecu.hybrid, Ecu.gateway, Ecu.hud, Ecu.engine, Ecu.transmission],
       rx_offset=VOLKSWAGEN_RX_OFFSET,
       bus=bus,
@@ -633,16 +633,16 @@ FW_QUERY_CONFIG = FwQueryConfig(
      obd_multiplexing=obd_multiplexing,
     ),
     Request(
-      [VOLKSWAGEN_VERSION_REQUEST_MULTI],
-      [VOLKSWAGEN_VERSION_RESPONSE],
+      [StdQueries.EXTENDED_DIAGNOSTIC_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
+      [StdQueries.EXTENDED_DIAGNOSTIC_RESPONSE, VOLKSWAGEN_VERSION_RESPONSE],
       whitelist_ecus=[Ecu.combinationMeter, Ecu.electricBrakeBooster, Ecu.cornerRadar, Ecu.telematics],
       rx_offset=VOLKSWAGEN_RX_OFFSET_CANFD,
       bus=bus,
       obd_multiplexing=obd_multiplexing,
     ),
     Request(
-      [VOLKSWAGEN_VERSION_REQUEST_MULTI],
-      [VOLKSWAGEN_VERSION_RESPONSE],
+      [StdQueries.EXTENDED_DIAGNOSTIC_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
+      [StdQueries.EXTENDED_DIAGNOSTIC_RESPONSE, VOLKSWAGEN_VERSION_RESPONSE],
       whitelist_ecus=[Ecu.hvac, Ecu.adas],
       bus=bus,
       obd_multiplexing=obd_multiplexing,
