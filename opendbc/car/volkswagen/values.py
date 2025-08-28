@@ -636,26 +636,29 @@ for bus, obd_multiplexing in [(1, True), (1, False), (0, False)]:
      obd_multiplexing=obd_multiplexing,
     ),
   ]
+  
+VW_EXT_SESSION_RESP_PREFIX = bytes([
+  uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40,  # 0x50
+  uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC                 # 0x03
+])
 
 # volkswagen 29 bit requests
 for bus in [0, 1, 2]:
   reqs += [
     # 0x17****** id with volkswagen custom offset
     Request(
-      [StdQueries.DEFAULT_DIAGNOSTIC_REQUEST, StdQueries.TESTER_PRESENT_REQUEST, StdQueries.EXTENDED_DIAGNOSTIC_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
-      [StdQueries.DEFAULT_DIAGNOSTIC_RESPONSE, StdQueries.TESTER_PRESENT_RESPONSE, StdQueries.EXTENDED_DIAGNOSTIC_RESPONSE, VOLKSWAGEN_VERSION_RESPONSE],
+      [StdQueries.TESTER_PRESENT_REQUEST, StdQueries.EXTENDED_DIAGNOSTIC_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
+      [StdQueries.TESTER_PRESENT_RESPONSE, VW_EXT_SESSION_RESP_PREFIX, VOLKSWAGEN_VERSION_RESPONSE],
       whitelist_ecus=[Ecu.combinationMeter, Ecu.electricBrakeBooster, Ecu.cornerRadar, Ecu.telematics],
       rx_offset=VOLKSWAGEN_RX_OFFSET_CANFD,
       bus=bus,
-      logging=True,
     ),
     # 0x18****** id with default last two bytes flipping
     Request(
-      [StdQueries.DEFAULT_DIAGNOSTIC_REQUEST, StdQueries.TESTER_PRESENT_REQUEST, StdQueries.EXTENDED_DIAGNOSTIC_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
-      [StdQueries.DEFAULT_DIAGNOSTIC_RESPONSE, StdQueries.TESTER_PRESENT_RESPONSE, StdQueries.EXTENDED_DIAGNOSTIC_RESPONSE, VOLKSWAGEN_VERSION_RESPONSE],
+      [StdQueries.TESTER_PRESENT_REQUEST, StdQueries.EXTENDED_DIAGNOSTIC_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
+      [StdQueries.TESTER_PRESENT_RESPONSE, VW_EXT_SESSION_RESP_PREFIX, VOLKSWAGEN_VERSION_RESPONSE],
       whitelist_ecus=[Ecu.hvac, Ecu.adas],
       bus=bus,
-      logging=True,
     ),
   ]
   
