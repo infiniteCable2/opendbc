@@ -1025,6 +1025,7 @@ FW_VERSIONS = {
     (Ecu.gateway, 0x74e, None): [], # bsm radar rear right
     (Ecu.hud,     0x769, None): [], # Rear Cam
     (Ecu.unknown, 0x77f, None): [], # electric engine ecu
+    (Ecu.unknown, 0x7c1, None): [], # electric engine ecu
     
     (Ecu.combinationMeter,     0x17fc0076, None): [], # engine ecu
     (Ecu.electricBrakeBooster, 0x17fc007c, None): [], # inverter
