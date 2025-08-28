@@ -615,12 +615,14 @@ VOLKSWAGEN_VERSION_RESPONSE = bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER + 
 VOLKSWAGEN_RX_OFFSET = 0x6a
 VOLKSWAGEN_RX_OFFSET_CANFD = 0x20000
 
-FW_QUERY_CONFIG = FwQueryConfig(
-  requests=[request for bus, obd_multiplexing in [(1, True), (1, False), (0, False)] for request in [
+reqs = []
+
+for bus, obd_multiplexing in [(1, True), (1, False), (0, False)]:
+  reqs += [
     Request(
       [VOLKSWAGEN_VERSION_REQUEST_MULTI],
       [VOLKSWAGEN_VERSION_RESPONSE],
-      whitelist_ecus=[Ecu.srs, Ecu.eps, Ecu.fwdRadar, Ecu.fwdCamera, Ecu.hybrid, Ecu.gateway, Ecu.hud, Ecu.engine, Ecu.transmission],
+      whitelist_ecus=[Ecu.srs, Ecu.eps, Ecu.fwdRadar, Ecu.fwdCamera, Ecu.hybrid, Ecu.gateway, Ecu.hud],
       rx_offset=VOLKSWAGEN_RX_OFFSET,
       bus=bus,
       obd_multiplexing=obd_multiplexing,
@@ -632,22 +634,29 @@ FW_QUERY_CONFIG = FwQueryConfig(
       bus=bus,
      obd_multiplexing=obd_multiplexing,
     ),
+  ]
+  
+for bus in [0, 1, 2]:
+  reqs += [
     Request(
       [StdQueries.EXTENDED_DIAGNOSTIC_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
       [StdQueries.EXTENDED_DIAGNOSTIC_RESPONSE, VOLKSWAGEN_VERSION_RESPONSE],
       whitelist_ecus=[Ecu.combinationMeter, Ecu.electricBrakeBooster, Ecu.cornerRadar, Ecu.telematics],
       rx_offset=VOLKSWAGEN_RX_OFFSET_CANFD,
       bus=bus,
-      obd_multiplexing=obd_multiplexing,
+      obd_multiplexing=False,
     ),
     Request(
       [StdQueries.EXTENDED_DIAGNOSTIC_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
       [StdQueries.EXTENDED_DIAGNOSTIC_RESPONSE, VOLKSWAGEN_VERSION_RESPONSE],
       whitelist_ecus=[Ecu.hvac, Ecu.adas],
       bus=bus,
-      obd_multiplexing=obd_multiplexing,
+      obd_multiplexing=False
     ),
-  ]],
+  ]
+  
+FW_QUERY_CONFIG = FwQueryConfig(
+  requests=reqs,
   non_essential_ecus={Ecu.eps: list(CAR)},
   extra_ecus=[(Ecu.fwdCamera, 0x74f, None)],
   match_fw_to_car_fuzzy=match_fw_to_car_fuzzy,
