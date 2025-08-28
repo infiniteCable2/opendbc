@@ -631,45 +631,50 @@ reqs = []
 
 # volkswagen 29 bit requests
 for bus in [0, 1, 2]:
+  # 0x17xOxxxx id with volkswagen custom offset
   reqs += [
-    # 0x17xOxxxx id with volkswagen custom offset
     Request(
       [StdQueries.TESTER_PRESENT_REQUEST, StdQueries.EXTENDED_DIAGNOSTIC_REQUEST],
       [StdQueries.TESTER_PRESENT_RESPONSE, VW_EXT_SESSION_RESP_PREFIX],
       whitelist_ecus=[Ecu.combinationMeter, Ecu.electricBrakeBooster, Ecu.cornerRadar, Ecu.telematics],
       rx_offset=VOLKSWAGEN_RX_OFFSET_CANFD,
       bus=bus,
+      obd_multiplexing=False,
     )
   ]
-  
   for did in VAG_DIDS_ASCII:
-    reqs += [Request(
-      [rd(did)],
-      [VOLKSWAGEN_VERSION_RESPONSE],  # 0x62
-      whitelist_ecus=[Ecu.combinationMeter, Ecu.electricBrakeBooster, Ecu.cornerRadar, Ecu.telematics],
-      rx_offset=VOLKSWAGEN_RX_OFFSET_CANFD,
-      bus=bus,
-    )
-  ]
+    reqs += [
+      Request(
+        [rd(did)],
+        [VOLKSWAGEN_VERSION_RESPONSE],  # 0x62
+        whitelist_ecus=[Ecu.combinationMeter, Ecu.electricBrakeBooster, Ecu.cornerRadar, Ecu.telematics],
+        rx_offset=VOLKSWAGEN_RX_OFFSET_CANFD,
+        bus=bus,
+        obd_multiplexing=False,
+      )
+    ]
   
+  # 18xxxxBB -> 18xxBBxx (Bitflip)
   reqs += [
-    # 18xxxxBB -> 18xxBBxx (Bitflip)
     Request(
       [StdQueries.TESTER_PRESENT_REQUEST, StdQueries.EXTENDED_DIAGNOSTIC_REQUEST],
       [StdQueries.TESTER_PRESENT_RESPONSE, VW_EXT_SESSION_RESP_PREFIX],
       whitelist_ecus=[Ecu.hvac, Ecu.adas],
       bus=bus,
+      obd_multiplexing=False,
     )
   ]
   
   for did in VAG_DIDS_ASCII:
-    reqs += [Request(
-      [rd(did)],
-      [VOLKSWAGEN_VERSION_RESPONSE],  # 0x62
-      whitelist_ecus=[Ecu.hvac, Ecu.adas],
-      bus=bus,
-    )
-  ]
+    reqs += [
+      Request(
+        [rd(did)],
+        [VOLKSWAGEN_VERSION_RESPONSE],  # 0x62
+        whitelist_ecus=[Ecu.hvac, Ecu.adas],
+        bus=bus,
+        obd_multiplexing=False,
+      )
+    ]
 
 # original volkswagen requests on 0x7** 
 for bus, obd_multiplexing in [(1, True), (1, False), (0, False)]:
