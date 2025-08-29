@@ -659,6 +659,7 @@ for bus, obd_multiplexing in [(1, True), (1, False), (0, False)]:
       rx_offset=VOLKSWAGEN_RX_OFFSET,
       bus=bus,
       obd_multiplexing=obd_multiplexing,
+      filter_mask=[(0x7FF, 0x700)],
     ),
     Request(
       [VOLKSWAGEN_VERSION_REQUEST_MULTI],
@@ -666,6 +667,7 @@ for bus, obd_multiplexing in [(1, True), (1, False), (0, False)]:
       whitelist_ecus=[Ecu.engine, Ecu.transmission],
       bus=bus,
       obd_multiplexing=obd_multiplexing,
+      filter_mask=[(0x7FF, 0x700)],
     ),
   ]
   
