@@ -1020,19 +1020,16 @@ FW_VERSIONS = {
       b'\xf1\x875Q0907572R \xf1\x890771',
     ],
   },
-  CAR.CUPRA_BORN_MK1: { # (n) numbering firmwares as per car of same model
-    (Ecu.parkingAdas, 0x70a, None): [], # PDC
-    (Ecu.cornerRadar, 0x74e, None): [], # bsm radar rear right
-    (Ecu.adas, 0x769, None): [], # Rear Cam
-    (Ecu.inverter, 0x17fc007c, None): [
-      b'\xf1\x871EA907121AJ\xf1\x893510\xf1\x8201S\x00',
-    ],
-    
-    #(Ecu.hybrid, 0x17fc0357, None): [], # 
-    #(Ecu.telematics, 0x17fc034f, None): [], # 
+  CAR.CUPRA_BORN_MK1: { # (n) numbering firmwares as per car of same model    
+    (Ecu.hybrid, 0x17fc0357, None): [], # 
+    (Ecu.telematics, 0x17fc034f, None): [], # 
+    (Ecu.debug, 0x17fc0376, None): [], # 
     #(Ecu.hvac, 0x18da01f1, None): [], # 
     #(Ecu.unknown, 0x18db33f1, None): [], # 
-
+    
+    (Ecu.inverter, 0x17fc007c, None): [
+      b'\xf1\x871EA907121AJ\xf1\x893510\xf1\x8201S\x00', # CUPRA Born 2023 (1)
+    ],
     (Ecu.engine, 0x17fc0076, None): [
       b'\xf1\x870EA906012EC\xf1\x892855', # CUPRA Born 2023 (1)
     ],
@@ -1050,6 +1047,15 @@ FW_VERSIONS = {
     (Ecu.fwdCamera, 0x74f, None): [
       b'\xf1\x871EA980654L \xf1\x895332', # VW ID.4 2021 (1)
       #b'\xf1\x871EA980654L \xf1\x895332', # VW ID.3 older model (1)
+    ],
+    (Ecu.cornerRadar, 0x74e, None): [ # rear radar right
+      b'\xf1\x872Q0907686L \xf1\x890289', # CUPRA Born 2023 (1)
+    ],
+    (Ecu.adas, 0x769, None): [ # rear camera
+      b'\xf1\x871EA980556J \xf1\x890397', # CUPRA Born 2023 (1)
+    ],
+    (Ecu.parkingAdas, 0x70a, None): [ # park distance control
+      b'\xf1\x871EA919294D \xf1\x890421', # CUPRA Born 2023 (1)
     ],
     (Ecu.fwdRadar, 0x757, None): [
       b'\xf1\x871EA907572H \xf1\x890234', # CUPRA Born 2023 (1)

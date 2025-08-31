@@ -629,7 +629,7 @@ for bus in [0, 1, 2]:
     Request(
       [StdQueries.TESTER_PRESENT_REQUEST, StdQueries.EXTENDED_DIAGNOSTIC_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
       [StdQueries.TESTER_PRESENT_RESPONSE, VW_EXT_SESSION_RESP_PREFIX, VOLKSWAGEN_VERSION_RESPONSE],
-      whitelist_ecus=[Ecu.engine, Ecu.inverter],
+      whitelist_ecus=[Ecu.engine, Ecu.inverter, Ecu.hybrid, Ecu.telematics],
       rx_offset=VOLKSWAGEN_RX_OFFSET_CANFD,
       bus=bus,
       obd_multiplexing=False,
