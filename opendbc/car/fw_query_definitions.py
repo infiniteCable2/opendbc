@@ -83,6 +83,7 @@ class StdQueries:
   KWP_VIN_REQUEST = b'\x21\x81'
   KWP_VIN_RESPONSE = b'\x61\x81'
 
+
 @dataclass
 class Request:
   request: list[bytes]
