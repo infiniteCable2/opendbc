@@ -1060,7 +1060,7 @@ FW_VERSIONS = {
     ],
   },
   CAR.CUPRA_BORN_GEN2: {
-    Ecu.inverter, 0x17fc007c, None): [
+    (Ecu.inverter, 0x17fc007c, None): [
     ],
     (Ecu.engine, 0x17fc0076, None): [
     ],
