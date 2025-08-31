@@ -612,58 +612,11 @@ VOLKSWAGEN_VERSION_REQUEST_MULTI = bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFI
   p16(uds.DATA_IDENTIFIER_TYPE.APPLICATION_DATA_IDENTIFICATION)
 VOLKSWAGEN_VERSION_RESPONSE = bytes([uds.SERVICE_TYPE.READ_DATA_BY_IDENTIFIER + 0x40])
 
-VW_EXT_SESSION_RESP_PREFIX = bytes([
-  uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40,  # 0x50
-  uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC                 # 0x03
-])
-
 VOLKSWAGEN_RX_OFFSET = 0x6a
 VOLKSWAGEN_RX_OFFSET_CANFD = 0x20000
 
-reqs = []
-
-# volkswagen 29 bit requests
-for bus in [0, 1, 2]:
-  # 0x17Fxxxxx id with volkswagen custom offset
-  # 0x1C4xxxxx id with volkswagen custom offset
-  reqs += [
-    Request(
-      #[StdQueries.TESTER_PRESENT_REQUEST, StdQueries.EXTENDED_DIAGNOSTIC_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
-      #[StdQueries.TESTER_PRESENT_RESPONSE, VW_EXT_SESSION_RESP_PREFIX, VOLKSWAGEN_VERSION_RESPONSE],
-      [VOLKSWAGEN_VERSION_REQUEST_MULTI],
-      [VOLKSWAGEN_VERSION_RESPONSE],
-      whitelist_ecus=[Ecu.engine, Ecu.inverter, Ecu.hybrid, Ecu.telematics],
-      rx_offset=VOLKSWAGEN_RX_OFFSET_CANFD,
-      bus=bus,
-      obd_multiplexing=False,
-      filter_mask=[(0x1FFFFF00, 0x17FC0000)],
-    ),
-    Request(
-      [VOLKSWAGEN_VERSION_REQUEST_MULTI],
-      [VOLKSWAGEN_VERSION_RESPONSE],
-      whitelist_ecus=[Ecu.hybrid, Ecu.telematics, Ecu.hvac],
-      rx_offset=VOLKSWAGEN_RX_OFFSET_CANFD,
-      bus=bus,
-      obd_multiplexing=False,
-      filter_mask=[(0x1FFFFF00, 0x1C400000)],
-    )
-  ]
-  
-  # 18xxxxBB -> 18xxBBxx (Bitflip)
-  #reqs += [
-  #  Request(
-  #    [StdQueries.TESTER_PRESENT_REQUEST, StdQueries.EXTENDED_DIAGNOSTIC_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
-  #    [StdQueries.TESTER_PRESENT_RESPONSE, VW_EXT_SESSION_RESP_PREFIX, VOLKSWAGEN_VERSION_RESPONSE],
-  #    whitelist_ecus=[Ecu.hvac, Ecu.adas],
-  #    bus=bus,
-  #    obd_multiplexing=False,
-  #    filter_mask=[(0x1FFF00FF, 0x18DA00F1)],
-  #  )
-  #]
-
-# original volkswagen requests on 0x7** 
-for bus, obd_multiplexing in [(1, True), (1, False), (0, False)]:
-  reqs += [
+FW_QUERY_CONFIG = FwQueryConfig(
+  requests = [request for bus, obd_multiplexing in [(1, True), (1, False), (0, False)] for request in [
     Request(
       [VOLKSWAGEN_VERSION_REQUEST_MULTI],
       [VOLKSWAGEN_VERSION_RESPONSE],
@@ -681,10 +634,16 @@ for bus, obd_multiplexing in [(1, True), (1, False), (0, False)]:
       obd_multiplexing=obd_multiplexing,
       filter_mask=[(0x7FF, 0x700)],
     ),
-  ]
-  
-FW_QUERY_CONFIG = FwQueryConfig(
-  requests=reqs,
+    Request(
+      [VOLKSWAGEN_VERSION_REQUEST_MULTI],
+      [VOLKSWAGEN_VERSION_RESPONSE],
+      whitelist_ecus=[Ecu.engine, Ecu.inverter],
+      rx_offset=VOLKSWAGEN_RX_OFFSET_CANFD,
+      bus=bus,
+      obd_multiplexing=obd_multiplexing,
+      filter_mask=[(0x1FFFFF00, 0x17FC0000)],
+    ),
+  ]],
   non_essential_ecus={Ecu.eps: list(CAR)},
   extra_ecus=[(Ecu.fwdCamera, 0x74f, None)],
   match_fw_to_car_fuzzy=match_fw_to_car_fuzzy,

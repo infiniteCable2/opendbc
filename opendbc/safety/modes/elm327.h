@@ -9,7 +9,6 @@ static bool elm327_tx_hook(const CANPacket_t *msg) {
   // VW diag ranges (29-bit)
   const unsigned int VW_DIAG_29B_MASK  = 0x1FFFFF00U;
   const unsigned int VW_DIAG_17FC_BASE = 0x17FC0000U;  // TX to ECU (RX at 0x17FE00NN)
-  const unsigned int VW_DIAG_1C40_BASE = 0x1C400000U;  // TX to ECU (RX at 0x1C4200NN)
  
   bool tx = true;
   int len = GET_LEN(msg);
@@ -23,7 +22,6 @@ static bool elm327_tx_hook(const CANPacket_t *msg) {
   // Check valid 11 bit send addresses for ISO 15765-4
   if ((msg->addr != 0x18DB33F1U) && ((msg->addr & 0x1FFF00FFU) != 0x18DA00F1U) &&
       ((msg->addr & VW_DIAG_29B_MASK) != VW_DIAG_17FC_BASE) &&
-	  ((msg->addr & VW_DIAG_29B_MASK) != VW_DIAG_1C40_BASE) &&
 	  ((msg->addr & 0x1FFFFF00U) != 0x600U) && ((msg->addr & 0x1FFFFF00U) != 0x700U) &&
       (msg->addr != GM_CAMERA_DIAG_ADDR)) {
     tx = false;
