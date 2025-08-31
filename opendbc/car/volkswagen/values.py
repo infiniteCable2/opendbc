@@ -629,7 +629,7 @@ for bus in [0, 1, 2]:
     Request(
       [StdQueries.TESTER_PRESENT_REQUEST, StdQueries.EXTENDED_DIAGNOSTIC_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
       [StdQueries.TESTER_PRESENT_RESPONSE, VW_EXT_SESSION_RESP_PREFIX, VOLKSWAGEN_VERSION_RESPONSE],
-      whitelist_ecus=[Ecu.combinationMeter, Ecu.electricBrakeBooster, Ecu.cornerRadar, Ecu.telematics],
+      whitelist_ecus=[Ecu.engine, Ecu.inverter],
       rx_offset=VOLKSWAGEN_RX_OFFSET_CANFD,
       bus=bus,
       obd_multiplexing=False,
@@ -638,16 +638,16 @@ for bus in [0, 1, 2]:
   ]
   
   # 18xxxxBB -> 18xxBBxx (Bitflip)
-  reqs += [
-    Request(
-      [StdQueries.TESTER_PRESENT_REQUEST, StdQueries.EXTENDED_DIAGNOSTIC_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
-      [StdQueries.TESTER_PRESENT_RESPONSE, VW_EXT_SESSION_RESP_PREFIX, VOLKSWAGEN_VERSION_RESPONSE],
-      whitelist_ecus=[Ecu.hvac, Ecu.adas],
-      bus=bus,
-      obd_multiplexing=False,
-      filter_mask=[(0x1FFF00FF, 0x18DA00F1)],
-    )
-  ]
+  #reqs += [
+  #  Request(
+  #    [StdQueries.TESTER_PRESENT_REQUEST, StdQueries.EXTENDED_DIAGNOSTIC_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
+  #    [StdQueries.TESTER_PRESENT_RESPONSE, VW_EXT_SESSION_RESP_PREFIX, VOLKSWAGEN_VERSION_RESPONSE],
+  #    whitelist_ecus=[Ecu.hvac, Ecu.adas],
+  #    bus=bus,
+  #    obd_multiplexing=False,
+  #    filter_mask=[(0x1FFF00FF, 0x18DA00F1)],
+  #  )
+  #]
 
 # original volkswagen requests on 0x7** 
 for bus, obd_multiplexing in [(1, True), (1, False), (0, False)]:
@@ -655,7 +655,7 @@ for bus, obd_multiplexing in [(1, True), (1, False), (0, False)]:
     Request(
       [VOLKSWAGEN_VERSION_REQUEST_MULTI],
       [VOLKSWAGEN_VERSION_RESPONSE],
-      whitelist_ecus=[Ecu.srs, Ecu.eps, Ecu.fwdRadar, Ecu.fwdCamera, Ecu.hybrid, Ecu.gateway, Ecu.hud],
+      whitelist_ecus=[Ecu.srs, Ecu.eps, Ecu.fwdRadar, Ecu.fwdCamera, Ecu.parkingAdas, Ecu.cornerRadar, Ecu.adas],
       rx_offset=VOLKSWAGEN_RX_OFFSET,
       bus=bus,
       obd_multiplexing=obd_multiplexing,
