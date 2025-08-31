@@ -1021,24 +1021,19 @@ FW_VERSIONS = {
     ],
   },
   CAR.CUPRA_BORN_MK1: { # (n) numbering firmwares as per car of same model
-    (Ecu.hybrid,      0x70a, None): [], # PDC
-    (Ecu.gateway,     0x74e, None): [], # bsm radar rear right
-    (Ecu.hud,         0x769, None): [], # Rear Cam
-    #(Ecu.unknown,     , None): [], # electric engine ecu
-    #(Ecu.parkingAdas, , None): [], # electric engine ecu
-    
-    (Ecu.combinationMeter,     0x17fc0076, None): [ # electric engine ecu
-      b'\xf1\x870EA906012EC\xf1\x892855',
-    ],
-    (Ecu.electricBrakeBooster, 0x17fc007c, None): [ # inverter
+    (Ecu.parkingAdas, 0x70a, None): [], # PDC
+    (Ecu.cornerRadar, 0x74e, None): [], # bsm radar rear right
+    (Ecu.adas, 0x769, None): [], # Rear Cam
+    (Ecu.inverter, 0x17fc007c, None): [
       b'\xf1\x871EA907121AJ\xf1\x893510\xf1\x8201S\x00',
     ],
-    (Ecu.cornerRadar,          0x17fc0357, None): [], # 
-    (Ecu.telematics,           0x17fc034f, None): [], # 
-    (Ecu.hvac,                 0x18da01f1, None): [], # 
-    (Ecu.adas,                 0x18db33f1, None): [], # 
+    
+    #(Ecu.hybrid, 0x17fc0357, None): [], # 
+    #(Ecu.telematics, 0x17fc034f, None): [], # 
+    #(Ecu.hvac, 0x18da01f1, None): [], # 
+    #(Ecu.unknown, 0x18db33f1, None): [], # 
 
-    (Ecu.engine, 0x7e0, None): [
+    (Ecu.engine, 0x17fc0076, None): [
       b'\xf1\x870EA906012EC\xf1\x892855', # CUPRA Born 2023 (1)
     ],
     (Ecu.transmission, 0x7e1, None): [],
