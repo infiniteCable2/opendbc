@@ -10,7 +10,7 @@ from opendbc.car.carlog import carlog
 from opendbc.car.structs import CarParams
 from opendbc.car.ecu_addrs import get_ecu_addrs
 from opendbc.car.fingerprints import FW_VERSIONS
-from opendbc.car.fw_query_definitions import ESSENTIAL_ECUS, AddrType, EcuAddrBusType, FwQueryConfig, LiveFwVersions, OfflineFwVersions
+from opendbc.car.fw_query_definitions import ESSENTIAL_ECUS, AddrType, EcuAddrBusType, FwQueryConfig, LiveFwVersions, OfflineFwVersions, Mask
 from opendbc.car.interfaces import get_interface_attr
 from opendbc.car.isotp_parallel_query import IsoTpParallelQuery
 

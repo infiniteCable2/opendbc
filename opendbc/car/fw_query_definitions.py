@@ -11,6 +11,7 @@ Ecu = CarParams.Ecu
 AddrType = tuple[int, int | None]
 EcuAddrBusType = tuple[int, int | None, int]
 EcuAddrSubAddr = tuple[Ecu, int, int | None]
+Mask = tuple[int, int]  # (mask, expected_value)
 
 LiveFwVersions = dict[AddrType, set[bytes]]
 OfflineFwVersions = dict[str, dict[EcuAddrSubAddr, list[bytes]]]
@@ -81,7 +82,7 @@ class StdQueries:
 
   KWP_VIN_REQUEST = b'\x21\x81'
   KWP_VIN_RESPONSE = b'\x61\x81'
-
+  
 
 @dataclass
 class Request:
