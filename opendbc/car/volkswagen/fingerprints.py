@@ -1021,9 +1021,9 @@ FW_VERSIONS = {
     ],
   },
   CAR.CUPRA_BORN_MK1: { # (n) numbering firmwares as per car of same model    
-    (Ecu.hybrid, 0x17fc0357, None): [], # 
-    (Ecu.telematics, 0x17fc034f, None): [], # 
-    (Ecu.debug, 0x17fc0376, None): [], # 
+    (Ecu.hybrid, 0x1c40014e, None): [], # 
+    (Ecu.telematics, 0x1c40014f, None): [], # 
+    (Ecu.hvac, 0x1c400157, None): [], # 
     #(Ecu.hvac, 0x18da01f1, None): [], # 
     #(Ecu.unknown, 0x18db33f1, None): [], # 
     

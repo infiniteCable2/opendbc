@@ -624,7 +624,8 @@ reqs = []
 
 # volkswagen 29 bit requests
 for bus in [0, 1, 2]:
-  # 0x17xOxxxx id with volkswagen custom offset
+  # 0x17Fxxxxx id with volkswagen custom offset
+  # 0x1C4xxxxx id with volkswagen custom offset
   reqs += [
     Request(
       #[StdQueries.TESTER_PRESENT_REQUEST, StdQueries.EXTENDED_DIAGNOSTIC_REQUEST, VOLKSWAGEN_VERSION_REQUEST_MULTI],
@@ -636,6 +637,15 @@ for bus in [0, 1, 2]:
       bus=bus,
       obd_multiplexing=False,
       filter_mask=[(0x1FFFFF00, 0x17FC0000)],
+    ),
+    Request(
+      [VOLKSWAGEN_VERSION_REQUEST_MULTI],
+      [VOLKSWAGEN_VERSION_RESPONSE],
+      whitelist_ecus=[Ecu.hybrid, Ecu.telematics, Ecu.hvac],
+      rx_offset=VOLKSWAGEN_RX_OFFSET_CANFD,
+      bus=bus,
+      obd_multiplexing=False,
+      filter_mask=[(0x1FFFFF00, 0x1C400000)],
     )
   ]
   
