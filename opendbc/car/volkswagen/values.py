@@ -645,7 +645,10 @@ FW_QUERY_CONFIG = FwQueryConfig(
     ),
   ]],
   non_essential_ecus={Ecu.eps: list(CAR)},
-  extra_ecus=[(Ecu.fwdCamera, 0x74f, None)],
+  extra_ecus=[(Ecu.fwdCamera, 0x74f, None),
+              (Ecu.parkingAdas, 0x70a, None),
+              (Ecu.cornerRadar, 0x74e, None),
+              (Ecu.adas, 0x769, None)],
   match_fw_to_car_fuzzy=match_fw_to_car_fuzzy,
 )
 
