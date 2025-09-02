@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.common.pid import PIDController
 from opendbc.car import DT_CTRL
