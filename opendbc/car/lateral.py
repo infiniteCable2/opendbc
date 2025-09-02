@@ -196,8 +196,10 @@ def apply_std_curvature_limits(apply_curvature: float, apply_curvature_last: flo
                                  
   # Lateral acceleration
   if roll: # true roll asymmetrically (need roll for panda...) -> I've sent this via custom CAN message, but prefering sensor data channel to panda with exact time frame assignment
+    assert False # not allowed
     min_curvature, max_curvature = get_max_curvature_roll(roll, v_ego)
   elif yaw_rate: # approximation by yaw rate (suited for non mathematically true curvature values with offset or similar)
+    assert False # not allowed
     min_curvature, max_curvature = get_max_curvature_yaw_rate(yaw_rate, apply_curvature, apply_curvature_last , v_ego, steer_step, override)
   else: # average raod roll for safety without true roll (allowes up to ~3.6m/s^2 (suited for curvature values with positive offsets without true loss))
     min_curvature, max_curvature = get_max_curvature_average(v_ego)
