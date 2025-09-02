@@ -70,8 +70,8 @@ class CarController(CarControllerBase):
           
           # correction is here only, but use this var to switch (no curv changing controller in controls)
           if CC.curvatureControllerActive: # PID + (car curv - VM no roll)
-            apply_curvature = actuators.curvature + (CS.out.steeringCurvature - CC.currentCurvatureNoRoll)
-            apply_curvature = self.LateralController.update(CS.out, self.VM, CC.rollDEPRECATED, apply_curvature, CC.steerLimited)
+            apply_curvature = self.LateralController.update(CS.out, self.VM, CC.rollDEPRECATED, actuators.curvature, CC.steerLimited)
+            apply_curvature = apply_curvature + (CS.out.steeringCurvature - CC.currentCurvatureNoRoll)
           else: # car curv - VM with roll
             apply_curvature = actuators.curvature + (CS.out.steeringCurvature - CC.currentCurvature)
             
