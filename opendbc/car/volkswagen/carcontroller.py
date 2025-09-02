@@ -49,7 +49,7 @@ class CarController(CarControllerBase):
     self.speed_limit_last = 0
     self.speed_limit_changed_timer = 0
     self.VM = VehicleModel(CP)
-    self.LateralController = LatControlCurvature(self.CCP.CURVATURE_PID, self.CCP.CURVATURE_LIMITS.CURVATURE_MAX, DT_CTRL/self.CCP.STEER_STEP)
+    self.LateralController = LatControlCurvature(self.CCP.CURVATURE_PID, self.CCP.CURVATURE_LIMITS.CURVATURE_MAX, 1 / (DT_CTRL * self.CCP.STEER_STEP))
 
   def update(self, CC, CC_SP, CS, now_nanos):
     actuators = CC.actuators
