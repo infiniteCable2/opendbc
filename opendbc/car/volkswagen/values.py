@@ -116,7 +116,7 @@ class CarControllerParams:
       self.STEERING_POWER_MIN      = 4     # HCA_03 minimum steering power, percentage
       self.STEERING_POWER_STEP     = 2     # HCA_03 steering power counter steps
       
-      self.CURVATURE_PID = structs.CarParams.LateralTuning.pid()
+      self.CURVATURE_PID = structs.CarParams.LateralTuning.pid.new_message()
       self.CURVATURE_PID.kpBP      = [10., 40.]
       self.CURVATURE_PID.kiBP      = [10., 40.]
       self.CURVATURE_PID.kf        = 1.
