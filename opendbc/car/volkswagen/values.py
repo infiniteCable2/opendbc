@@ -2,7 +2,7 @@ from collections import defaultdict, namedtuple
 from dataclasses import dataclass, field
 from enum import Enum, IntFlag, StrEnum
 
-from opendbc.car import Bus, CanBusBase, CarSpecs, DbcDict, PlatformConfig, Platforms, structs, uds
+from opendbc.car import Bus, CanBusBase, CarSpecs, DbcDict, PlatformConfig, Platforms, structs, uds, car
 from opendbc.car.lateral import CurvatureSteeringLimits
 from opendbc.can import CANDefine
 from opendbc.car.common.conversions import Conversions as CV
@@ -116,7 +116,7 @@ class CarControllerParams:
       self.STEERING_POWER_MIN      = 4     # HCA_03 minimum steering power, percentage
       self.STEERING_POWER_STEP     = 2     # HCA_03 steering power counter steps
       
-      self.CURVATURE_PID = structs.CarParams.LateralTuning.pid.new_message()
+      self.CURVATURE_PID = car.CarParams.LateralPIDTuning.new_message()
       self.CURVATURE_PID.kpBP      = [10., 40.]
       self.CURVATURE_PID.kiBP      = [10., 40.]
       self.CURVATURE_PID.kf        = 1.
