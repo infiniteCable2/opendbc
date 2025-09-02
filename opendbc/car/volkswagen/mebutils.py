@@ -155,7 +155,7 @@ class LatControlCurvature():
   def __init__(self, pid_params, limit, rate):
     self.pid = MultiplicativeUnwindPID((pid_params.kpBP, pid_params.kpV),
                                        (pid_params.kiBP, pid_params.kiV),
-                                       k_f=pid_params.kf, pos_limit=limit, neg_limit=-limit
+                                       k_f=pid_params.kf, pos_limit=limit, neg_limit=-limit,
                                        rate=rate)
   def reset(self):
     self.pid.reset()
