@@ -271,7 +271,7 @@ class CarState(CarStateBase, MadsCarState):
     ret.steeringPressed  = abs(ret.steeringTorque) > self.CCP.STEER_DRIVER_ALLOWANCE
     ret.steeringCurvature = -pt_cp.vl["QFK_01"]["Curvature"] * (1, -1)[int(pt_cp.vl["QFK_01"]["Curvature_VZ"])]
     
-    ret.yawRate = pt_cp.vl["ESC_50"]["Yaw_Rate"] * (1, -1)[int(pt_cp.vl["ESC_50"]["Yaw_Rate_Sign"])] * CV.DEG_TO_RAD
+    ret.yawRate = -pt_cp.vl["ESC_50"]["Yaw_Rate"] * (1, -1)[int(pt_cp.vl["ESC_50"]["Yaw_Rate_Sign"])] * CV.DEG_TO_RAD
     
     # Update gear and/or clutch position data.
     if self.CP.flags & VolkswagenFlags.ALT_GEAR:
