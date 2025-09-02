@@ -71,7 +71,7 @@ class CarController(CarControllerBase):
           # correction is here only, but use this var to switch (no curv changing controller in controls)
           if CC.curvatureControllerActive: # PID + (car curv - VM no roll)
             apply_curvature = actuators.curvature + (CS.out.steeringCurvature - CC.currentCurvatureNoRoll)
-            apply_curvature = LateralController.update(CS.out, self.VM, apply_curvature, CC.steerLimited)
+            apply_curvature = self.LateralController.update(CS.out, self.VM, apply_curvature, CC.steerLimited)
           else: # car curv - VM with roll
             apply_curvature = actuators.curvature + (CS.out.steeringCurvature - CC.currentCurvature)
             
@@ -85,7 +85,7 @@ class CarController(CarControllerBase):
           steering_power = min(max(target_power, min_power), max_power)
           
         else:
-          LateralController.reset()
+          self.LateralController.reset()
           if self.steering_power_last > 0: # keep HCA alive until steering power has reduced to zero
             hca_enabled = True
             apply_curvature = np.clip(CS.out.steeringCurvature, -self.CCP.CURVATURE_LIMITS.CURVATURE_MAX, self.CCP.CURVATURE_LIMITS.CURVATURE_MAX) # synchronize with current curvature
