@@ -68,7 +68,7 @@ class CarController(CarControllerBase):
         if CC.latActive:
           hca_enabled = True
           #actuator_curvature = actuators.curvature + (CS.out.steeringCurvature - CC.currentCurvatureNoRoll)
-          apply_curvature = LateralController.update(CS.out, self.VM, actuators.curvature, False)
+          apply_curvature = LateralController.update(CS.out, self.VM, actuators.curvature, False) if CC.curvatureControllerActive else actuators.curvature
           apply_curvature = apply_std_curvature_limits(actuators.curvature, self.apply_curvature_last, CS.out.vEgoRaw, CS.out.steeringCurvature,
                                                        CS.out.steeringPressed, self.CCP.STEER_STEP, CC.latActive, self.CCP.CURVATURE_LIMITS)
 
