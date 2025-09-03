@@ -134,6 +134,10 @@ class CarControllerParams:
         MAX_LATERAL_JERK=ISO_LATERAL_JERK,
         MAX_ANGLE_RATE=0,
       )
+      
+      self.CURVATURE_LIMITS: CurvatureSteeringLimits = CurvatureSteeringLimits(
+        0.195,  # Max curvature for steering command, m^-1
+      )
 
       if CP.flags & VolkswagenFlags.ALT_GEAR:
         self.shifter_values = can_define.dv["Gateway_73"]["GE_Fahrstufe"]
