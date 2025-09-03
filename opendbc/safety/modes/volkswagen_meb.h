@@ -203,7 +203,6 @@ static const CurvatureSteeringLimits VOLKSWAGEN_MEB_STEERING_LIMITS = {
   .curvature_to_can = 149253.7313, // 1 / 6.7e-6 rad/m to can
   .send_rate = 0.02,
   .inactive_curvature_is_zero = true,
-  .roll_to_can = 10000.0,
 };
 
 static void volkswagen_meb_rx_hook(const CANPacket_t *msg) {
@@ -310,19 +309,6 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
   
   bool tx = true;
 
-  // PANDA DATA is a custom CAN messages for internal use only, transferring roll from OP for safety checks
-  if (msg->addr == MSG_Panda_Data_01) {
-    int current_roll = (msg->data[0] | ((msg->data[1] & 0x7F) << 8));
-
-    bool current_roll_sign = GET_BIT(msg, 15U);
-    if (!current_roll_sign) {
-      current_roll *= -1;
-    }
-    
-    update_sample(&roll, current_roll);
-    tx = false;
-  }
-
   // Safety check for HCA_03 Heading Control Assist curvature
   if (msg->addr == MSG_HCA_03) {
     int desired_curvature_raw = GET_BYTES(msg, 3, 2) & 0x7FFFU;
@@ -336,7 +322,7 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
     int steer_power = (msg->data[2] >> 0) & 0x7FU;
 
     // if (steer_curvature_cmd_checks(desired_curvature_raw, steer_power, steer_req, VOLKSWAGEN_MEB_STEERING_LIMITS)) {
-    if (steer_curvature_cmd_checks_average(desired_curvature_raw, steer_req, VOLKSWAGEN_MEB_STEERING_LIMITS) || steer_power_cmd_checks(steer_power, steer_req)) {
+    if (steer_curvature_cmd_checks(desired_curvature_raw, steer_req, VOLKSWAGEN_MEB_STEERING_LIMITS) || steer_power_cmd_checks(steer_power, steer_req)) {
       tx = false;
     }
   }

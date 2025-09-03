@@ -82,7 +82,6 @@ int desired_angle_last = 0;
 struct sample_t angle_meas;         // last 6 steer angles/curvatures
 
 // for safety modes with curvature steering control
-struct sample_t roll; // last 6 roll values
 struct sample_t curvature_meas;         // last 6 steer curvatures
 int desired_curvature_last = 0;
 int desired_steer_power_last = 0;
@@ -463,7 +462,6 @@ int set_safety_hooks(uint16_t mode, uint16_t param) {
   reset_sample(&torque_driver);
   reset_sample(&angle_meas);
   reset_sample(&curvature_meas);
-  reset_sample(&roll);
 
   controls_allowed = false;
   relay_malfunction_reset();
