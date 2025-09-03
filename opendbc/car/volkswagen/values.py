@@ -2,8 +2,8 @@ from collections import defaultdict, namedtuple
 from dataclasses import dataclass, field
 from enum import Enum, IntFlag, StrEnum
 
-from opendbc.car import Bus, CanBusBase, CarSpecs, DbcDict, PlatformConfig, Platforms, structs, uds, ACCELERATION_DUE_TO_GRAVITY
-from opendbc.car.lateral import AngleSteeringLimits, ISO_LATERAL_ACCEL, ISO_LATERAL_JERK
+from opendbc.car import Bus, CanBusBase, CarSpecs, DbcDict, PlatformConfig, Platforms, structs, uds
+from opendbc.car.lateral import CurvatureSteeringLimits
 from opendbc.can import CANDefine
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.docs_definitions import CarFootnote, CarHarness, CarDocs, CarParts, Column, \
@@ -16,8 +16,6 @@ NetworkLocation = structs.CarParams.NetworkLocation
 TransmissionType = structs.CarParams.TransmissionType
 GearShifter = structs.CarState.GearShifter
 Button = namedtuple('Button', ['event_type', 'can_addr', 'can_msg', 'values'])
-
-AVERAGE_ROAD_ROLL = 0.06
 
 
 class CanBus(CanBusBase):
@@ -118,22 +116,12 @@ class CarControllerParams:
       self.STEERING_POWER_MIN      = 4     # HCA_03 minimum steering power, percentage
       self.STEERING_POWER_STEP     = 2     # HCA_03 steering power counter steps
       
-      self.CURVATURE_PID: structs.CarParams.LateralPIDTuning = structs.CarParams.LateralPIDTuning(
-        kpBP = [10., 40.],
-        kiBP = [10., 40.],
-        kf   = 1.,
-        kpV  = [0., 1.45],
-        kiV  = [0., 0.12],
-      )
-      
-      CURVATURE_LIMITS: AngleSteeringLimits = AngleSteeringLimits(
-        0.195,  # Max curvature for steering command, m^-1
-        ([], []),
-        ([], []),
-        MAX_LATERAL_ACCEL=ISO_LATERAL_ACCEL + (ACCELERATION_DUE_TO_GRAVITY * AVERAGE_ROAD_ROLL),  # ~3.6 m/s^2
-        MAX_LATERAL_JERK=ISO_LATERAL_JERK,
-        MAX_ANGLE_RATE=0,
-      )
+      self.CURVATURE_PID = structs.CarParams.LateralPIDTuning()
+      self.CURVATURE_PID.kpBP      = [10., 40.]
+      self.CURVATURE_PID.kiBP      = [10., 40.]
+      self.CURVATURE_PID.kf        = 1.
+      self.CURVATURE_PID.kpV       = [0., 1.45]
+      self.CURVATURE_PID.kiV       = [0., 0.12]
       
       self.CURVATURE_LIMITS: CurvatureSteeringLimits = CurvatureSteeringLimits(
         0.195,  # Max curvature for steering command, m^-1
