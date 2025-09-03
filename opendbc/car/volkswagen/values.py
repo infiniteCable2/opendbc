@@ -126,7 +126,7 @@ class CarControllerParams:
         kiV  = [0., 0.12],
       )
       
-      CURVATURE_LIMITS: AngleSteeringLimits = AngleSteeringLimits(
+      self.CURVATURE_LIMITS: AngleSteeringLimits = AngleSteeringLimits(
         0.195,  # Max curvature for steering command, m^-1
         ([], []),
         ([], []),
