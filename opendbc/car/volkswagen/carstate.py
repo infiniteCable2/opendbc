@@ -251,7 +251,7 @@ class CarState(CarStateBase, MadsCarState):
   def update_meb(self, pt_cp, main_cp, cam_cp, ext_cp) -> tuple[structs.CarState, structs.CarStateSP]:
     ret = structs.CarState()
     ret_sp = structs.CarStateSP()
-    
+
     # Update vehicle speed and acceleration from ABS wheel speeds.
     self.parse_wheel_speeds(ret,
       pt_cp.vl["ESC_51"]["VL_Radgeschw"],
@@ -270,16 +270,16 @@ class CarState(CarStateBase, MadsCarState):
     ret.steeringTorque   = pt_cp.vl["LH_EPS_03"]["EPS_Lenkmoment"] * (1, -1)[int(pt_cp.vl["LH_EPS_03"]["EPS_VZ_Lenkmoment"])]
     ret.steeringPressed  = abs(ret.steeringTorque) > self.CCP.STEER_DRIVER_ALLOWANCE
     ret.steeringCurvature = -pt_cp.vl["QFK_01"]["Curvature"] * (1, -1)[int(pt_cp.vl["QFK_01"]["Curvature_VZ"])]
-    
+
     ret.yawRate = pt_cp.vl["ESC_50"]["Yaw_Rate"] * (1, -1)[int(pt_cp.vl["ESC_50"]["Yaw_Rate_Sign"])] * CV.DEG_TO_RAD
-    
+
     # Update gear and/or clutch position data.
     if self.CP.flags & VolkswagenFlags.ALT_GEAR:
       ret.gearShifter = self.parse_gear_shifter(self.CCP.shifter_values.get(pt_cp.vl["Gateway_73"]["GE_Fahrstufe"], None)) # (candidate for all plattforms)
     else:
       ret.gearShifter = self.parse_gear_shifter(self.CCP.shifter_values.get(pt_cp.vl["Getriebe_11"]["GE_Fahrstufe"], None))
     drive_mode = ret.gearShifter == GearShifter.drive
-    
+
     hca_status = self.CCP.hca_status_values.get(pt_cp.vl["QFK_01"]["LatCon_HCA_Status"])
     ret.steerFaultTemporary, ret.steerFaultPermanent = self.update_hca_state(hca_status, drive_mode=drive_mode)
 
@@ -298,12 +298,13 @@ class CarState(CarStateBase, MadsCarState):
     else:
       ret.parkingBrake = pt_cp.vl["Gateway_73"]["EPB_Status"] in (1, 4) # this signal is not working for newer models
 
-    # Update door and trunk/hatch lid open status.
-    ret.doorOpen = any([pt_cp.vl["ZV_02"]["ZV_FT_offen"],
-                        pt_cp.vl["ZV_02"]["ZV_BT_offen"],
-                        pt_cp.vl["ZV_02"]["ZV_HFS_offen"],
-                        pt_cp.vl["ZV_02"]["ZV_HBFS_offen"],
-                        pt_cp.vl["ZV_02"]["ZV_HD_offen"]])
+    if not (self.CP.flags & VolkswagenFlags.MQB_EVO):
+      # Update door and trunk/hatch lid open status.
+      ret.doorOpen = any([pt_cp.vl["ZV_02"]["ZV_FT_offen"],
+                          pt_cp.vl["ZV_02"]["ZV_BT_offen"],
+                          pt_cp.vl["ZV_02"]["ZV_HFS_offen"],
+                          pt_cp.vl["ZV_02"]["ZV_HBFS_offen"],
+                          pt_cp.vl["ZV_02"]["ZV_HD_offen"]])
 
     # Update seatbelt fastened status.
     ret.seatbeltUnlatched = pt_cp.vl["Airbag_02"]["AB_Gurtschloss_FA"] != 3
@@ -361,7 +362,7 @@ class CarState(CarStateBase, MadsCarState):
     self.speed_limit_mgr.update(ret.vEgo, psd_04_values, psd_05_values, psd_06_values, vze_01_values, raining)
     ret.cruiseState.speedLimit = self.speed_limit_mgr.get_speed_limit()
     ret.cruiseState.speedLimitPredicative = self.speed_limit_mgr.get_speed_limit_predicative()
-    
+
     # Update button states for turn signals and ACC controls, capture all ACC button state/config for passthrough
     # turn signal effect
     self.left_blinker_active  = bool(pt_cp.vl["Blinkmodi_02"]["BM_links"])
@@ -376,9 +377,9 @@ class CarState(CarStateBase, MadsCarState):
     main_cruise_latching = not bool(pt_cp.vl["GRA_ACC_01"]["GRA_Typ_Hauptschalter"])
     buttons = self.CCP.BUTTONS_ALT if main_cruise_latching else self.CCP.BUTTONS
     ret.buttonEvents = self.create_button_events(pt_cp, buttons)
-    
+
     self.gra_stock_values = pt_cp.vl["GRA_ACC_01"]
-    
+
     # Additional safety checks performed in CarInterface.
     ret.espDisabled = bool(pt_cp.vl["ESP_21"]["ESP_Tastung_passiv"]) # this is also true for ESC Sport mode
     ret.espActive   = bool(pt_cp.vl["ESP_21"]["ESP_Eingriff"])
@@ -396,7 +397,7 @@ class CarState(CarStateBase, MadsCarState):
       ret.batteryDetails.soc          = ret.batteryDetails.charge / ret.batteryDetails.capacity * 100 if ret.batteryDetails.capacity > 0 else 0 # battery SoC in percent
       ret.batteryDetails.power        = main_cp.vl["MEB_HVEM_01"]["Engine_Power"] # engine power output
       ret.batteryDetails.temperature  = main_cp.vl["DCDC_03"]["DC_Temperatur"] # dcdc converter temperature
-      
+
     MadsCarState.update_mads(self, ret, pt_cp, hca_status)
 
     self.frame += 1
@@ -417,7 +418,7 @@ class CarState(CarStateBase, MadsCarState):
     perm_fault = drive_mode and hca_status == "DISABLED" or (self.eps_init_complete and hca_status == "FAULT")
     temp_fault = drive_mode and hca_status in ("REJECTED", "PREEMPTED") or not self.eps_init_complete
     return temp_fault, perm_fault
-    
+
   def update_acc_fault(self, acc_fault, parking_brake=False, drive_mode=True, recovery_frames_max=100):
     # Ignore FAULT when not in drive mode and parked
     # do not show misleading error during ignition in parked state

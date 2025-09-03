@@ -369,6 +369,12 @@ FW_VERSIONS = {
       b'\xf1\x875Q0907572S \xf1\x890780',
     ],
   },
+  CAR.VOLKSWAGEN_GOLF_MK8: {
+    (Ecu.fwdRadar, 0x757, None): [
+      b'\xf1\x875WA907572B \xf1\x890395',
+      b'\xf1\x875WA907572C \xf1\x890461',
+    ],
+  },
   CAR.VOLKSWAGEN_JETTA_MK6: {
     (Ecu.srs, 0x715, None): [
       b'\xf1\x875C0959655M \xf1\x890726\xf1\x82\t00NB1108--------24',
@@ -1020,7 +1026,7 @@ FW_VERSIONS = {
       b'\xf1\x875Q0907572R \xf1\x890771',
     ],
   },
-  CAR.CUPRA_BORN_MK1: { # (n) numbering firmwares as per car of same model        
+  CAR.CUPRA_BORN_MK1: { # (n) numbering firmwares as per car of same model
     (Ecu.inverter, 0x17fc007c, None): [
       b'\xf1\x871EA907121AJ\xf1\x893510\xf1\x8201S\x00', # CUPRA Born 2023 (1)
     ],

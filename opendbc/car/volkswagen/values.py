@@ -36,7 +36,7 @@ class CanBus(CanBusBase):
     # NetworkLocation.fwdCamera: radar-camera object fusion CAN
     # NetworkLocation.gateway: powertrain CAN
     return self.offset + 1
-    
+
   @property
   def main(self) -> int:
     return self.offset + 1
@@ -115,7 +115,7 @@ class CarControllerParams:
       self.STEERING_POWER_MAX      = 50    # HCA_03 maximum steering power, percentage
       self.STEERING_POWER_MIN      = 4     # HCA_03 minimum steering power, percentage
       self.STEERING_POWER_STEP     = 2     # HCA_03 steering power counter steps
-      
+
       self.CURVATURE_LIMITS: CurvatureSteeringLimits = CurvatureSteeringLimits(
         0.195,  # Max curvature for steering command, m^-1
       )
@@ -124,7 +124,7 @@ class CarControllerParams:
         self.shifter_values = can_define.dv["Gateway_73"]["GE_Fahrstufe"]
       else:
         self.shifter_values = can_define.dv["Getriebe_11"]["GE_Fahrstufe"]
-      
+
       self.hca_status_values = can_define.dv["QFK_01"]["LatCon_HCA_Status"]
 
       BASE_BUTTONS = [
@@ -227,7 +227,8 @@ class VolkswagenFlags(IntFlag):
   PQ = 2
   MEB = 64
   MEB_GEN2 = 128
-  
+  MQB_EVO = 256
+
 
 
 @dataclass
@@ -371,6 +372,17 @@ class CAR(Platforms):
     VolkswagenCarSpecs(mass=1397, wheelbase=2.62),
     chassis_codes={"5G", "AU", "BA", "BE"},
     wmis={WMI.VOLKSWAGEN_MEXICO_CAR, WMI.VOLKSWAGEN_EUROPE_CAR},
+  )
+  VOLKSWAGEN_GOLF_MK8 = VolkswagenMEBPlatformConfig(
+    [
+      VWCarDocs("Volkswagen Golf 2021-25"),
+      VWCarDocs("Volkswagen Golf GTI 2021-25"),
+      VWCarDocs("Volkswagen Golf R 2021-25"),
+    ],
+    VolkswagenCarSpecs(mass=1360, wheelbase=2.64),
+    chassis_codes={"CD"},  # TODO: incomplete
+    wmis={WMI.VOLKSWAGEN_EUROPE_CAR},  # TODO: incomplete
+    flags=VolkswagenFlags.MQB_EVO,
   )
   VOLKSWAGEN_JETTA_MK6 = VolkswagenPQPlatformConfig(
     [VWCarDocs("Volkswagen Jetta 2015-18")],
