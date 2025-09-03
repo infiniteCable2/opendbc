@@ -157,7 +157,7 @@ def apply_iso_curvature_limits(apply_curvature: float, apply_curvature_last: flo
   if not lat_active:
     new_apply_curvature = curvature
 
-  return float(np.clip(new_apply_curvature, -limits.ANGLE_LIMITS.STEER_ANGLE_MAX, limits.ANGLE_LIMITS.STEER_ANGLE_MAX))
+  return float(np.clip(new_apply_curvature, -limits.STEER_ANGLE_MAX, limits.STEER_ANGLE_MAX))
 
 
 def common_fault_avoidance(fault_condition: bool, request: bool, above_limit_frames: int,
