@@ -112,6 +112,7 @@ def create_acc_buttons_control(packer, bus, gra_stock_values, cancel=False, resu
 
 def create_capacitive_wheel_touch(packer, bus, lat_active, klr_stock_values):
   values = {s: klr_stock_values[s] for s in [
+    "COUNTER",
     "KLR_Touchintensitaet_1",
     "KLR_Touchintensitaet_2",
     "KLR_Touchintensitaet_3",
