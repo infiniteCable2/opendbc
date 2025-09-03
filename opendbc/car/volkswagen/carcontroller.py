@@ -230,7 +230,7 @@ class CarController(CarControllerBase):
         hud_alert = self.CCP.LDW_MESSAGES["laneAssistTakeOver"]
 
       if self.CP.flags & VolkswagenFlags.MEB:
-        sound_alert = self.CCP.LDW_SOUNDS["Beep"] if hud_alert == self.CCP.LDW_MESSAGES["laneAssistTakeOver"] else self.CCP.LDW_SOUNDS["None"]
+        sound_alert = self.CCP.LDW_SOUNDS["Chime"] if hud_alert == self.CCP.LDW_MESSAGES["laneAssistTakeOver"] else self.CCP.LDW_SOUNDS["None"]
         can_sends.append(self.CCS.create_lka_hud_control(self.packer_pt, self.CAN.pt, CS.ldw_stock_values, CC.latActive,
                                                          CS.out.steeringPressed, hud_alert, hud_control, sound_alert))
       else:

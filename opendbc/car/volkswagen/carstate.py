@@ -6,14 +6,18 @@ from opendbc.car.volkswagen.values import DBC, CanBus, NetworkLocation, Transmis
                                                       CarControllerParams, VolkswagenFlags
 from opendbc.car.volkswagen.speed_limit_manager import SpeedLimitManager
 
+from opendbc.sunnypilot.car.volkswagen.mads import MadsCarState
+
 ButtonType = structs.CarState.ButtonEvent.Type
 
 
-class CarState(CarStateBase):
+class CarState(CarStateBase, MadsCarState):
   def __init__(self, CP, CP_SP):
     super().__init__(CP, CP_SP)
+    MadsCarState.__init__(self, CP, CP_SP)
     self.frame = 0
     self.eps_init_complete = False
+    self.cruise_recovery_timer = 0
     self.CCP = CarControllerParams(CP)
     self.button_states = {button.event_type: False for button in self.CCP.BUTTONS}
     self.esp_hold_confirmation = False
@@ -392,6 +396,8 @@ class CarState(CarStateBase):
       ret.batteryDetails.soc          = ret.batteryDetails.charge / ret.batteryDetails.capacity * 100 if ret.batteryDetails.capacity > 0 else 0 # battery SoC in percent
       ret.batteryDetails.power        = main_cp.vl["MEB_HVEM_01"]["Engine_Power"] # engine power output
       ret.batteryDetails.temperature  = main_cp.vl["DCDC_03"]["DC_Temperatur"] # dcdc converter temperature
+      
+    MadsCarState.update_mads(self, ret, pt_cp, hca_status)
 
     self.frame += 1
     return ret, ret_sp
@@ -412,10 +418,16 @@ class CarState(CarStateBase):
     temp_fault = drive_mode and hca_status in ("REJECTED", "PREEMPTED") or not self.eps_init_complete
     return temp_fault, perm_fault
     
-  def update_acc_fault(self, acc_fault, parking_brake=False, drive_mode=True):
+  def update_acc_fault(self, acc_fault, parking_brake=False, drive_mode=True, recovery_frames_max=100):
     # Ignore FAULT when not in drive mode and parked
     # do not show misleading error during ignition in parked state
-    fault = False if parking_brake and not drive_mode else acc_fault
+    # grant a short time to recover a normal cruise state
+    fault = acc_fault
+    if parking_brake and not drive_mode:
+      fault = False
+      self.cruise_recovery_timer = self.frame
+    elif self.frame - self.cruise_recovery_timer < recovery_frames_max:
+      fault = False
     return fault
 
   @staticmethod
