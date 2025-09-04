@@ -135,7 +135,9 @@ class CarInterface(CarInterfaceBase):
       ret.startAccel = 0.85 # ~0.85 m/s^2 for brake release
       ret.vEgoStarting = 0.5 # minimum ~0.5 m/s acc starting state is neccessary to not fault the car
       ret.vEgoStopping = 0.1
-      ret.stopAccel = -1.1 # stock stopped accel
+      ret.stopAccel = -0.55 # try a good balance, maybe new gen car faults only for very low -1.1 stop accel
+      #ret.stopAccel = -0.2 # stock stopping accel for newer gen car, stopped accel is volkswagen neutral value
+      #ret.stopAccel = -1.1 # stock stopped accel
     else:
       ret.vEgoStarting = 0.1
       ret.vEgoStopping = 0.5
