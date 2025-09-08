@@ -223,7 +223,7 @@ def create_acc_accel_control(packer, bus, CP, acc_type, acc_enabled, upper_jerk,
 
   if CP.flags & VolkswagenFlags.MEB_GEN2:
     values.update({
-      "SET_ME_0x2FE": 0x2FE,
+      "SET_ME_0x2FE": 0x2FE, # unclear if neccessary
     })
 
   commands.append(packer.make_can_msg("ACC_18", bus, values))
