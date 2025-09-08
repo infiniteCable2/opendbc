@@ -25,6 +25,7 @@ class CarState(CarStateBase, MadsCarState):
     self.eps_stock_values = False
     self.curvature = 0.
     self.speed_limit_mgr = SpeedLimitManager(CP, speed_limit_max_kph=120, predicative=True)
+    self.force_rhd_for_bsm = False
 
   def update_button_enable(self, buttonEvents: list[structs.CarState.ButtonEvent]):
     if not self.CP.pcmCruise:
@@ -271,7 +272,7 @@ class CarState(CarStateBase, MadsCarState):
     ret.steeringPressed  = abs(ret.steeringTorque) > self.CCP.STEER_DRIVER_ALLOWANCE
     ret.steeringCurvature = -pt_cp.vl["QFK_01"]["Curvature"] * (1, -1)[int(pt_cp.vl["QFK_01"]["Curvature_VZ"])]
     
-    ret.yawRate = pt_cp.vl["ESC_50"]["Yaw_Rate"] * (1, -1)[int(pt_cp.vl["ESC_50"]["Yaw_Rate_Sign"])] * CV.DEG_TO_RAD
+    ret.yawRate = -pt_cp.vl["ESC_50"]["Yaw_Rate"] * (1, -1)[int(pt_cp.vl["ESC_50"]["Yaw_Rate_Sign"])] * CV.DEG_TO_RAD
     
     # Update gear and/or clutch position data.
     if self.CP.flags & VolkswagenFlags.ALT_GEAR:
@@ -311,11 +312,12 @@ class CarState(CarStateBase, MadsCarState):
     # Consume blind-spot monitoring info/warning LED states, if available.
     # Infostufe: BSM LED on, Warnung: BSM LED flashing
     if self.CP.enableBsm:
-      # TODO get side assignment
       bsm_bus = pt_cp if self.CP.flags & VolkswagenFlags.MEB_GEN2 else ext_cp
-      #bsm_bus = pt_cp if "MEB_Side_Assist_01" in pt_cp.vl else ext_cp # do this if not differentiable by model years
-      ret.leftBlindspot  = bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Info_Driver"]) or bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Warn_Driver"])
-      ret.rightBlindspot = bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Info_Passenger"]) or bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Warn_Passenger"])
+      blindspot_driver    = bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Info_Driver"]) or bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Warn_Driver"])
+      blindspot_passenger = bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Info_Passenger"]) or bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Warn_Passenger"])
+      car_is_lhd = True if not self.force_rhd_for_bsm else False # TODO
+      ret.leftBlindspot  = blindspot_driver if car_is_lhd else blindspot_passenger
+      ret.rightBlindspot = blindspot_passenger if car_is_lhd else blindspot_driver
 
     # Consume factory LDW data relevant for factory SWA (Lane Change Assist)
     # and capture it for forwarding to the blind spot radar controller

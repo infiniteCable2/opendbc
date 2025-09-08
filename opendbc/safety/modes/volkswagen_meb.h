@@ -335,7 +335,8 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
     bool steer_req = (((msg->data[1] >> 4) & 0x0FU) == 4U);
     int steer_power = (msg->data[2] >> 0) & 0x7FU;
 
-    if (steer_curvature_cmd_checks(desired_curvature_raw, steer_power, steer_req, VOLKSWAGEN_MEB_STEERING_LIMITS)) {
+    // if (steer_curvature_cmd_checks(desired_curvature_raw, steer_power, steer_req, VOLKSWAGEN_MEB_STEERING_LIMITS)) {
+    if (steer_curvature_cmd_checks_average(desired_curvature_raw, steer_req, VOLKSWAGEN_MEB_STEERING_LIMITS) || steer_power_cmd_checks(steer_power, steer_req)) {
       tx = false;
     }
   }
