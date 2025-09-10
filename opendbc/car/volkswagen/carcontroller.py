@@ -54,7 +54,9 @@ class CarController(CarControllerBase):
       else None
     )
     self.LeadController = LeadControllerE2E()
-
+    self.lead_distance = 0
+    self.has_lead = False
+    
   def update(self, CC, CC_SP, CS, now_nanos):
     actuators = CC.actuators
     hud_control = CC.hudControl
@@ -200,16 +202,16 @@ class CarController(CarControllerBase):
           
           self.LeadController.update()
           if not hud_control.leadVisible and self.LeadController.is_lead_present()
-            has_lead      = True
-            lead_distance = self.LeadController.get_distance()
+            self.has_lead      = True
+            seld.lead_distance = self.LeadController.get_distance()
           else:
-            has_lead      = hud_control.leadVisible
-            lead_distance = hud_control.leadDistance
+            self.has_lead      = hud_control.leadVisible
+            self.lead_distance = hud_control.leadDistance
 
           critical_state = hud_control.visualAlert == VisualAlert.fcw
-          upper_control_limit, lower_control_limit = get_long_control_limits(CC.enabled, CS.out.vEgo, hud_control.setSpeed, lead_distance, has_lead, critical_state)
+          upper_control_limit, lower_control_limit = get_long_control_limits(CC.enabled, CS.out.vEgo, hud_control.setSpeed, self.lead_distance, self.has_lead, critical_state)
           self.long_jerk_up_last, self.long_jerk_down_last, self.long_dy_up_last, self.long_dy_down_last = get_long_jerk_limits(CC.enabled, long_override,
-                                                                                                                                lead_distance, has_lead,
+                                                                                                                                self.lead_distance, self.has_lead,
                                                                                                                                 accel, self.accel_last, self.long_jerk_up_last,
                                                                                                                                 self.long_jerk_down_last, self.long_dy_up_last,
                                                                                                                                 self.long_dy_down_last,
@@ -263,7 +265,7 @@ class CarController(CarControllerBase):
           fcw_alert = hud_control.visualAlert == VisualAlert.fcw
           show_distance_bars = self.frame - self.distance_bar_frame < 400
           gap = max(8, CS.out.vEgo * hud_control.leadFollowTime)
-          distance = max(8, hud_control.leadDistance) if hud_control.leadDistance != 0 else 0
+          distance = max(8, self.lead_distance) if self.lead_distance != 0 else 0
           acc_hud_status = self.CCS.acc_hud_status_value(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled,
                                                          CC.cruiseControl.override or CS.out.gasPressed)
           
@@ -277,7 +279,7 @@ class CarController(CarControllerBase):
           acc_hud_event = self.CCS.acc_hud_event(acc_hud_status, CS.esp_hold_confirmation, sl_predicative_active, sl_active)
           
           can_sends.append(self.CCS.create_acc_hud_control(self.packer_pt, self.CAN.pt, acc_hud_status, hud_control.setSpeed * CV.MS_TO_KPH,
-                                                           hud_control.leadVisible, hud_control.leadDistanceBars + 1, show_distance_bars,
+                                                           self.has_lead, hud_control.leadDistanceBars + 1, show_distance_bars,
                                                            CS.esp_hold_confirmation, distance, gap, fcw_alert, acc_hud_event, speed_limit))
 
         else:
