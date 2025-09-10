@@ -8,6 +8,7 @@ from opendbc.car.interfaces import CarControllerBase
 from opendbc.car.volkswagen import mqbcan, pqcan, mebcan, pandacan
 from opendbc.car.volkswagen.values import CanBus, CarControllerParams, VolkswagenFlags
 from opendbc.car.volkswagen.mebutils import get_long_jerk_limits, get_long_control_limits, map_speed_to_acc_tempolimit, LatControlCurvature
+from opendbc.car.volkswagen.lead_controller_e2e import LeadControllerE2E
 
 VisualAlert = structs.CarControl.HUDControl.VisualAlert
 LongCtrlState = structs.CarControl.Actuators.LongControlState
@@ -52,6 +53,7 @@ class CarController(CarControllerBase):
       if (CP.flags & VolkswagenFlags.MEB)
       else None
     )
+    self.LeadController = LeadControllerE2E()
 
   def update(self, CC, CC_SP, CS, now_nanos):
     actuators = CC.actuators
@@ -195,11 +197,19 @@ class CarController(CarControllerBase):
 
           self.long_disabled_counter = min(self.long_disabled_counter + 1, 5) if not CC.enabled else 0
           long_disabling = not CC.enabled and self.long_disabled_counter < 5
+          
+          self.LeadController.update()
+          if not hud_control.leadVisible and self.LeadController.has_lead()
+            has_lead      = True
+            lead_distance = self.LeadController.get_distance()
+          else:
+            has_lead      = hud_control.leadVisible
+            lead_distance = hud_control.leadDistance
 
           critical_state = hud_control.visualAlert == VisualAlert.fcw
-          upper_control_limit, lower_control_limit = get_long_control_limits(CC.enabled, CS.out.vEgo, hud_control.setSpeed, hud_control.leadDistance, hud_control.leadVisible, critical_state)
+          upper_control_limit, lower_control_limit = get_long_control_limits(CC.enabled, CS.out.vEgo, hud_control.setSpeed, lead_distance, has_lead, critical_state)
           self.long_jerk_up_last, self.long_jerk_down_last, self.long_dy_up_last, self.long_dy_down_last = get_long_jerk_limits(CC.enabled, long_override,
-                                                                                                                                hud_control.leadDistance, hud_control.leadVisible,
+                                                                                                                                lead_distance, has_lead,
                                                                                                                                 accel, self.accel_last, self.long_jerk_up_last,
                                                                                                                                 self.long_jerk_down_last, self.long_dy_up_last,
                                                                                                                                 self.long_dy_down_last,
