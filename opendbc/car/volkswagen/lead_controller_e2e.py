@@ -6,14 +6,13 @@ STOP_SPEED_THRESHOLD = 0.5 # m/s
 class LeadControllerE2E():
   def __init__(self):
     self.sm = messaging.SubMaster(['modelV2'])
-    self.distance = np.inf
-    self.has_lead = False
+    self.reset()
 
   def reset(self):
     self.distance = np.inf
     self.has_lead = False
     
-  def has_lead(self):
+  def is_lead_present(self):
     return self.has_lead
     
   def get_distance(self):
@@ -42,7 +41,7 @@ class LeadControllerE2E():
     stop_idx = below_thresh[0]
 
     dt = np.diff(t)
-    v_mid = v[:-1]
+    v_mid = 0.5 * (v[:-1] + v[1:])
 
     valid_len = min(stop_idx, len(dt))
     self.distance = np.sum(v_mid[:valid_len] * dt[:valid_len])
