@@ -199,7 +199,7 @@ class CarController(CarControllerBase):
           long_disabling = not CC.enabled and self.long_disabled_counter < 5
           
           self.LeadController.update()
-          if not hud_control.leadVisible and self.LeadController.has_lead()
+          if not hud_control.leadVisible and self.LeadController.is_lead_present()
             has_lead      = True
             lead_distance = self.LeadController.get_distance()
           else:
