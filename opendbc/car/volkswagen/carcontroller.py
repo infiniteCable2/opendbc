@@ -262,7 +262,7 @@ class CarController(CarControllerBase):
     if hud_control.leadDistanceBars != self.lead_distance_bars_last:
       self.distance_bar_frame = self.frame
 
-    if self.frame % 300:
+    if self.frame % 300 == 0:
       self.lead_type = self.lead_type + 1 if self.lead_type < 7 else 0
     
     if self.frame % self.CCP.ACC_HUD_STEP == 0 and self.CP.openpilotLongitudinalControl:
@@ -286,7 +286,7 @@ class CarController(CarControllerBase):
           
           can_sends.append(self.CCS.create_acc_hud_control(self.packer_pt, self.CAN.pt, acc_hud_status, hud_control.setSpeed * CV.MS_TO_KPH,
                                                            True, self.lead_type, hud_control.leadDistanceBars + 1, show_distance_bars,
-                                                           CS.esp_hold_confirmation, distance, gap, fcw_alert, acc_hud_event, speed_limit))
+                                                           CS.esp_hold_confirmation, 1, gap, fcw_alert, acc_hud_event, speed_limit))
 
         else:
           lead_distance = 0
