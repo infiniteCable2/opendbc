@@ -281,7 +281,7 @@ def get_desired_gap(distance_bars, desired_gap, current_gap_signal):
   return gap
 
 
-def create_acc_hud_control(packer, bus, acc_control, set_speed, lead_visible, distance_bars, show_distance_bars, esp_hold, distance, desired_gap, fcw_alert, acc_event, speed_limit):
+def create_acc_hud_control(packer, bus, acc_control, set_speed, lead_visible, lead_type, distance_bars, show_distance_bars, esp_hold, distance, desired_gap, fcw_alert, acc_event, speed_limit):
 
   values = {
     "ACC_Status_ACC":                acc_control,
@@ -295,7 +295,7 @@ def create_acc_hud_control(packer, bus, acc_control, set_speed, lead_visible, di
     "ACC_Abstandsindex_02":          569, # seems to be default for MEB but is not static in every case
     "ACC_EGO_Fahrzeug":              2 if fcw_alert and acc_control in (ACC_HUD_ACTIVE, ACC_HUD_OVERRIDE) else (1 if acc_control == ACC_HUD_ACTIVE else 0), # red car warn symbol for fcw
     "Lead_Type_Detected":            1 if lead_visible else 0, # object should be displayed
-    "Lead_Type":                     3 if lead_visible else 0, # displaying a car
+    "Lead_Type":                     lead_type if lead_visible else 0, # displaying a car (3)
     "Lead_Distance":                 distance if lead_visible else 0, # hud distance of object
     "ACC_Enabled":                   1 if acc_control in (ACC_HUD_ACTIVE, ACC_HUD_OVERRIDE) else 0,
     "ACC_Standby_Override":          1 if acc_control != ACC_HUD_ACTIVE else 0,
