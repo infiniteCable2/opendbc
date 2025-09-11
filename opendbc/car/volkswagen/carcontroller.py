@@ -8,7 +8,6 @@ from opendbc.car.interfaces import CarControllerBase
 from opendbc.car.volkswagen import mqbcan, pqcan, mebcan, pandacan
 from opendbc.car.volkswagen.values import CanBus, CarControllerParams, VolkswagenFlags
 from opendbc.car.volkswagen.mebutils import get_long_jerk_limits, get_long_control_limits, map_speed_to_acc_tempolimit, LatControlCurvature
-from opendbc.car.volkswagen.lead_controller_e2e import LeadControllerE2E
 from opendbc.car.common.pid import PIDController
 
 VisualAlert = structs.CarControl.HUDControl.VisualAlert
@@ -53,10 +52,6 @@ class CarController(CarControllerBase):
       if (CP.flags & VolkswagenFlags.MEB)
       else None
     )
-    self.LeadController = LeadControllerE2E()
-    self.lead_distance = 0
-    self.has_lead = False
-    self.lead_type = 0
     
   def update(self, CC, CC_SP, CS, now_nanos):
     actuators = CC.actuators
@@ -182,9 +177,6 @@ class CarController(CarControllerBase):
       self.gra_down = True if set_speed > actuator_speed and self.gra_enabled else False
     
     # **** Acceleration Controls ******************************************** #
-
-    if self.frame % 20 == 0 and self.CP.flags & VolkswagenFlags.MEB:
-      self.LeadController.update()
     
     if self.frame % self.CCP.ACC_CONTROL_STEP == 0 and self.CP.openpilotLongitudinalControl:
       if not self.long_cruise_control:
@@ -203,22 +195,14 @@ class CarController(CarControllerBase):
 
           self.long_disabled_counter = min(self.long_disabled_counter + 1, 5) if not CC.enabled else 0
           long_disabling = not CC.enabled and self.long_disabled_counter < 5
-          
-          if not hud_control.leadVisible and self.LeadController.is_lead_present():
-            self.has_lead      = True
-            self.lead_distance = self.LeadController.get_distance()
-            self.lead_type     = 1 # human
-          else:
-            self.has_lead      = hud_control.leadVisible
-            self.lead_distance = hud_control.leadDistance
-            self.lead_type     = 3 # car
 
-          critical_state = hud_control.visualAlert == VisualAlert.fcw
+          #critical_state = hud_control.visualAlert == VisualAlert.fcw
           upper_control_limit = 0.0625
           lower_control_limit = 0.048
           jerk_raw = self.jerk_control.update(accel - self.accel_last)
           upper_jerk = LONG_JERK_MIN if long_override else (np.clip(jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw > 0 else LONG_JERK_MIN)
           lower_jerk = LONG_JERK_MIN if long_override else (np.clip(-jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw < 0 else LONG_JERK_MIN)
+          
           acc_control = self.CCS.acc_control_value(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, long_override)          
           acc_hold_type = self.CCS.acc_hold_type(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, starting, stopping,
                                                  CS.esp_hold_confirmation, long_override, long_override_begin, long_disabling)
@@ -266,7 +250,7 @@ class CarController(CarControllerBase):
           fcw_alert = hud_control.visualAlert == VisualAlert.fcw
           show_distance_bars = self.frame - self.distance_bar_frame < 400
           gap = max(8, CS.out.vEgo * hud_control.leadFollowTime)
-          distance = max(8, self.lead_distance) if self.lead_distance != 0 else 0
+          distance = max(8, hud_control.leadDistance) if hud_control.leadDistance != 0 else 0
           acc_hud_status = self.CCS.acc_hud_status_value(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled,
                                                          CC.cruiseControl.override or CS.out.gasPressed)
           
@@ -280,7 +264,7 @@ class CarController(CarControllerBase):
           acc_hud_event = self.CCS.acc_hud_event(acc_hud_status, CS.esp_hold_confirmation, sl_predicative_active, sl_active)
           
           can_sends.append(self.CCS.create_acc_hud_control(self.packer_pt, self.CAN.pt, acc_hud_status, hud_control.setSpeed * CV.MS_TO_KPH,
-                                                           self.has_lead, self.lead_type, hud_control.leadDistanceBars + 1, show_distance_bars,
+                                                           hud_control.leadVisible, hud_control.leadDistanceBars + 1, show_distance_bars,
                                                            CS.esp_hold_confirmation, distance, gap, fcw_alert, acc_hud_event, speed_limit))
 
         else:
