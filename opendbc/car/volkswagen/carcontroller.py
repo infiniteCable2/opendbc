@@ -31,7 +31,7 @@ class CarController(CarControllerBase):
     self.steering_power_last = 0
     self.steering_offset = 0.
     self.accel_last = 0.
-    self.jerk_control = PIDController(0.8, 0.1, k_f=1., pos_limit=LONG_JERK_MAX, neg_limit=-LONG_JERK_MAX, rate=(1 / (DT_CTRL * self.CCP.ACC_CONTROL_STEP))
+    self.jerk_control = PIDController(0.8, 0.1, pos_limit=LONG_JERK_MAX, neg_limit=-LONG_JERK_MAX, rate=(1 / (DT_CTRL * self.CCP.ACC_CONTROL_STEP))
     self.long_override_counter = 0
     self.long_disabled_counter = 0
     self.gra_acc_counter_last = None
