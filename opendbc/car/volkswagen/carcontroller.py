@@ -14,6 +14,8 @@ from opendbc.car.common.pid import PIDController
 VisualAlert = structs.CarControl.HUDControl.VisualAlert
 LongCtrlState = structs.CarControl.Actuators.LongControlState
 
+LONG_JERK_MIN = 0.5
+LONG_JERK_MAX = 5.0
 
 class CarController(CarControllerBase):
   def __init__(self, dbc_names, CP, CP_SP):
@@ -30,7 +32,7 @@ class CarController(CarControllerBase):
     self.steering_power_last = 0
     self.steering_offset = 0.
     self.accel_last = 0.
-    self.jerk_control = PIDController(0.8, 0.1, k_f=1, pos_limit=5.0, neg_limit=0.5, rate=(1 / (DT_CTRL * self.CCP.ACC_CONTROL_STEP))
+    self.jerk_control = PIDController(0.8, 0.1, k_f=1., pos_limit=LONG_JERK_MAX, neg_limit=-LONG_JERK_MAX, rate=(1 / (DT_CTRL * self.CCP.ACC_CONTROL_STEP))
     self.long_override_counter = 0
     self.long_disabled_counter = 0
     self.gra_acc_counter_last = None
@@ -215,8 +217,8 @@ class CarController(CarControllerBase):
           upper_control_limit = 0.0625
           lower_control_limit = 0.048
           jerk_raw = self.jerk_control.update(accel - self.accel_last)
-          upper_jerk = 0.5 if long_override else (np.clip(jerk_raw, 0.5, 5.0) if jerk_raw > 0 else 0.5)
-          lower_jerk = 0.5 if long_override else (np.clip(-jerk_raw, 0.5, 5.0) if jerk_raw < 0 else 0.5)
+          upper_jerk = LONG_JERK_MIN if long_override else (np.clip(jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw > 0 else LONG_JERK_MIN)
+          lower_jerk = LONG_JERK_MIN if long_override else (np.clip(-jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw < 0 else LONG_JERK_MIN)
           acc_control = self.CCS.acc_control_value(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, long_override)          
           acc_hold_type = self.CCS.acc_hold_type(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, starting, stopping,
                                                  CS.esp_hold_confirmation, long_override, long_override_begin, long_disabling)
