@@ -203,7 +203,7 @@ class CarController(CarControllerBase):
           self.LeadController.update()
           if not hud_control.leadVisible and self.LeadController.is_lead_present():
             self.has_lead      = True
-            seld.lead_distance = self.LeadController.get_distance()
+            self.lead_distance = self.LeadController.get_distance()
           else:
             self.has_lead      = hud_control.leadVisible
             self.lead_distance = hud_control.leadDistance
