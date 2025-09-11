@@ -44,5 +44,5 @@ class LeadControllerE2E():
     v_mid = 0.5 * (v[:-1] + v[1:])
 
     valid_len = min(stop_idx, len(dt))
-    self.distance = np.sum(v_mid[:valid_len] * dt[:valid_len])
+    self.distance = max(1, np.sum(v_mid[:valid_len] * dt[:valid_len]))
     self.has_lead = True
