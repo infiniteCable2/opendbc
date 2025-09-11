@@ -35,8 +35,7 @@ class LeadControllerE2E():
     below_thresh = np.where(v < STOP_SPEED_THRESHOLD)[0]
 
     if len(below_thresh) == 0:
-      self.distance = 0
-      self.has_lead = True
+      self.reset()
       return
 
     stop_idx = below_thresh[0]
