@@ -182,6 +182,9 @@ class CarController(CarControllerBase):
       self.gra_down = True if set_speed > actuator_speed and self.gra_enabled else False
     
     # **** Acceleration Controls ******************************************** #
+
+    if self.frame % 20 == 0 and self.CP.flags & VolkswagenFlags.MEB:
+      self.LeadController.update()
     
     if self.frame % self.CCP.ACC_CONTROL_STEP == 0 and self.CP.openpilotLongitudinalControl:
       if not self.long_cruise_control:
@@ -201,11 +204,10 @@ class CarController(CarControllerBase):
           self.long_disabled_counter = min(self.long_disabled_counter + 1, 5) if not CC.enabled else 0
           long_disabling = not CC.enabled and self.long_disabled_counter < 5
           
-          self.LeadController.update()
           if not hud_control.leadVisible and self.LeadController.is_lead_present():
             self.has_lead      = True
             self.lead_distance = self.LeadController.get_distance()
-            self.lead_type     = 1
+            self.lead_type     = 1 # human
           else:
             self.has_lead      = hud_control.leadVisible
             self.lead_distance = hud_control.leadDistance
