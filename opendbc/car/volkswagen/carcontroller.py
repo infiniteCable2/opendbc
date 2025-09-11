@@ -56,6 +56,7 @@ class CarController(CarControllerBase):
     self.LeadController = LeadControllerE2E()
     self.lead_distance = 0
     self.has_lead = False
+    self.lead_type = 0
     
   def update(self, CC, CC_SP, CS, now_nanos):
     actuators = CC.actuators
@@ -204,9 +205,11 @@ class CarController(CarControllerBase):
           if not hud_control.leadVisible and self.LeadController.is_lead_present():
             self.has_lead      = True
             self.lead_distance = self.LeadController.get_distance()
+            #self.lead_type     = 3
           else:
             self.has_lead      = hud_control.leadVisible
             self.lead_distance = hud_control.leadDistance
+            #self.lead_type     = 3 # car
 
           critical_state = hud_control.visualAlert == VisualAlert.fcw
           upper_control_limit, lower_control_limit = get_long_control_limits(CC.enabled, CS.out.vEgo, hud_control.setSpeed, self.lead_distance, self.has_lead, critical_state)
@@ -258,6 +261,9 @@ class CarController(CarControllerBase):
 
     if hud_control.leadDistanceBars != self.lead_distance_bars_last:
       self.distance_bar_frame = self.frame
+
+    if self.frame % 300:
+      self.lead_type = self.lead_type + 1 if self.lead_type < 7 else 0
     
     if self.frame % self.CCP.ACC_HUD_STEP == 0 and self.CP.openpilotLongitudinalControl:
       if not(CS.acc_type == 3 and self.CP.flags & VolkswagenFlags.PQ):
@@ -279,7 +285,7 @@ class CarController(CarControllerBase):
           acc_hud_event = self.CCS.acc_hud_event(acc_hud_status, CS.esp_hold_confirmation, sl_predicative_active, sl_active)
           
           can_sends.append(self.CCS.create_acc_hud_control(self.packer_pt, self.CAN.pt, acc_hud_status, hud_control.setSpeed * CV.MS_TO_KPH,
-                                                           self.has_lead, hud_control.leadDistanceBars + 1, show_distance_bars,
+                                                           True, self.lead_type, hud_control.leadDistanceBars + 1, show_distance_bars,
                                                            CS.esp_hold_confirmation, distance, gap, fcw_alert, acc_hud_event, speed_limit))
 
         else:
