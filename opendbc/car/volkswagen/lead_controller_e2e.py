@@ -32,6 +32,12 @@ class LeadControllerE2E():
       self.reset()
       return
 
+    # not faking a lead in stopped state
+    v_current = np.linalg.norm([model.x[0], model.y[0], model.z[0]])
+    if v_current < 0.1:
+      self.reset()
+      return
+
     v_all = np.stack([model.x, model.y, model.z], axis=1)
     v = np.linalg.norm(v_all, axis=1)
     t = np.array(model.t)
