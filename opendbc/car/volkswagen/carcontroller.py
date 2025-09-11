@@ -9,6 +9,7 @@ from opendbc.car.volkswagen import mqbcan, pqcan, mebcan, pandacan
 from opendbc.car.volkswagen.values import CanBus, CarControllerParams, VolkswagenFlags
 from opendbc.car.volkswagen.mebutils import get_long_jerk_limits, get_long_control_limits, map_speed_to_acc_tempolimit, LatControlCurvature
 from opendbc.car.volkswagen.lead_controller_e2e import LeadControllerE2E
+from opendbc.car.common.pid import PIDController
 
 VisualAlert = structs.CarControl.HUDControl.VisualAlert
 LongCtrlState = structs.CarControl.Actuators.LongControlState
@@ -29,10 +30,7 @@ class CarController(CarControllerBase):
     self.steering_power_last = 0
     self.steering_offset = 0.
     self.accel_last = 0.
-    self.long_jerk_up_last = 0.
-    self.long_jerk_down_last = 0.
-    self.long_dy_up_last = 0.
-    self.long_dy_down_last = 0.
+    self.jerk_control = PIDController(0.8, 0.1, k_f=1, pos_limit=5.0, neg_limit=0.5, rate=(1 / (DT_CTRL * self.CCP.ACC_CONTROL_STEP))
     self.long_override_counter = 0
     self.long_disabled_counter = 0
     self.gra_acc_counter_last = None
@@ -214,20 +212,16 @@ class CarController(CarControllerBase):
             self.lead_type     = 3 # car
 
           critical_state = hud_control.visualAlert == VisualAlert.fcw
-          upper_control_limit, lower_control_limit = get_long_control_limits(CC.enabled, CS.out.vEgo, hud_control.setSpeed, self.lead_distance, self.has_lead, critical_state)
-          self.long_jerk_up_last, self.long_jerk_down_last, self.long_dy_up_last, self.long_dy_down_last = get_long_jerk_limits(CC.enabled, long_override,
-                                                                                                                                self.lead_distance, self.has_lead,
-                                                                                                                                accel, self.accel_last, self.long_jerk_up_last,
-                                                                                                                                self.long_jerk_down_last, self.long_dy_up_last,
-                                                                                                                                self.long_dy_down_last,
-                                                                                                                                DT_CTRL * self.CCP.ACC_CONTROL_STEP,
-                                                                                                                                critical_state)
-
+          upper_control_limit = 0.0625
+          lower_control_limit = 0.048
+          jerk_raw = self.jerk_control.update(accel - self.accel_last)
+          upper_jerk = 0.5 if long_override else (np.clip(jerk_raw, 0.5, 5.0) if jerk_raw > 0 else 0.5)
+          lower_jerk = 0.5 if long_override else (np.clip(-jerk_raw, 0.5, 5.0) if jerk_raw < 0 else 0.5)
           acc_control = self.CCS.acc_control_value(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, long_override)          
           acc_hold_type = self.CCS.acc_hold_type(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, starting, stopping,
                                                  CS.esp_hold_confirmation, long_override, long_override_begin, long_disabling)
           can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, self.CAN.pt, self.CP, CS.acc_type, CC.enabled,
-                                                             self.long_jerk_up_last, self.long_jerk_down_last, upper_control_limit, lower_control_limit,
+                                                             upper_jerk, lower_jerk, upper_control_limit, lower_control_limit,
                                                              accel, acc_control, acc_hold_type, stopping, starting, CS.esp_hold_confirmation,
                                                              CS.out.vEgoRaw * CV.MS_TO_KPH, long_override, CS.travel_assist_available))
 
