@@ -31,7 +31,8 @@ class CarController(CarControllerBase):
     self.steering_power_last = 0
     self.steering_offset = 0.
     self.accel_last = 0.
-    self.jerk_control = PIDController(0.6, 0.6, pos_limit=LONG_JERK_MAX, neg_limit=-LONG_JERK_MAX, rate=(1 / (DT_CTRL * self.CCP.ACC_CONTROL_STEP)))
+    self.jerk_control_upper = PIDController(10., 20., pos_limit=LONG_JERK_MAX, neg_limit=LONG_JERK_MIN, rate=(1 / (DT_CTRL * self.CCP.ACC_CONTROL_STEP)))
+    self.jerk_control_lower = PIDController(10., 20., pos_limit=LONG_JERK_MAX, neg_limit=LONG_JERK_MIN, rate=(1 / (DT_CTRL * self.CCP.ACC_CONTROL_STEP)))
     self.long_override_counter = 0
     self.long_disabled_counter = 0
     self.gra_acc_counter_last = None
@@ -197,9 +198,10 @@ class CarController(CarControllerBase):
           long_disabling = not CC.enabled and self.long_disabled_counter < 5
 
           critical_state = hud_control.visualAlert == VisualAlert.fcw
-          jerk_raw = self.jerk_control.update(accel - self.accel_last)
-          upper_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else (np.clip(jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw > 0 else LONG_JERK_MIN))
-          lower_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else (np.clip(-jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw < 0 else LONG_JERK_MIN))
+          upper_jerk_raw = self.jerk_control_upper.update(max(0, accel - self.accel_last))
+          lower_jerk_raw = self.jerk_control_lower.update(abs(min(0, accel - self.accel_last)))
+          upper_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else upper_jerk_raw)
+          lower_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else lower_jerk_raw)
           
           acc_control = self.CCS.acc_control_value(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, long_override)          
           acc_hold_type = self.CCS.acc_hold_type(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, starting, stopping,
