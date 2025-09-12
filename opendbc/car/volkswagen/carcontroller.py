@@ -31,7 +31,7 @@ class CarController(CarControllerBase):
     self.steering_power_last = 0
     self.steering_offset = 0.
     self.accel_last = 0.
-    self.jerk_filter = FirstOrderFilter(0.0, rc=0.2, dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP))
+    self.jerk_filter = FirstOrderFilter(0.0, rc=0.25, dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP))
     self.long_override_counter = 0
     self.long_disabled_counter = 0
     self.gra_acc_counter_last = None
@@ -197,7 +197,7 @@ class CarController(CarControllerBase):
           long_disabling = not CC.enabled and self.long_disabled_counter < 5
 
           critical_state = hud_control.visualAlert == VisualAlert.fcw
-          jerk_raw =  self.jerk_filter.update((accel - self.accel_last) / (DT_CTRL * self.CCP.ACC_CONTROL_STEP))
+          jerk_raw = self.jerk_filter.update((accel - self.accel_last) / (DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if CC.enabled else 0
           upper_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else (np.clip(jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw > 0 else LONG_JERK_MIN))
           lower_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else (np.clip(-jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw < 0 else LONG_JERK_MIN))
           
