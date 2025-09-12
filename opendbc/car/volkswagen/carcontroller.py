@@ -197,8 +197,6 @@ class CarController(CarControllerBase):
           long_disabling = not CC.enabled and self.long_disabled_counter < 5
 
           critical_state = hud_control.visualAlert == VisualAlert.fcw
-          upper_control_limit = 0.0625
-          lower_control_limit = 0.072
           jerk_raw = self.jerk_control.update(accel - self.accel_last)
           upper_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else (np.clip(jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw > 0 else LONG_JERK_MIN))
           lower_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else (np.clip(-jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw < 0 else LONG_JERK_MIN))
@@ -207,7 +205,7 @@ class CarController(CarControllerBase):
           acc_hold_type = self.CCS.acc_hold_type(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, starting, stopping,
                                                  CS.esp_hold_confirmation, long_override, long_override_begin, long_disabling)
           can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, self.CAN.pt, self.CP, CS.acc_type, CC.enabled,
-                                                             upper_jerk, lower_jerk, upper_control_limit, lower_control_limit,
+                                                             upper_jerk, lower_jerk, 0.0625, 0.048,
                                                              accel, acc_control, acc_hold_type, stopping, starting, CS.esp_hold_confirmation,
                                                              CS.out.vEgoRaw * CV.MS_TO_KPH, long_override, CS.travel_assist_available))
 
