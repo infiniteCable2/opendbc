@@ -3,12 +3,11 @@ import numpy as np
 from opendbc.can import CANPacker
 from opendbc.car import Bus, DT_CTRL, structs
 from opendbc.car.lateral import apply_driver_steer_torque_limits, apply_std_curvature_limits
-from opendbc.car.common.conversions import Conversions as CV
+from opendbc.car.common.conversions import Conversions as CV, FirstOrderFilter
 from opendbc.car.interfaces import CarControllerBase
 from opendbc.car.volkswagen import mqbcan, pqcan, mebcan, pandacan
 from opendbc.car.volkswagen.values import CanBus, CarControllerParams, VolkswagenFlags
 from opendbc.car.volkswagen.mebutils import get_long_jerk_limits, get_long_control_limits, map_speed_to_acc_tempolimit, LatControlCurvature
-from opendbc.car.common.pid import PIDController
 
 VisualAlert = structs.CarControl.HUDControl.VisualAlert
 LongCtrlState = structs.CarControl.Actuators.LongControlState
@@ -31,8 +30,7 @@ class CarController(CarControllerBase):
     self.steering_power_last = 0
     self.steering_offset = 0.
     self.accel_last = 0.
-    self.jerk_control_upper = PIDController(10., 20., pos_limit=LONG_JERK_MAX, neg_limit=LONG_JERK_MIN, rate=(1 / (DT_CTRL * self.CCP.ACC_CONTROL_STEP)))
-    self.jerk_control_lower = PIDController(10., 20., pos_limit=LONG_JERK_MAX, neg_limit=LONG_JERK_MIN, rate=(1 / (DT_CTRL * self.CCP.ACC_CONTROL_STEP)))
+    self.jerk_filter = FirstOrderFilter(0.0, rc=0.2, dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP))
     self.long_override_counter = 0
     self.long_disabled_counter = 0
     self.gra_acc_counter_last = None
@@ -198,10 +196,9 @@ class CarController(CarControllerBase):
           long_disabling = not CC.enabled and self.long_disabled_counter < 5
 
           critical_state = hud_control.visualAlert == VisualAlert.fcw
-          upper_jerk_raw = self.jerk_control_upper.update(max(0, accel - self.accel_last))
-          lower_jerk_raw = self.jerk_control_lower.update(abs(min(0, accel - self.accel_last)))
-          upper_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else upper_jerk_raw)
-          lower_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else lower_jerk_raw)
+          jerk_raw =  self.jerk_filter.update((accel - self.accel_last) / (DT_CTRL * self.CCP.ACC_CONTROL_STEP))
+          upper_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else (np.clip(jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw > 0 else LONG_JERK_MIN)
+          lower_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else (np.clip(-jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw < 0 else LONG_JERK_MIN)
           
           acc_control = self.CCS.acc_control_value(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, long_override)          
           acc_hold_type = self.CCS.acc_hold_type(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, starting, stopping,
