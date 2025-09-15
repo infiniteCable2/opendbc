@@ -114,10 +114,10 @@ class CarInterface(CarInterfaceBase):
     if ret.flags & VolkswagenFlags.MEB:
       ret.longitudinalActuatorDelay = 0.3
       ret.radarDelay = 0.04
-      ret.longitudinalTuning.kpBP = [0.5, 1.5, 15.]
+      ret.longitudinalTuning.kpBP = [0., 15.]
       ret.longitudinalTuning.kiBP = [0., 25.]
       ret.longitudinalTuning.kf = 0.6
-      ret.longitudinalTuning.kpV = [0., 0.8, 0.4]
+      ret.longitudinalTuning.kpV = [0.8, 0.4]
       ret.longitudinalTuning.kiV = [0.1, 0.]
 
     ret.alphaLongitudinalAvailable = ret.networkLocation == NetworkLocation.gateway or docs
@@ -132,8 +132,8 @@ class CarInterface(CarInterfaceBase):
     ret.autoResumeSng = ret.minEnableSpeed == -1
 
     if ret.flags & VolkswagenFlags.MEB:
-      #ret.startingState = True # OP long starting state is used
-      #ret.startAccel = 0.85 # ~0.85 m/s^2 for brake release
+      ret.startingState = True # OP long starting state is used
+      ret.startAccel = 0.6 # ~0.85 m/s^2 for brake release
       ret.vEgoStarting = 0.5 # minimum ~0.5 m/s acc starting state is neccessary to not fault the car
       ret.vEgoStopping = 0.1
       ret.stopAccel = -0.55 # try a good balance, maybe new gen car faults only for very low -1.1 stop accel
