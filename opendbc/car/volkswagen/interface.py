@@ -112,12 +112,10 @@ class CarInterface(CarInterfaceBase):
     # Global longitudinal tuning defaults, can be overridden per-vehicle
 
     if ret.flags & VolkswagenFlags.MEB:
-      ret.longitudinalActuatorDelay = 0.5
-      ret.radarDelay = 0.04
-      #ret.longitudinalTuning.kpBP = [0., 25.]
-      #ret.longitudinalTuning.kiBP = [0., 25.]
-      #ret.longitudinalTuning.kpV = [0.4, 0.]
-      #ret.longitudinalTuning.kiV = [0.1, 0.]
+      ret.longitudinalActuatorDelay = 0.4
+      ret.radarDelay = 0.2
+      ret.longitudinalTuning.kiBP = [0., 5., 35.]
+      ret.longitudinalTuning.kiV = [1.4, 0.8, 0.5]
 
     ret.alphaLongitudinalAvailable = ret.networkLocation == NetworkLocation.gateway or docs
     if alpha_long:
@@ -132,7 +130,7 @@ class CarInterface(CarInterfaceBase):
 
     if ret.flags & VolkswagenFlags.MEB:
       #ret.startingState = True # OP long starting state is used
-      #ret.startAccel = 0.6 # ~0.85 m/s^2 for brake release
+      #ret.startAccel = 0.8 # ~0.85 m/s^2 for brake release
       ret.vEgoStarting = 0.5 # minimum ~0.5 m/s acc starting state is neccessary to not fault the car
       ret.vEgoStopping = 0.1
       ret.stopAccel = -0.55 # try a good balance, maybe new gen car faults only for very low -1.1 stop accel
