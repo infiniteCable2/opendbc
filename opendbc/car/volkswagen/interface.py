@@ -116,8 +116,7 @@ class CarInterface(CarInterfaceBase):
       ret.radarDelay = 0.04
       ret.longitudinalTuning.kpBP = [0., 15.]
       ret.longitudinalTuning.kiBP = [0., 25.]
-      ret.longitudinalTuning.kf = 0.6
-      ret.longitudinalTuning.kpV = [0.8, 0.4]
+      ret.longitudinalTuning.kpV = [0.8, 0.2]
       ret.longitudinalTuning.kiV = [0.1, 0.]
 
     ret.alphaLongitudinalAvailable = ret.networkLocation == NetworkLocation.gateway or docs
