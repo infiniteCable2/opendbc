@@ -31,7 +31,7 @@ class CarController(CarControllerBase):
     self.steering_power_last = 0
     self.steering_offset = 0.
     self.accel_last = 0.
-    self.jerk_filter = FirstOrderFilter(0.0, rc=0.3, dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP))
+    self.jerk_filter = FirstOrderFilter(0.0, rc=0.2, dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP))
     self.long_override_counter = 0
     self.long_disabled_counter = 0
     self.gra_acc_counter_last = None
