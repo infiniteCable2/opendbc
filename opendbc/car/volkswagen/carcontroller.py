@@ -32,6 +32,7 @@ class CarController(CarControllerBase):
     self.steering_offset = 0.
     self.accel_last = 0.
     self.jerk_filter = FirstOrderFilter(0.0, rc=0.18, dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP))
+    self.accel_filter = FirstOrderFilter(0.0, rc=0.3, dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP))
     self.long_override_counter = 0
     self.long_disabled_counter = 0
     self.gra_acc_counter_last = None
@@ -202,8 +203,9 @@ class CarController(CarControllerBase):
           jerk_raw = self.jerk_filter.update((accel - self.accel_last) / (DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if CC.enabled else 0
           upper_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else (np.clip(jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw > 0 else LONG_JERK_MIN))
           lower_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else (np.clip(-jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw < 0 else LONG_JERK_MIN))
-          upper_limit = 0 #if critical_state else (np.interp(abs(min(0, CS.out.aEgo - accel)), [0., 0.25], [0.0, 0.125]))
-          lower_limit = 0 #if critical_state else (np.interp(max(0, CS.out.aEgo - accel), [0., 0.25], [0.0, 0.144]))
+          accel_change_smooth = self.accel_filter.update(accel - self.accel_last) if CC.enabled else 0
+          upper_limit = 0 if critical_state else (np.interp(abs(min(0, accel_change_smooth)), [0., 0.3], [0.0, 0.125]))
+          lower_limit = 0 if critical_state else (np.interp(max(0, accel_change_smooth), [0., 0.3], [0.0, 0.144]))
           
           acc_control = self.CCS.acc_control_value(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, long_override)          
           acc_hold_type = self.CCS.acc_hold_type(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, starting, stopping,
