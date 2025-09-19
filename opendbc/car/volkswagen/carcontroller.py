@@ -29,9 +29,9 @@ class CarController(CarControllerBase):
     self.steering_power_last = 0
     self.steering_offset = 0.
     self.accel_last = 0.
-    #self.long_jerk_control = LongControlJerk(dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if self.CP.flags & VolkswagenFlags.MEB else None
-    #self.long_limit_control = LongControlLimit() if self.CP.flags & VolkswagenFlags.MEB else None
-    self.jerk_filter = FirstOrderFilter(0.0, rc=0.16, dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP))
+    self.long_jerk_control = LongControlJerk(dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if self.CP.flags & VolkswagenFlags.MEB else None
+    self.long_limit_control = LongControlLimit() if self.CP.flags & VolkswagenFlags.MEB else None
+    #self.jerk_filter = FirstOrderFilter(0.0, rc=0.16, dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP))
     self.long_override_counter = 0
     self.long_disabled_counter = 0
     self.gra_acc_counter_last = None
@@ -199,19 +199,19 @@ class CarController(CarControllerBase):
           long_disabling = not CC.enabled and self.long_disabled_counter < 5
 
           critical_state = hud_control.visualAlert == VisualAlert.fcw
-          #self.long_jerk_control.update(CC.enabled, long_override, hud_control.leadDistance, hud_control.leadVisible, accel, critical_state)
-          #self.long_limit_control.update(CC.enabled, CS.out.vEgoRaw, hud_control.setSpeed, hud_control.leadDistance, hud_control.leadVisible, critical_state)
-          jerk_raw = self.jerk_filter.update((accel - self.accel_last) / (DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if CC.enabled else 0
-          upper_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else (np.clip(jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw > 0 else LONG_JERK_MIN))
-          lower_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else (np.clip(-jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw < 0 else LONG_JERK_MIN))
+          self.long_jerk_control.update(CC.enabled, long_override, hud_control.leadDistance, hud_control.leadVisible, accel, critical_state)
+          self.long_limit_control.update(CC.enabled, CS.out.vEgoRaw, hud_control.setSpeed, hud_control.leadDistance, hud_control.leadVisible, critical_state)
+          #jerk_raw = self.jerk_filter.update((accel - self.accel_last) / (DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if CC.enabled else 0
+          #upper_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else (np.clip(jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw > 0 else LONG_JERK_MIN))
+          #lower_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else (np.clip(-jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw < 0 else LONG_JERK_MIN))
           
           acc_control = self.CCS.acc_control_value(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, long_override)          
           acc_hold_type = self.CCS.acc_hold_type(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, starting, stopping,
                                                  CS.esp_hold_confirmation, long_override, long_override_begin, long_disabling)
           can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, self.CAN.pt, self.CP, CS.acc_type, CC.enabled,
-                                                             upper_jerk, lower_jerk, 0, 0,
-                                                             #self.long_jerk_control.get_jerk_up(), self.long_jerk_control.get_jerk_down(),
-                                                             #self.long_limit_control.get_upper_limit(), self.long_limit_control.get_lower_limit(),
+                                                             #upper_jerk, lower_jerk, 0, 0,
+                                                             self.long_jerk_control.get_jerk_up(), self.long_jerk_control.get_jerk_down(),
+                                                             self.long_limit_control.get_upper_limit(), self.long_limit_control.get_lower_limit(),
                                                              accel, acc_control, acc_hold_type, stopping, starting, CS.esp_hold_confirmation,
                                                              CS.out.vEgoRaw * CV.MS_TO_KPH, long_override, CS.travel_assist_available))
 
