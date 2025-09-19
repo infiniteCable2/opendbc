@@ -7,7 +7,7 @@ from opendbc.car import DT_CTRL
 
 class LongControlJerk():
   JERK_LIMIT_MIN = 0.5
-  JERK_LIMIT_UP = 5.0
+  JERK_LIMIT_MAX = 5.0
   FILTER_GAIN_DISTANCE = [0, 100]
   FILTER_GAIN_VALUES = [0.9, 0.65]
   
