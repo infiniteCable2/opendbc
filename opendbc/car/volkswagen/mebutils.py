@@ -9,7 +9,7 @@ class LongControlJerk():
   JERK_LIMIT_MIN = 0.5
   JERK_LIMIT_MAX = 5.0
   FILTER_GAIN_DISTANCE = [0, 100]
-  FILTER_GAIN_VALUES = [0.9, 0.65]
+  FILTER_GAIN_VALUES = [0.85, 0.65]
   
   def __init__(self, dt=DT_CTRL):
     self.dy_up = 0.
@@ -87,12 +87,12 @@ class LongControlLimit():
       self.lower_limit = self.LIMIT_MIN
     else:
       # how far can the true accel vary downwards from requested accel
-      self.upper_limit = np.interp(distance, [20, 100], [self.LIMIT_MIN, self.UPPER_LIMIT_MAX ]) if has_lead else self.LIMIT_MIN # base line based on distance
+      self.upper_limit = np.interp(distance, [10, 100], [self.LIMIT_MIN, self.UPPER_LIMIT_MAX ]) if has_lead else self.LIMIT_MIN # base line based on distance
   
       # how far can the true accel vary upwards from requested accel
       set_speed_diff_up = max(0, abs(speed) - abs(set_speed)) # set speed difference down requested by user or speed overshoot (includes hud - real speed difference!)
       set_speed_diff_up_factor = np.interp(set_speed_diff_up, [1, 1.75], [1., 0.]) # faster requested speed decrease and less speed overshoot downhill 
-      self.lower_limit = np.interp(distance, [20, 100], [self.LIMIT_MIN, self.LOWER_LIMIT_MAX]) if has_lead else self.LIMIT_MIN # base line based on distance
+      self.lower_limit = np.interp(distance, [10, 100], [self.LIMIT_MIN, self.LOWER_LIMIT_MAX]) if has_lead else self.LIMIT_MIN # base line based on distance
       self.lower_limit = self.lower_limit * set_speed_diff_up_factor
 
   def get_upper_limit(self):
