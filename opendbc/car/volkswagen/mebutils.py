@@ -11,13 +11,11 @@ class LongControlJerk():
   FILTER_GAIN_DISTANCE = [0, 100]
   FILTER_GAIN_VALUES = [0.9, 0.65]
   
-  def __init__(self, jerk_limit_min=self.JERK_LIMIT_MIN, jerk_limit_max=self.JERK_LIMIT_MAX, dt=DT_CTRL):
+  def __init__(self, dt=DT_CTRL):
     self.dy_up = 0.
     self.dy_down = 0.
     self.jerk_up = 0.
     self.jerk_down = 0.
-    self.jerk_limit_min = jerk_limit_min
-    self.jerk_limit_max = jerk_limit_max
     self.dt = dt
     self.accel_last = 0.
     
@@ -33,13 +31,13 @@ class LongControlJerk():
       self.dy_up = 0.
       self.dy_down = 0.
     elif override:
-      self.jerk_up = self.jerk_limit_min
-      self.jerk_down = self.jerk_limit_min
+      self.jerk_up = self.JERK_LIMIT_MIN
+      self.jerk_down = self.JERK_LIMIT_MIN
       self.dy_up = 0.
       self.dy_down = 0.
     elif critical_state: # force best car reaction
-      self.jerk_up = self.jerk_limit_max
-      self.jerk_down = self.jerk_limit_max
+      self.jerk_up = self.JERK_LIMIT_MAX
+      self.jerk_down = self.JERK_LIMIT_MAX
       self.dy_up = 0.
       self.dy_down = 0.
     else:
@@ -53,12 +51,12 @@ class LongControlJerk():
       # how fast does the car react to acceleration
       self.dy_up += filter_gain * (tgt_up - self.jerk_up - self.dy_up)
       self.jerk_up += self.dt * self.dy_up
-      self.jerk_up = np.clip(self.jerk_up, self.jerk_limit_min, self.jerk_limit_max)
+      self.jerk_up = np.clip(self.jerk_up, self.JERK_LIMIT_MIN, self.JERK_LIMIT_MAX)
   
       # how fast does the car react to braking
       self.dy_down += filter_gain * (tgt_down - self.jerk_down - self.dy_down)
       self.jerk_down += self.dt * self.dy_down
-      self.jerk_down = np.clip(self.jerk_down, self.jerk_limit_min, self.jerk_limit_max)
+      self.jerk_down = np.clip(self.jerk_down, self.JERK_LIMIT_MIN, self.JERK_LIMIT_MAX)
   
       self.accel_last = accel
 
