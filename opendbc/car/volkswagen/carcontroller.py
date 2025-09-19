@@ -8,13 +8,11 @@ from opendbc.car.common.filter_simple import FirstOrderFilter
 from opendbc.car.interfaces import CarControllerBase
 from opendbc.car.volkswagen import mqbcan, pqcan, mebcan, pandacan
 from opendbc.car.volkswagen.values import CanBus, CarControllerParams, VolkswagenFlags
-from opendbc.car.volkswagen.mebutils import get_long_jerk_limits, get_long_control_limits, map_speed_to_acc_tempolimit, LatControlCurvature
+from opendbc.car.volkswagen.mebutils import LongControlJerk, LongControlLimit, map_speed_to_acc_tempolimit, LatControlCurvature
 
 VisualAlert = structs.CarControl.HUDControl.VisualAlert
 LongCtrlState = structs.CarControl.Actuators.LongControlState
 
-LONG_JERK_MIN = 0.5
-LONG_JERK_MAX = 5.0
 
 class CarController(CarControllerBase):
   def __init__(self, dbc_names, CP, CP_SP):
@@ -31,8 +29,8 @@ class CarController(CarControllerBase):
     self.steering_power_last = 0
     self.steering_offset = 0.
     self.accel_last = 0.
-    self.jerk_filter = FirstOrderFilter(0.0, rc=0.18, dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP))
-    self.accel_filter = FirstOrderFilter(0.0, rc=0.3, dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP))
+    self.long_jerk_control = LongControlJerk(dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if self.CP.flags & VolkswagenFlags.MEB else None
+    self.long_limit_control = LongControlLimit() if self.CP.flags & VolkswagenFlags.MEB else None
     self.long_override_counter = 0
     self.long_disabled_counter = 0
     self.gra_acc_counter_last = None
@@ -200,18 +198,15 @@ class CarController(CarControllerBase):
           long_disabling = not CC.enabled and self.long_disabled_counter < 5
 
           critical_state = hud_control.visualAlert == VisualAlert.fcw
-          jerk_raw = self.jerk_filter.update((accel - self.accel_last) / (DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if CC.enabled else 0
-          upper_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else (np.clip(jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw > 0 else LONG_JERK_MIN))
-          lower_jerk = LONG_JERK_MAX if critical_state else (LONG_JERK_MIN if long_override else (np.clip(-jerk_raw, LONG_JERK_MIN, LONG_JERK_MAX) if jerk_raw < 0 else LONG_JERK_MIN))
-          #accel_change_smooth = self.accel_filter.update(CS.out.aEgo - accel) if CC.enabled else 0
-          upper_limit = 0 #if critical_state else (np.interp(CS.out.vEgo, [0., 5.], [0., np.interp(abs(min(0, accel_change_smooth)), [0., 0.3], [0.0, 0.125])]))
-          lower_limit = 0 #if critical_state else (np.interp(CS.out.vEgo, [0., 5.], [0., np.interp(max(0, accel_change_smooth), [0., 0.3], [0.0, 0.144])]))
+          self.long_jerk_control.update(CC.enabled, long_override, hud_control.leadDistance, hud_control.leadVisible, accel, critical_state)
+          self.long_limit_control.update(CC.enabled, CS.out.vEgoRaw, hud_control.setSpeed, hud_control.leadDistance, hud_control.leadVisible, critical_state)
           
           acc_control = self.CCS.acc_control_value(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, long_override)          
           acc_hold_type = self.CCS.acc_hold_type(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, starting, stopping,
                                                  CS.esp_hold_confirmation, long_override, long_override_begin, long_disabling)
           can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, self.CAN.pt, self.CP, CS.acc_type, CC.enabled,
-                                                             upper_jerk, lower_jerk, upper_limit, lower_limit,
+                                                             self.long_jerk_control.get_upper_jerk, self.long_jerk_control.get_lower_jerk,
+                                                             self.long_limit_control.get_upper_limit, self.long_limit_control.get_lower_limit,
                                                              accel, acc_control, acc_hold_type, stopping, starting, CS.esp_hold_confirmation,
                                                              CS.out.vEgoRaw * CV.MS_TO_KPH, long_override, CS.travel_assist_available))
 
