@@ -112,10 +112,10 @@ class CarInterface(CarInterfaceBase):
     # Global longitudinal tuning defaults, can be overridden per-vehicle
 
     if ret.flags & VolkswagenFlags.MEB:
-      ret.longitudinalActuatorDelay = 0.5
-      ret.radarDelay = 0.2
+      ret.longitudinalActuatorDelay = 0.4
+      ret.radarDelay = 0.4
       ret.longitudinalTuning.kiBP = [0., 20.]
-      ret.longitudinalTuning.kiV = [0.6, 0.2]
+      ret.longitudinalTuning.kiV = [0.2, 0.]
 
     ret.alphaLongitudinalAvailable = ret.networkLocation == NetworkLocation.gateway or docs
     if alpha_long:
