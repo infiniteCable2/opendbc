@@ -49,7 +49,7 @@ class LongControlJerk():
         filter_gain_dist_change = np.interp(max(0, distance_change), self.FILTER_GAIN_DISTANCE_CHANGE, [self.FILTER_GAIN_MIN, self.FILTER_GAIN_MAX]) # gain by distance change
         filter_gain = max(filter_gain_dist, filter_gain_dist_change) # use highest gain
       else:
-        filter_gain = self.FILTER_GAIN_VALUES[0]
+        filter_gain = self.FILTER_GAIN_MAX
       
       j = (accel - self.accel_last) / self.dt
   
