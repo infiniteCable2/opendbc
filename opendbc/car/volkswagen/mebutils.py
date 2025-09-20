@@ -84,9 +84,9 @@ class LongControlLimit():
   UPPER_LIMIT_MAX = UPPER_LIMIT_FACTOR * 2
   LIMIT_MIN = 0.
   LIMIT_DISTANCE = [0, 80]
-  LIMIT_DISTANCE_CHANGE_DOWN = [10, 30]
-  LIMIT_DISTANCE_CHANGE_UP = [0, 10]
-  DISTANCE_FILTER_RC = 0.2
+  LIMIT_DISTANCE_CHANGE_DOWN = [10, 30] # high precision for worst case high speed approaching a stopped lead
+  LIMIT_DISTANCE_CHANGE_UP = [0, 5] # precisely follow an accelerating lead from stop
+  DISTANCE_FILTER_RC = 0.3 # smooth noisy distance signal for distant leads
   
   def __init__(self, dt=DT_CTRL):
     self.upper_limit = self.LIMIT_MIN
