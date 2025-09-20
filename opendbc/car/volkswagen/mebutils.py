@@ -86,13 +86,14 @@ class LongControlLimit():
   LIMIT_DISTANCE = [0, 80]
   LIMIT_DISTANCE_CHANGE_DOWN = [10, 30]
   LIMIT_DISTANCE_CHANGE_UP = [0, 10]
+  DISTANCE_FILTER_RC = 0.2
   
   def __init__(self, dt=DT_CTRL):
     self.upper_limit = self.LIMIT_MIN
     self.lower_limit = self.LIMIT_MIN
     self.dt = dt
     self.distance_last = 0.
-    self.distance_filter = FirstOrderFilter(0.0, rc=0.2, dt=dt)
+    self.distance_filter = FirstOrderFilter(0.0, rc=self.DISTANCE_FILTER_RC, dt=dt, initialized=False)
     
   def update(self, enabled: bool, speed: float, set_speed: float, distance: float, has_lead: bool, critical_state: bool):
     # control limits by distance are used to improve comfort while ensuring precise car reaction if neccessary
@@ -103,7 +104,11 @@ class LongControlLimit():
       self.lower_limit = self.LIMIT_MIN
     else:
       distance_change_raw = (self.distance_last - distance) / self.dt if 0 not in (self.distance_last, distance) else 0
-      distance_change = self.distance_filter.update(distance_change_raw)
+      if self.distance_last == 0 and distance != 0: # for new lead detection reset filter and correctly force current state upon next iteration
+        self.distance_filter = FirstOrderFilter(rc=self.DISTANCE_FILTER_RC, dt=self.dt, initialized=False)
+        distance_change = distance_change_raw
+      else:
+        distance_change = self.distance_filter.update(distance_change_raw)
       # how far can the true accel vary downwards from requested accel
       upper_limit_dist = np.interp(distance, self.LIMIT_DISTANCE, [self.LIMIT_MIN, self.UPPER_LIMIT_MAX]) # base line based on distance
       upper_limit_dist_change = np.interp(-min(0, distance_change), self.LIMIT_DISTANCE_CHANGE_UP, [self.UPPER_LIMIT_MAX, self.LIMIT_MIN]) # limit by distance change up
