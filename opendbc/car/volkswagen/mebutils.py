@@ -92,7 +92,7 @@ class LongControlLimit():
     self.lower_limit = self.LIMIT_MIN
     self.dt = dt
     self.distance_last = 0.
-    self.distance_filter = FirstOrderFilter(0.0, rc=0.3, dt=dt)
+    self.distance_filter = FirstOrderFilter(0.0, rc=0.2, dt=dt)
     
   def update(self, enabled: bool, speed: float, set_speed: float, distance: float, has_lead: bool, critical_state: bool):
     # control limits by distance are used to improve comfort while ensuring precise car reaction if neccessary
