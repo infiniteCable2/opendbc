@@ -9,6 +9,7 @@ class LongControlJerk():
   JERK_LIMIT_MIN = 0.5
   JERK_LIMIT_MAX = 5.0
   FILTER_GAIN_DISTANCE = [0, 60]
+  FILTER_GAIN_DISTANCE_CHANGE = [40, 100]
   FILTER_GAIN_VALUES = [0.85, 0.65]
   
   def __init__(self, dt=DT_CTRL):
@@ -18,13 +19,13 @@ class LongControlJerk():
     self.jerk_down = 0.
     self.dt = dt
     self.accel_last = 0.
+    self.distance_last = 0.
     
   def update(self, enabled, override, distance, has_lead, accel, critical_state):
     # jerk limits by accel change and distance are used to improve comfort while ensuring a fast enough car reaction
     # override mechanics reminder:
     # (1) sending accel = 0 and directly setting jerk to zero results in round about steady accel until harder accel pedal press -> lack of control
-    # (2) sending accel = 0 and allowing a high jerk results in a abrupt accel cut -> lack of comfort
-    
+    # (2) sending accel = 0 and allowing a high jerk results in a abrupt accel cut -> lack of comfort    
     if not enabled:
       self.jerk_up = 0.
       self.jerk_down = 0.
@@ -41,7 +42,14 @@ class LongControlJerk():
       self.dy_up = 0.
       self.dy_down = 0.
     else:
-      filter_gain = np.interp(distance, self.FILTER_GAIN_DISTANCE, self.FILTER_GAIN_VALUES) if has_lead else self.FILTER_GAIN_VALUES[0]
+      if has_lead:
+        distance_change = (self.distance_last - distance) / self.dt if 0 not in (self.distance_last, distance) else 0
+        filter_gain_dist = np.interp(distance, self.FILTER_GAIN_DISTANCE, self.FILTER_GAIN_VALUES) # gain by distance
+        filter_gain_dist_change = np.interp(max(0, distance_change), self.FILTER_GAIN_DISTANCE_CHANGE, self.FILTER_GAIN_VALUES) # gain by distance change
+        filter_gain = max(filter_gain_dist, filter_gain_dist_change) # use highest gain
+      else:
+        filter_gain = self.FILTER_GAIN_VALUES[0]
+      
       
       j = (accel - self.accel_last) / self.dt
   
@@ -59,6 +67,7 @@ class LongControlJerk():
       self.jerk_down = np.clip(self.jerk_down, self.JERK_LIMIT_MIN, self.JERK_LIMIT_MAX)
   
       self.accel_last = accel
+      self.distance_last = distance
 
   def get_jerk_up(self):
     return self.jerk_up
@@ -74,26 +83,37 @@ class LongControlLimit():
   UPPER_LIMIT_MAX = UPPER_LIMIT_FACTOR * 2
   LIMIT_MIN = 0.
   LIMIT_DISTANCE = [0, 60]
+  LIMIT_DISTANCE_CHANGE = [40, 100]
   
-  def __init__(self):
+  def __init__(self, dt=DT_CTRL):
     self.upper_limit = self.LIMIT_MIN
     self.lower_limit = self.LIMIT_MIN
+    self.dt = dt
+    self.distance_last = 0.
     
   def update(self, enabled: bool, speed: float, set_speed: float, distance: float, has_lead: bool, critical_state: bool):
     # control limits by distance are used to improve comfort while ensuring precise car reaction if neccessary
     # also used to reduce an effect of decel overshoot when target is breaking
-    # limits are controlled mainly by distance of lead car
+    # limits are controlled mainly by distance of lead car    
     if not enabled or critical_state or not has_lead: # force most precise accel command execution
       self.upper_limit = self.LIMIT_MIN
       self.lower_limit = self.LIMIT_MIN
     else:
+      distance_change = (self.distance_last - distance) / self.dt if 0 not in (self.distance_last, distance) else 0
       # how far can the true accel vary downwards from requested accel
-      self.upper_limit = np.interp(distance, self.LIMIT_DISTANCE, [self.LIMIT_MIN, self.UPPER_LIMIT_MAX]) # base line based on distance
+      upper_limit_dist = np.interp(distance, self.LIMIT_DISTANCE, [self.LIMIT_MIN, self.UPPER_LIMIT_MAX]) # base line based on distance
+      upper_limit_dist_change = np.interp(max(0, distance_change), self.LIMIT_DISTANCE_CHANGE, [self.UPPER_LIMIT_MAX, self.LIMIT_MIN]) # limit by distance change
+      self.upper_limit = min(upper_limit_dist, upper_limit_dist_change) # use lowest limit
+      
       # how far can the true accel vary upwards from requested accel
       set_speed_diff_up = max(0, abs(speed) - abs(set_speed)) # set speed difference down requested by user or speed overshoot (includes hud - real speed difference!)
       set_speed_diff_up_factor = np.interp(set_speed_diff_up, [1, 1.75], [1., 0.]) # faster requested speed decrease and less speed overshoot downhill 
-      self.lower_limit = np.interp(distance, self.LIMIT_DISTANCE, [self.LIMIT_MIN, self.LOWER_LIMIT_MAX]) # base line based on distance
-      self.lower_limit = self.lower_limit * set_speed_diff_up_factor
+      lower_limit_dist = np.interp(distance, self.LIMIT_DISTANCE, [self.LIMIT_MIN, self.LOWER_LIMIT_MAX]) # base line based on distance
+      lower_limit_dist_speed = lower_limit_dist * set_speed_diff_up_factor
+      lower_limit_dist_change = np.interp(max(0, distance_change), self.LIMIT_DISTANCE_CHANGE, [self.LOWER_LIMIT_MAX, self.LIMIT_MIN]) # limit by distance change
+      self.lower_limit = min(lower_limit_dist_speed, lower_limit_dist_change) # use lowest limit
+
+    self.distance_last = distance
 
   def get_upper_limit(self):
     return self.upper_limit
