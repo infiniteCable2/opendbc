@@ -30,7 +30,7 @@ class CarController(CarControllerBase):
     self.steering_offset = 0.
     self.accel_last = 0.
     self.long_jerk_control = LongControlJerk(dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if self.CP.flags & VolkswagenFlags.MEB else None
-    self.long_limit_control = LongControlLimit() if self.CP.flags & VolkswagenFlags.MEB else None
+    self.long_limit_control = LongControlLimit(dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if self.CP.flags & VolkswagenFlags.MEB else None
     #self.jerk_filter = FirstOrderFilter(0.0, rc=0.16, dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP))
     self.long_override_counter = 0
     self.long_disabled_counter = 0
