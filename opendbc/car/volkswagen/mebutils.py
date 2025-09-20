@@ -51,7 +51,6 @@ class LongControlJerk():
       else:
         filter_gain = self.FILTER_GAIN_VALUES[0]
       
-      
       j = (accel - self.accel_last) / self.dt
   
       tgt_up = abs(j) if j > 0 else 0.
@@ -67,8 +66,8 @@ class LongControlJerk():
       self.jerk_down += self.dt * self.dy_down
       self.jerk_down = np.clip(self.jerk_down, self.JERK_LIMIT_MIN, self.JERK_LIMIT_MAX)
   
-      self.accel_last = accel
-      self.distance_last = distance
+    self.accel_last = accel
+    self.distance_last = distance
 
   def get_jerk_up(self):
     return self.jerk_up
