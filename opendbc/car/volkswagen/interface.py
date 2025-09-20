@@ -129,13 +129,11 @@ class CarInterface(CarInterfaceBase):
     ret.autoResumeSng = ret.minEnableSpeed == -1
 
     if ret.flags & VolkswagenFlags.MEB:
-      #ret.startingState = True # OP long starting state is used
-      #ret.startAccel = 0.8 # ~0.85 m/s^2 for brake release
+      ret.startingState = True # OP long starting state is used: for very slow start the car can go into error (EPB car shutting down bug)
+      ret.startAccel = 0.6
       ret.vEgoStarting = 0.5 # minimum ~0.5 m/s acc starting state is neccessary to not fault the car
       ret.vEgoStopping = 0.1
-      ret.stopAccel = -0.55 # try a good balance, maybe new gen car faults only for very low -1.1 stop accel
-      #ret.stopAccel = -0.2 # stock stopping accel for newer gen car, stopped accel is volkswagen neutral value
-      #ret.stopAccel = -1.1 # stock stopped accel
+      ret.stopAccel = -0.55 # different stopping accels seen, good working value
     else:
       ret.vEgoStarting = 0.1
       ret.vEgoStopping = 0.5
