@@ -22,6 +22,7 @@ class LongControlJerk():
     self.dt = dt
     self.accel_last = 0.
     self.distance_last = 0.
+    self.skip = False
     
   def update(self, enabled, override, distance, has_lead, accel, critical_state):
     # jerk limits by accel change and distance are used to improve comfort while ensuring a fast enough car reaction
@@ -33,16 +34,19 @@ class LongControlJerk():
       self.jerk_down = 0.
       self.dy_up = 0.
       self.dy_down = 0.
+      self.skip = True
     elif override:
       self.jerk_up = self.JERK_LIMIT_MIN
       self.jerk_down = self.JERK_LIMIT_MIN
       self.dy_up = 0.
       self.dy_down = 0.
+      self.skip = True
     elif critical_state: # force best car reaction
       self.jerk_up = self.JERK_LIMIT_MAX
       self.jerk_down = self.JERK_LIMIT_MAX
       self.dy_up = 0.
       self.dy_down = 0.
+      self.skip = True
     else:
       if has_lead:
         distance_change = (self.distance_last - distance) / self.dt if 0 not in (self.distance_last, distance) else 0
@@ -52,7 +56,8 @@ class LongControlJerk():
       else:
         filter_gain = self.FILTER_GAIN_MAX
       
-      j = (accel - self.accel_last) / self.dt
+      j = (accel - self.accel_last) / self.dt if not self.skip else 0
+      self.skip = False
   
       tgt_up = abs(j) if j > 0 else 0.
       tgt_down = abs(j) if j < 0 else 0.
