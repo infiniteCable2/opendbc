@@ -1,5 +1,6 @@
 import numpy as np
 
+from opendbc.car.common.filter_simple import FirstOrderFilter
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.common.pid import PIDController
 from opendbc.car import DT_CTRL
@@ -21,6 +22,7 @@ class LongControlJerk():
     self.dt = dt
     self.accel_last = 0.
     self.distance_last = 0.
+    self.distance_filter = FirstOrderFilter(0.0, rc=0.3, dt=dt)
     
   def update(self, enabled, override, distance, has_lead, accel, critical_state):
     # jerk limits by accel change and distance are used to improve comfort while ensuring a fast enough car reaction
@@ -44,7 +46,8 @@ class LongControlJerk():
       self.dy_down = 0.
     else:
       if has_lead:
-        distance_change = (self.distance_last - distance) / self.dt if 0 not in (self.distance_last, distance) else 0
+        distance_change_raw = (self.distance_last - distance) / self.dt if 0 not in (self.distance_last, distance) else 0
+        distance_change = self.distance_filter.update(distance_change_raw)
         filter_gain_dist = np.interp(distance, self.FILTER_GAIN_DISTANCE, [self.FILTER_GAIN_MAX, self.FILTER_GAIN_MIN]) # gain by distance
         filter_gain_dist_change = np.interp(max(0, distance_change), self.FILTER_GAIN_DISTANCE_CHANGE, [self.FILTER_GAIN_MIN, self.FILTER_GAIN_MAX]) # gain by distance change
         filter_gain = max(filter_gain_dist, filter_gain_dist_change) # use highest gain
@@ -91,6 +94,7 @@ class LongControlLimit():
     self.lower_limit = self.LIMIT_MIN
     self.dt = dt
     self.distance_last = 0.
+    self.distance_filter = FirstOrderFilter(0.0, rc=0.3, dt=dt)
     
   def update(self, enabled: bool, speed: float, set_speed: float, distance: float, has_lead: bool, critical_state: bool):
     # control limits by distance are used to improve comfort while ensuring precise car reaction if neccessary
@@ -100,7 +104,8 @@ class LongControlLimit():
       self.upper_limit = self.LIMIT_MIN
       self.lower_limit = self.LIMIT_MIN
     else:
-      distance_change = (self.distance_last - distance) / self.dt if 0 not in (self.distance_last, distance) else 0
+      distance_change_raw = (self.distance_last - distance) / self.dt if 0 not in (self.distance_last, distance) else 0
+      distance_change = self.distance_filter.update(distance_change_raw)
       # how far can the true accel vary downwards from requested accel
       upper_limit_dist = np.interp(distance, self.LIMIT_DISTANCE, [self.LIMIT_MIN, self.UPPER_LIMIT_MAX]) # base line based on distance
       upper_limit_dist_change = np.interp(-min(0, distance_change), self.LIMIT_DISTANCE_CHANGE_UP, [self.UPPER_LIMIT_MAX, self.LIMIT_MIN]) # limit by distance change up
