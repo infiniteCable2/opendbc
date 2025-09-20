@@ -6,6 +6,7 @@ SPEED_DROP_THRESHOLD = 1.5
 
 class LeadControllerE2E():
   def __init__(self):
+    assert False
     self.sm = messaging.SubMaster(['modelV2'])
     self.reset()
 
