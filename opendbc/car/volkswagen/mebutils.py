@@ -105,7 +105,7 @@ class LongControlLimit():
     else:
       distance_change_raw = (self.distance_last - distance) / self.dt if 0 not in (self.distance_last, distance) else 0
       if self.distance_last == 0 and distance != 0: # for new lead detection reset filter and correctly force current state upon next iteration
-        self.distance_filter = FirstOrderFilter(rc=self.DISTANCE_FILTER_RC, dt=self.dt, initialized=False)
+        self.distance_filter = FirstOrderFilter(0.0, rc=self.DISTANCE_FILTER_RC, dt=self.dt, initialized=False)
         distance_change = distance_change_raw
       else:
         distance_change = self.distance_filter.update(distance_change_raw)
