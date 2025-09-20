@@ -83,7 +83,8 @@ class LongControlLimit():
   UPPER_LIMIT_MAX = UPPER_LIMIT_FACTOR * 2
   LIMIT_MIN = 0.
   LIMIT_DISTANCE = [0, 60]
-  LIMIT_DISTANCE_CHANGE = [10, 30]
+  LIMIT_DISTANCE_CHANGE_DOWN = [10, 30]
+  LIMIT_DISTANCE_CHANGE_UP = [0, 10]
   
   def __init__(self, dt=DT_CTRL):
     self.upper_limit = self.LIMIT_MIN
@@ -102,7 +103,7 @@ class LongControlLimit():
       distance_change = (self.distance_last - distance) / self.dt if 0 not in (self.distance_last, distance) else 0
       # how far can the true accel vary downwards from requested accel
       upper_limit_dist = np.interp(distance, self.LIMIT_DISTANCE, [self.LIMIT_MIN, self.UPPER_LIMIT_MAX]) # base line based on distance
-      upper_limit_dist_change = np.interp(max(0, distance_change), self.LIMIT_DISTANCE_CHANGE, [self.UPPER_LIMIT_MAX, self.LIMIT_MIN]) # limit by distance change
+      upper_limit_dist_change = np.interp(-min(0, distance_change), self.LIMIT_DISTANCE_CHANGE_UP, [self.UPPER_LIMIT_MAX, self.LIMIT_MIN]) # limit by distance change up
       self.upper_limit = min(upper_limit_dist, upper_limit_dist_change) # use lowest limit
       
       # how far can the true accel vary upwards from requested accel
@@ -110,7 +111,7 @@ class LongControlLimit():
       set_speed_diff_up_factor = np.interp(set_speed_diff_up, [1, 1.75], [1., 0.]) # faster requested speed decrease and less speed overshoot downhill 
       lower_limit_dist = np.interp(distance, self.LIMIT_DISTANCE, [self.LIMIT_MIN, self.LOWER_LIMIT_MAX]) # base line based on distance
       lower_limit_dist_speed = lower_limit_dist * set_speed_diff_up_factor
-      lower_limit_dist_change = np.interp(max(0, distance_change), self.LIMIT_DISTANCE_CHANGE, [self.LOWER_LIMIT_MAX, self.LIMIT_MIN]) # limit by distance change
+      lower_limit_dist_change = np.interp(max(0, distance_change), self.LIMIT_DISTANCE_CHANGE_DOWN, [self.LOWER_LIMIT_MAX, self.LIMIT_MIN]) # limit by distance change down
       self.lower_limit = min(lower_limit_dist_speed, lower_limit_dist_change) # use lowest limit
 
     self.distance_last = distance
