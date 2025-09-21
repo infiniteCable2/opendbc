@@ -119,15 +119,15 @@ class LongControlLimit():
         self.lower_limit = self.LIMIT_MIN
         self.distance_valid_timer = 0
     else:
-      self.distance_valid_timer = 0
       distance_change_raw = (self.distance_last - distance) / self.dt if 0 not in (self.distance_last, distance) else 0
       distance_filter_rc = np.interp(distance, self.LIMIT_DISTANCE, self.DISTANCE_FILTER_RC)
-      if self.distance_last == 0 and distance != 0: # for new lead detection reset filter and correctly force current state upon next iteration
+      if (self.distance_last == 0 or self.distance_valid_timer != 0) and distance != 0: # for new lead detection reset filter and correctly force current state upon next iteration
         self.distance_filter = FirstOrderFilter(0.0, rc=distance_filter_rc, dt=self.dt, initialized=False)
         distance_change = distance_change_raw
       else:
         self.distance_filter.update_alpha(distance_filter_rc)
         distance_change = self.distance_filter.update(distance_change_raw)
+      self.distance_valid_timer = 0
         
       # how far can the true accel vary downwards from requested accel
       upper_limit_dist = np.interp(distance, self.LIMIT_DISTANCE, [self.LIMIT_MIN, self.UPPER_LIMIT_MAX]) # base line based on distance
