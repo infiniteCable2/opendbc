@@ -133,7 +133,7 @@ class CarInterface(CarInterfaceBase):
 
     if ret.flags & VolkswagenFlags.MEB:
       ret.startingState = True # OP long starting state is used: for very slow start the car can go into error (EPB car shutting down bug)
-      ret.startAccel = 0.6
+      ret.startAccel = 0.8
       ret.vEgoStarting = 0.5 # minimum ~0.5 m/s acc starting state is neccessary to not fault the car
       ret.vEgoStopping = 0.1
       ret.stopAccel = -0.55 # different stopping accels seen, good working value
