@@ -91,7 +91,7 @@ class LongControlLimit():
   LIMIT_DISTANCE = [0, 80]
   LIMIT_DISTANCE_CHANGE_DOWN = [10, 30] # high precision for worst case high speed approaching a stopped lead
   LIMIT_DISTANCE_CHANGE_UP = [0, 5] # precisely follow an accelerating lead from stop
-  DISTANCE_FILTER_RC = 0.3 # smooth noisy distance signal for distant leads
+  DISTANCE_FILTER_RC = [0., 0.5] # smooth noisy distance signal for distant leads
   DISTANCE_TIMEOUT = 0.1 # seconds
   
   def __init__(self, dt=DT_CTRL):
@@ -99,7 +99,7 @@ class LongControlLimit():
     self.lower_limit = self.LIMIT_MIN
     self.dt = dt
     self.distance_last = 0.
-    self.distance_filter = FirstOrderFilter(0.0, rc=self.DISTANCE_FILTER_RC, dt=dt, initialized=False)
+    self.distance_filter = FirstOrderFilter(0.0, rc=self.DISTANCE_FILTER_RC[0], dt=dt, initialized=False)
     self.distance_valid_timer = 0
     
   def update(self, enabled: bool, speed: float, set_speed: float, distance: float, has_lead: bool, critical_state: bool):
@@ -121,10 +121,12 @@ class LongControlLimit():
     else:
       self.distance_valid_timer = 0
       distance_change = (self.distance_last - distance) / self.dt if 0 not in (self.distance_last, distance) else 0
+      distance_filter_rc = np.interp(distance, self.LIMIT_DISTANCE, self.DISTANCE_FILTER_RC)
       if self.distance_last == 0 and distance != 0: # for new lead detection reset filter and correctly force current state upon next iteration
-        self.distance_filter = FirstOrderFilter(0.0, rc=self.DISTANCE_FILTER_RC, dt=self.dt, initialized=False)
+        self.distance_filter = FirstOrderFilter(0.0, rc=distance_filter_rc, dt=self.dt, initialized=False)
         distance_change_filtered = distance_change
       else:
+        self.distance_filter.update_alpha(distance_filter_rc)
         distance_change_filtered = self.distance_filter.update(distance_change)
         
       # how far can the true accel vary downwards from requested accel
