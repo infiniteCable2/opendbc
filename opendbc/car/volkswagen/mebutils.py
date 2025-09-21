@@ -10,7 +10,7 @@ class LongControlJerk():
   JERK_LIMIT_MIN = 0.5
   JERK_LIMIT_MAX = 5.0
   FILTER_GAIN_DISTANCE = [0, 80]
-  FILTER_GAIN_DISTANCE_CHANGE = [5, 20]
+  FILTER_GAIN_DISTANCE_CHANGE = [5, 25]
   FILTER_GAIN_MAX = 0.95
   FILTER_GAIN_MIN = 0.65
   
@@ -89,10 +89,10 @@ class LongControlLimit():
   UPPER_LIMIT_MAX = UPPER_LIMIT_FACTOR * 2
   LIMIT_MIN = 0.
   LIMIT_DISTANCE = [0, 80]
-  LIMIT_DISTANCE_CHANGE_DOWN = [5, 20] # high precision for worst case high speed approaching a stopped lead
+  LIMIT_DISTANCE_CHANGE_DOWN = [5, 25] # high precision for worst case high speed approaching a stopped lead
   LIMIT_DISTANCE_CHANGE_UP = [0, 5] # precisely follow an accelerating lead especially from stop
   LIMIT_DISTANCE_CHANGE_UP_ACT_SPEED = [0, 20] # usage by speed for upper limit by distance change
-  DISTANCE_FILTER_RC = [0.15, 0.35] # smooth noisy distance signal for distant leads
+  DISTANCE_FILTER_RC = [0.15, 0.5] # smooth noisy distance signal for distant leads
   DISTANCE_TIMEOUT = 0.5 # seconds
   
   def __init__(self, dt=DT_CTRL):
