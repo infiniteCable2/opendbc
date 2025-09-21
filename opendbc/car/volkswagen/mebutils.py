@@ -89,10 +89,11 @@ class LongControlLimit():
   UPPER_LIMIT_MAX = UPPER_LIMIT_FACTOR * 2
   LIMIT_MIN = 0.
   LIMIT_DISTANCE = [0, 80]
-  LIMIT_DISTANCE_CHANGE_DOWN = [10, 30] # high precision for worst case high speed approaching a stopped lead
-  LIMIT_DISTANCE_CHANGE_UP = [0, 5] # precisely follow an accelerating lead from stop
-  DISTANCE_FILTER_RC = [0.15, 0.3] # smooth noisy distance signal for distant leads
-  DISTANCE_TIMEOUT = 0.2 # seconds
+  LIMIT_DISTANCE_CHANGE_DOWN = [10, 20] # high precision for worst case high speed approaching a stopped lead
+  LIMIT_DISTANCE_CHANGE_UP = [0, 5] # precisely follow an accelerating lead especially from stop
+  LIMIT_DISTANCE_CHANGE_UP_ACT_SPEED = [0, 20] # usage by speed for upper limit by distance change
+  DISTANCE_FILTER_RC = [0.15, 0.35] # smooth noisy distance signal for distant leads
+  DISTANCE_TIMEOUT = 0.5 # seconds
   
   def __init__(self, dt=DT_CTRL):
     self.upper_limit = self.LIMIT_MIN
@@ -132,6 +133,7 @@ class LongControlLimit():
       # how far can the true accel vary downwards from requested accel
       upper_limit_dist = np.interp(distance, self.LIMIT_DISTANCE, [self.LIMIT_MIN, self.UPPER_LIMIT_MAX]) # base line based on distance
       upper_limit_dist_change = np.interp(-min(0, distance_change), self.LIMIT_DISTANCE_CHANGE_UP, [self.UPPER_LIMIT_MAX, self.LIMIT_MIN]) # limit by distance change up
+      upper_limit_dist_change = np.interp(speed, self.LIMIT_DISTANCE_CHANGE_UP_ACT_SPEED, [upper_limit_dist_change, upper_limit_dist]) # use limit by distance change for lower speeds
       self.upper_limit = min(upper_limit_dist, upper_limit_dist_change) # use lowest limit
       
       # how far can the true accel vary upwards from requested accel
