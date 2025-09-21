@@ -184,7 +184,8 @@ class CarController(CarControllerBase):
           # Logic to prevent car error with EPB:
           #   * send a few frames of HMS RAMP RELEASE command at the very begin of long override and right at the end of active long control -> clean exit of ACC car controls
           #   * (1 frame of HMS RAMP RELEASE is enough, but lower the possibility of panda safety blocking it)
-          starting = actuators.longControlState == LongCtrlState.starting and CS.out.vEgo <= self.CP.vEgoStarting # openpilot sets starting state after overriding, ensure being in range
+          starting = actuators.longControlState == LongCtrlState.pid and (CS.esp_hold_confirmation or CS.out.vEgo < self.CP.vEgoStarting)
+          #starting = actuators.longControlState == LongCtrlState.starting and CS.out.vEgo <= self.CP.vEgoStarting # openpilot sets starting state after overriding, ensure being in range
           accel = float(np.clip(actuators.accel, self.CCP.ACCEL_MIN, self.CCP.ACCEL_MAX) if CC.enabled else 0)
 
           long_override = CC.cruiseControl.override or CS.out.gasPressed
