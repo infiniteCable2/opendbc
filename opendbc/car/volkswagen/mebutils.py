@@ -111,7 +111,7 @@ class LongControlLimit():
       self.lower_limit = self.LIMIT_MIN
       self.distance_valid_timer = 0
     elif not has_lead: 
-      if distance == 0 and self.distance_last != 0 and self.distance_valid_timer <= self.DISTANCE_TIMEOUT: # fluctuation block: keep alive
+      if distance == 0 and self.distance_last != 0 and self.distance_valid_timer < self.DISTANCE_TIMEOUT: # fluctuation block: keep alive
         self.distance_valid_timer += self.dt
         distance = self.distance_last
       else: # force most precise
