@@ -10,7 +10,7 @@ class LongControlJerk():
   JERK_LIMIT_MIN = 0.5
   JERK_LIMIT_MAX = 5.0
   FILTER_GAIN_DISTANCE = [0, 80]
-  FILTER_GAIN_DISTANCE_CHANGE = [10, 20]
+  FILTER_GAIN_DISTANCE_CHANGE = [5, 20]
   FILTER_GAIN_MAX = 0.9
   FILTER_GAIN_MIN = 0.7
   
@@ -89,7 +89,7 @@ class LongControlLimit():
   UPPER_LIMIT_MAX = UPPER_LIMIT_FACTOR * 2
   LIMIT_MIN = 0.
   LIMIT_DISTANCE = [0, 80]
-  LIMIT_DISTANCE_CHANGE_DOWN = [10, 20] # high precision for worst case high speed approaching a stopped lead
+  LIMIT_DISTANCE_CHANGE_DOWN = [5, 20] # high precision for worst case high speed approaching a stopped lead
   LIMIT_DISTANCE_CHANGE_UP = [0, 5] # precisely follow an accelerating lead especially from stop
   LIMIT_DISTANCE_CHANGE_UP_ACT_SPEED = [0, 20] # usage by speed for upper limit by distance change
   DISTANCE_FILTER_RC = [0.15, 0.35] # smooth noisy distance signal for distant leads
@@ -112,13 +112,11 @@ class LongControlLimit():
       self.lower_limit = self.LIMIT_MIN
       self.distance_valid_timer = 0
     elif not has_lead: 
-      if distance == 0 and self.distance_last != 0 and self.distance_valid_timer < self.DISTANCE_TIMEOUT: # fluctuation block: keep alive
+      if self.distance_valid_timer < self.DISTANCE_TIMEOUT: # fluctuation block: keep alive
         self.distance_valid_timer += self.dt
-        distance = self.distance_last
       else: # force most precise
         self.upper_limit = self.LIMIT_MIN
         self.lower_limit = self.LIMIT_MIN
-        self.distance_valid_timer = 0
     else:
       distance_change_raw = (self.distance_last - distance) / self.dt if 0 not in (self.distance_last, distance) else 0
       distance_filter_rc = np.interp(distance, self.LIMIT_DISTANCE, self.DISTANCE_FILTER_RC)
