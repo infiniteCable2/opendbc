@@ -11,8 +11,8 @@ class LongControlJerk():
   JERK_LIMIT_MAX = 5.0
   FILTER_GAIN_DISTANCE = [0, 80]
   FILTER_GAIN_DISTANCE_CHANGE = [5, 20]
-  FILTER_GAIN_MAX = 0.9
-  FILTER_GAIN_MIN = 0.7
+  FILTER_GAIN_MAX = 0.95
+  FILTER_GAIN_MIN = 0.65
   
   def __init__(self, dt=DT_CTRL):
     self.dy_up = 0.
