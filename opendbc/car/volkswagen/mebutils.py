@@ -91,8 +91,8 @@ class LongControlLimit():
   LIMIT_DISTANCE = [0, 80]
   LIMIT_DISTANCE_CHANGE_DOWN = [10, 30] # high precision for worst case high speed approaching a stopped lead
   LIMIT_DISTANCE_CHANGE_UP = [0, 5] # precisely follow an accelerating lead from stop
-  DISTANCE_FILTER_RC = [0., 0.5] # smooth noisy distance signal for distant leads
-  DISTANCE_TIMEOUT = 0.1 # seconds
+  DISTANCE_FILTER_RC = [0.15, 0.3] # smooth noisy distance signal for distant leads
+  DISTANCE_TIMEOUT = 0.2 # seconds
   
   def __init__(self, dt=DT_CTRL):
     self.upper_limit = self.LIMIT_MIN
@@ -120,18 +120,18 @@ class LongControlLimit():
         self.distance_valid_timer = 0
     else:
       self.distance_valid_timer = 0
-      distance_change = (self.distance_last - distance) / self.dt if 0 not in (self.distance_last, distance) else 0
+      distance_change_raw = (self.distance_last - distance) / self.dt if 0 not in (self.distance_last, distance) else 0
       distance_filter_rc = np.interp(distance, self.LIMIT_DISTANCE, self.DISTANCE_FILTER_RC)
       if self.distance_last == 0 and distance != 0: # for new lead detection reset filter and correctly force current state upon next iteration
         self.distance_filter = FirstOrderFilter(0.0, rc=distance_filter_rc, dt=self.dt, initialized=False)
-        distance_change_filtered = distance_change
+        distance_change = distance_change_raw
       else:
         self.distance_filter.update_alpha(distance_filter_rc)
-        distance_change_filtered = self.distance_filter.update(distance_change)
+        distance_change = self.distance_filter.update(distance_change_raw)
         
       # how far can the true accel vary downwards from requested accel
       upper_limit_dist = np.interp(distance, self.LIMIT_DISTANCE, [self.LIMIT_MIN, self.UPPER_LIMIT_MAX]) # base line based on distance
-      upper_limit_dist_change = np.interp(-min(0, distance_change_filtered), self.LIMIT_DISTANCE_CHANGE_UP, [self.UPPER_LIMIT_MAX, self.LIMIT_MIN]) # limit by distance change up
+      upper_limit_dist_change = np.interp(-min(0, distance_change), self.LIMIT_DISTANCE_CHANGE_UP, [self.UPPER_LIMIT_MAX, self.LIMIT_MIN]) # limit by distance change up
       self.upper_limit = min(upper_limit_dist, upper_limit_dist_change) # use lowest limit
       
       # how far can the true accel vary upwards from requested accel
