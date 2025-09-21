@@ -11,8 +11,9 @@ class LongControlJerk():
   JERK_LIMIT_MAX = 5.0
   FILTER_GAIN_DISTANCE = [0, 80]
   FILTER_GAIN_DISTANCE_CHANGE = [5, 25]
-  FILTER_GAIN_MAX = 0.95
+  FILTER_GAIN_MAX = 1.
   FILTER_GAIN_MIN = 0.65
+  FILTER_GAIN_NO_LEAD = 0.9
   
   def __init__(self, dt=DT_CTRL):
     self.dy_up = 0.
@@ -54,7 +55,7 @@ class LongControlJerk():
         filter_gain_dist_change = np.interp(max(0, distance_change), self.FILTER_GAIN_DISTANCE_CHANGE, [self.FILTER_GAIN_MIN, self.FILTER_GAIN_MAX]) # gain by distance change
         filter_gain = max(filter_gain_dist, filter_gain_dist_change) # use highest gain
       else:
-        filter_gain = self.FILTER_GAIN_MAX
+        filter_gain = self.FILTER_GAIN_NO_LEAD
       
       j = (accel - self.accel_last) / self.dt if not self.skip else 0
       self.skip = False
