@@ -7,13 +7,13 @@ from opendbc.car import DT_CTRL
 
 
 class LongControlJerk():
-  JERK_LIMIT_MIN = 0.6
+  JERK_LIMIT_MIN = 0.65
   JERK_LIMIT_MAX = 5.0
   FILTER_GAIN_DISTANCE = [0, 100]
   FILTER_GAIN_DISTANCE_CHANGE = [5, 25]
   FILTER_GAIN_MAX = 1.
   FILTER_GAIN_MIN = 0.65
-  FILTER_GAIN_NO_LEAD = 0.9
+  FILTER_GAIN_NO_LEAD = 0.95
   
   def __init__(self, dt=DT_CTRL):
     self.dy_up = 0.
@@ -80,7 +80,7 @@ class LongControlJerk():
 
 class LongControlLimit():
   LOWER_LIMIT_FACTOR = 0.024
-  LOWER_LIMIT_MAX = LOWER_LIMIT_FACTOR * 6
+  LOWER_LIMIT_MAX = LOWER_LIMIT_FACTOR * 12
   UPPER_LIMIT_FACTOR = 0.0625
   UPPER_LIMIT_MAX = UPPER_LIMIT_FACTOR * 2
   LIMIT_MIN = 0.
