@@ -82,7 +82,7 @@ class LongControlLimit():
   LOWER_LIMIT_FACTOR = 0.024
   LOWER_LIMIT_MAX = LOWER_LIMIT_FACTOR * 12
   UPPER_LIMIT_FACTOR = 0.0625
-  UPPER_LIMIT_MAX = UPPER_LIMIT_FACTOR * 2
+  UPPER_LIMIT_MAX = UPPER_LIMIT_FACTOR * 4
   LIMIT_MIN = 0.
   LIMIT_DISTANCE = [0, 100]
   LIMIT_DISTANCE_CHANGE_DOWN = [5, 25] # high precision for worst case high speed approaching a stopped lead
