@@ -9,10 +9,10 @@ from opendbc.car import DT_CTRL
 class LongControlJerk():
   JERK_LIMIT_MIN = 0.5
   JERK_LIMIT_MAX = 5.0
-  FILTER_GAIN_DISTANCE = [0, 80]
-  FILTER_GAIN_DISTANCE_CHANGE = [0, 25]
-  FILTER_GAIN_MAX = 1.
-  FILTER_GAIN_MIN = 0.65
+  FILTER_GAIN_DISTANCE = [0, 100]
+  FILTER_GAIN_DISTANCE_CHANGE = [5, 25]
+  FILTER_GAIN_MAX = 0.95
+  FILTER_GAIN_MIN = 0.7
   FILTER_GAIN_NO_LEAD = 0.9
   
   def __init__(self, dt=DT_CTRL):
@@ -23,7 +23,6 @@ class LongControlJerk():
     self.dt = dt
     self.accel_last = 0.
     self.distance_last = 0.
-    self.skip = False
     
   def update(self, enabled, override, distance, has_lead, accel, critical_state):
     # jerk limits by accel change and distance are used to improve comfort while ensuring a fast enough car reaction
@@ -35,19 +34,16 @@ class LongControlJerk():
       self.jerk_down = 0.
       self.dy_up = 0.
       self.dy_down = 0.
-      self.skip = True
     elif override:
       self.jerk_up = self.JERK_LIMIT_MIN
       self.jerk_down = self.JERK_LIMIT_MIN
       self.dy_up = 0.
       self.dy_down = 0.
-      self.skip = True
     elif critical_state: # force best car reaction
       self.jerk_up = self.JERK_LIMIT_MAX
       self.jerk_down = self.JERK_LIMIT_MAX
       self.dy_up = 0.
       self.dy_down = 0.
-      self.skip = True
     else:
       if has_lead:
         distance_change = (self.distance_last - distance) / self.dt if 0 not in (self.distance_last, distance) else 0
@@ -57,8 +53,7 @@ class LongControlJerk():
       else:
         filter_gain = self.FILTER_GAIN_NO_LEAD
       
-      j = (accel - self.accel_last) / self.dt if not self.skip else 0
-      self.skip = False
+      j = (accel - self.accel_last) / self.dt
   
       tgt_up = abs(j) if j > 0 else 0.
       tgt_down = abs(j) if j < 0 else 0.
@@ -89,7 +84,7 @@ class LongControlLimit():
   UPPER_LIMIT_FACTOR = 0.0625
   UPPER_LIMIT_MAX = UPPER_LIMIT_FACTOR * 2
   LIMIT_MIN = 0.
-  LIMIT_DISTANCE = [0, 80]
+  LIMIT_DISTANCE = [0, 100]
   LIMIT_DISTANCE_CHANGE_DOWN = [5, 25] # high precision for worst case high speed approaching a stopped lead
   LIMIT_DISTANCE_CHANGE_UP = [0, 5] # precisely follow an accelerating lead especially from stop
   LIMIT_DISTANCE_CHANGE_UP_ACT_SPEED = [0, 20] # usage by speed for upper limit by distance change
