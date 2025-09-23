@@ -7,11 +7,11 @@ from opendbc.car import DT_CTRL
 
 
 class LongControlJerk():
-  JERK_LIMIT_MIN = 0.65
+  JERK_LIMIT_MIN = 0.7
   JERK_LIMIT_MAX = 5.0
   FILTER_GAIN_DISTANCE = [0, 100]
   FILTER_GAIN_DISTANCE_CHANGE = [5, 25]
-  FILTER_GAIN_MAX = 1.
+  FILTER_GAIN_MAX = 0.95
   FILTER_GAIN_MIN = 0.65
   FILTER_GAIN_NO_LEAD = 0.95
   
@@ -87,7 +87,6 @@ class LongControlLimit():
   LIMIT_DISTANCE = [0, 100]
   LIMIT_DISTANCE_CHANGE_DOWN = [5, 25] # high precision for worst case high speed approaching a stopped lead
   LIMIT_DISTANCE_CHANGE_UP = [0, 5] # precisely follow an accelerating lead especially from stop
-  LIMIT_DISTANCE_CHANGE_UP_ACT_SPEED = [0, 20] # usage by speed for upper limit by distance change
   DISTANCE_FILTER_RC = [0.15, 0.6] # smooth noisy distance signal for distant leads
   DISTANCE_TIMEOUT = 1. # seconds
   
@@ -127,7 +126,6 @@ class LongControlLimit():
       # how far can the true accel vary downwards from requested accel
       upper_limit_dist = np.interp(distance, self.LIMIT_DISTANCE, [self.LIMIT_MIN, self.UPPER_LIMIT_MAX]) # base line based on distance
       upper_limit_dist_change = np.interp(-min(0, distance_change), self.LIMIT_DISTANCE_CHANGE_UP, [self.UPPER_LIMIT_MAX, self.LIMIT_MIN]) # limit by distance change up
-      upper_limit_dist_change = np.interp(speed, self.LIMIT_DISTANCE_CHANGE_UP_ACT_SPEED, [upper_limit_dist_change, upper_limit_dist]) # use limit by distance change for lower speeds
       self.upper_limit = min(upper_limit_dist, upper_limit_dist_change) # use lowest limit
       
       # how far can the true accel vary upwards from requested accel
