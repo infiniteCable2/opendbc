@@ -3,6 +3,7 @@ import math
 
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.volkswagen.values import VolkswagenFlags
+from opendbc.car.lateral import ISO_LATERAL_ACCEL
 
 NOT_SET = 0
 SPEED_SUGGESTED_MAX_HIGHWAY_GER_KPH = 130 # 130 kph in germany
@@ -13,22 +14,26 @@ SANITY_CHECK_DIFF_PERCENT_LOWER = 30
 SPEED_LIMIT_UNLIMITED_VZE_KPH = int(round(144 * CV.MS_TO_KPH))
 DECELERATION_PREDICATIVE = 1.0
 SEGMENT_DECAY = 10
+PSD_NEXT_TYPE_SPEED_LIMIT = 1
+PSD_NEXT_TYPE_CURV_SPEED = 2
 
 
 class SpeedLimitManager:
-  def __init__(self, car_params, speed_limit_max_kph=SPEED_SUGGESTED_MAX_HIGHWAY_GER_KPH, predicative=False):
+  def __init__(self, car_params, speed_limit_max_kph=SPEED_SUGGESTED_MAX_HIGHWAY_GER_KPH, predicative=False, predicative_speed=False):
     self.CP = car_params
     self.v_limit_psd = NOT_SET
     self.v_limit_psd_next = NOT_SET
     self.v_limit_psd_legal = NOT_SET
+    self.v_limit_psd_next_type = NOT_SET
     self.v_limit_vze = NOT_SET
     self.v_limit_speed_factor_psd = 1
     self.v_limit_vze_sanity_error = False
     self.v_limit_output_last = NOT_SET
     self.v_limit_max = speed_limit_max_kph
     self.predicative = predicative
+    self.predicative_speed = predicative_speed
     self.predicative_segments = {}
-    self.current_predicative_segment = {"ID": NOT_SET, "Length": NOT_SET, "Speed": NOT_SET, "StreetType": NOT_SET}
+    self.current_predicative_segment = {"ID": NOT_SET, "Length": NOT_SET, "Speed": NOT_SET, "StreetType": NOT_SET, "Curvature": NOT_SET}
     self.v_limit_psd_next_last_timestamp = 0
     self.v_limit_psd_next_last = NOT_SET
     self.v_limit_psd_next_decay_time = NOT_SET
@@ -50,8 +55,15 @@ class SpeedLimitManager:
       self._get_speed_limit_psd_next(current_speed_ms)
 
   def get_speed_limit_predicative(self):
+    if self.v_limit_psd_next_type != PSD_NEXT_TYPE_SPEED_LIMIT:
+      return NOT_SET
     v_limit_output = self.v_limit_psd_next if self.predicative and self.v_limit_psd_next != NOT_SET and self.v_limit_psd_next < self.v_limit_output_last else NOT_SET
+    return v_limit_output * CV.KPH_TO_MS
     
+  def get_curve_speed_predicative(self):
+    if self.v_limit_psd_next_type != PSD_NEXT_TYPE_CURV_SPEED:
+      return NOT_SET
+    v_limit_output = self.v_limit_psd_next if self.predicative and self.v_limit_psd_next != NOT_SET and self.v_limit_psd_next < self.v_limit_output_last else NOT_SET
     return v_limit_output * CV.KPH_TO_MS
 
   def get_speed_limit(self):
@@ -125,6 +137,32 @@ class SpeedLimitManager:
         self.current_predicative_segment["ID"] = psd_05["PSD_Pos_Segment_ID"]
         self.current_predicative_segment["Speed"] = NOT_SET
         self.current_predicative_segment["StreetType"] = NOT_SET
+        
+  def _calculate_segement_curvature(self, psd_04):
+    SCALE = 4.664e-5  # [1/m] dbc signal not scaled at the moment
+    curv_begin = NOT_SET
+    curv_end = NOT_SET
+        
+    if psd_04["PSD_Anfangskruemmung"] != 255:
+      curv_begin = psd_04["PSD_Anfangskruemmung"] * SCALE
+      if psd_04["PSD_Anfangskruemmung_Vorz"] == 1:
+        curv_begin *= -1
+        
+    if psd_04["PSD_Endkruemmung"] != 255:
+      curv_end = psd_04["PSD_Endkruemmung"] * SCALE
+      if psd_04["PSD_Endkruemmung_Vorz"] == 1:
+        curv_end *= -1
+        
+    curvature = max(abs(curv_begin), abs(curv_end))
+    curvature *= -1 if (curv_begin < 0 or curv_end < 0) else 1
+    
+    return curvature
+    
+  def _calculate_curve_speed(self, curvature):
+    if curvature == NOT_SET:
+      return NOT_SET
+    curv_speed_ms = math.sqrt(ISO_LATERAL_ACCEL / abs(curvature))
+    return curv_speed_ms * CV.MS_TO_KPH
 
   def _refresh_current_segment(self):
     current_segment = self.current_predicative_segment["ID"]
@@ -146,6 +184,7 @@ class SpeedLimitManager:
       seg = self.predicative_segments.get(segment_id)
       if seg:
         seg["Length"] = psd_04["PSD_Segmentlaenge"]
+        seg["Curvature"] = self._calculate_segement_curvature(psd_04)
         seg["StreetType"] = self._get_street_type(psd_04["PSD_Strassenkategorie"], psd_04["PSD_Bebauung"])
         seg["ID_Prev"] = psd_04["PSD_Vorgaenger_Segment_ID"]
         seg["Timestamp"] = now
@@ -153,6 +192,7 @@ class SpeedLimitManager:
         self.predicative_segments[segment_id] = {
           "ID": segment_id,
           "Length": psd_04["PSD_Segmentlaenge"],
+          "Curvature": self._calculate_segement_curvature(psd_04),
           "StreetType": self._get_street_type(psd_04["PSD_Strassenkategorie"], psd_04["PSD_Bebauung"]),
           "ID_Prev": psd_04["PSD_Vorgaenger_Segment_ID"],
           "Speed": NOT_SET,
@@ -229,17 +269,31 @@ class SpeedLimitManager:
     seg = self.predicative_segments.get(seg_id)
     if not seg:
       return
-  
-    speed_kmh = seg.get("Speed", NOT_SET)
-    if seg.get("QualityFlag", False) and speed_kmh != NOT_SET:
-      if speed_kmh < self.v_limit_output_last:
-        v_target_ms = speed_kmh * CV.KPH_TO_MS
-        braking_distance = (current_speed_ms**2 - v_target_ms**2) / (2 * DECELERATION_PREDICATIVE)
         
-        if braking_distance > 0 and total_dist <= braking_distance:
-          if speed_kmh < best_result["limit"]:
-            best_result["limit"] = speed_kmh
-            best_result["dist"] = total_dist
+    speed_curv_kmh = self._calculate_curve_speed(seg.get("Curvature", None))
+    speed_kmh = seg.get("Speed", NOT_SET)
+    
+    if seg.get("QualityFlag", False):
+      if speed_kmh != NOT_SET:
+        if speed_kmh < self.v_limit_output_last:
+          v_target_ms = speed_kmh * CV.KPH_TO_MS
+          braking_distance = (current_speed_ms**2 - v_target_ms**2) / (2 * DECELERATION_PREDICATIVE)
+          
+          if braking_distance > 0 and total_dist <= braking_distance:
+            if speed_kmh < best_result["limit"]:
+              best_result["limit"] = speed_kmh
+              best_result["dist"] = total_dist
+              
+      if speed_curv_kmh != NOT_SET:
+        if speed_curv_kmh < self.v_limit_output_last:
+          v_target_ms = speed_curv_kmh * CV.KPH_TO_MS
+          braking_distance = (current_speed_ms**2 - v_target_ms**2) / (2 * DECELERATION_PREDICATIVE)
+          
+          if braking_distance > 0 and total_dist <= braking_distance:
+            if speed_curv_kmh < best_result["curv_limit"]:
+              best_result["curv_limit"] = speed_curv_kmh
+              best_result["curv_dist"] = total_dist
+              best_result["curv_length"] = seg.get("Length", 0)
 
     children = [sid for sid, s in self.predicative_segments.items() if s.get("ID_Prev") == seg_id]
     if len(children) > 1:
@@ -260,21 +314,31 @@ class SpeedLimitManager:
     if current_id == NOT_SET:
       return
 
-    best_result = {"limit": float('inf'), "dist": float('inf')}
+    best_result = {"limit": float('inf'), "dist": float('inf'), "curv_limit": float('inf'), "curv_dist": float('inf'), "curv_length": float('inf')}
     self._dfs(current_id, 0, set(), current_speed_ms, best_result)
 
     now = time.time()
-    if best_result["limit"] != float('inf'):
+    if self.predicative_speed and best_result["curv_limit"] != float('inf') and best_result["curv_limit"] < best_result["limit"]:
+      self.v_limit_psd_next_type = PSD_NEXT_TYPE_CURV_SPEED
+      self.v_limit_psd_next = best_result["curv_limit"]
+      self.v_limit_psd_next_last = best_result["curv_limit"]
+      self.v_limit_psd_next_last_timestamp = now
+      self.v_limit_psd_next_decay_time = math.sqrt(2 * best_result["dist"] / DECELERATION_PREDICATIVE) + (self.v_limit_psd_next * best_result["curv_length"] / current_speed_ms)
+      
+    elif self.predicative and best_result["limit"] != float('inf') and best_result["limit"] < best_result["curv_limit"]:
+      self.v_limit_psd_next_type = PSD_NEXT_TYPE_SPEED_LIMIT
       self.v_limit_psd_next = best_result["limit"]
       self.v_limit_psd_next_last = best_result["limit"]
       self.v_limit_psd_next_last_timestamp = now
       self.v_limit_psd_next_decay_time = math.sqrt(2 * best_result["dist"] / DECELERATION_PREDICATIVE)
+    
     else:
       if now - self.v_limit_psd_next_last_timestamp <= self.v_limit_psd_next_decay_time and self.v_limit_output_last > self.v_limit_psd_next_last and not self.v_limit_changed:
         self.v_limit_psd_next = self.v_limit_psd_next_last
       else:
         self.v_limit_psd_next_last = NOT_SET
         self.v_limit_psd_next_decay_time = NOT_SET
+        self.v_limit_psd_next_type = NOT_SET
 
   def _get_speed_limit_psd(self):
     seg_id = self.current_predicative_segment.get("ID")
