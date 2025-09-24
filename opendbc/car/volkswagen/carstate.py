@@ -4,7 +4,7 @@ from opendbc.car.interfaces import CarStateBase
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.volkswagen.values import DBC, CanBus, NetworkLocation, TransmissionType, GearShifter, \
                                                       CarControllerParams, VolkswagenFlags
-from opendbc.car.volkswagen.speed_limit_manager import SpeedLimitManager
+from opendbc.car.volkswagen.speed_limit_manager import SpeedLimitManager, NOT_SET, PSD_NEXT_TYPE_SPEED_LIMIT, PSD_NEXT_TYPE_CURV_SPEED
 
 from opendbc.sunnypilot.car.volkswagen.mads import MadsCarState
 
@@ -25,7 +25,7 @@ class CarState(CarStateBase, MadsCarState):
     self.eps_stock_values = False
     self.curvature = 0.
     self.speed_limit_mgr = SpeedLimitManager(CP, speed_limit_max_kph=120, predicative=True, predicative_curve=True)
-    self.speed_limit_predicative_type = 'None'
+    self.speed_limit_predicative_type = NOT_SET
     self.force_rhd_for_bsm = False
 
   def update_button_enable(self, buttonEvents: list[structs.CarState.ButtonEvent]):
