@@ -265,7 +265,7 @@ class SpeedLimitManager:
     if not seg:
       return
         
-    speed_curv_kmh = self._calculate_curve_speed(seg.get("Curvature", None))
+    speed_curv_kmh = self._calculate_curve_speed(seg.get("Curvature", NOT_SET))
     speed_kmh = seg.get("Speed", NOT_SET)
     
     if seg.get("QualityFlag", False): # quality flag is used to detect valid speed limits
