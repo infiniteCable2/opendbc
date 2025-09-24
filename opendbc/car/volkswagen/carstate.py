@@ -24,7 +24,8 @@ class CarState(CarStateBase, MadsCarState):
     self.upscale_lead_car_signal = False
     self.eps_stock_values = False
     self.curvature = 0.
-    self.speed_limit_mgr = SpeedLimitManager(CP, speed_limit_max_kph=120, predicative=True)
+    self.speed_limit_mgr = SpeedLimitManager(CP, speed_limit_max_kph=120, predicative=True, predicative_curve=True)
+    self.speed_limit_predicative_type = 'None'
     self.force_rhd_for_bsm = False
 
   def update_button_enable(self, buttonEvents: list[structs.CarState.ButtonEvent]):
@@ -365,6 +366,7 @@ class CarState(CarStateBase, MadsCarState):
     self.speed_limit_mgr.update(ret.vEgo, psd_04_values, psd_05_values, psd_06_values, vze_01_values, raining)
     ret.cruiseState.speedLimit = self.speed_limit_mgr.get_speed_limit()
     ret.cruiseState.speedLimitPredicative = self.speed_limit_mgr.get_speed_limit_predicative()
+    self.speed_limit_predicative_type = self.speed_limit_mgr.get_speed_limit_predicative_type()
     
     # Update button states for turn signals and ACC controls, capture all ACC button state/config for passthrough
     # turn signal effect
