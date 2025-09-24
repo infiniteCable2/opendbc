@@ -1,5 +1,6 @@
 from opendbc.car.volkswagen.mebutils import map_speed_to_acc_tempolimit
 from opendbc.car.volkswagen.values import VolkswagenFlags
+from opendbc.car.volkswagen.speed_limit_manager import PSD_NEXT_TYPE_CURV_SPEED
 
 ACCEL_INACTIVE = 3.01
 ACCEL_OVERRIDE = 0.00
@@ -258,13 +259,16 @@ def acc_hud_status_value(main_switch_on, acc_faulted, long_active, override):
   return acc_hud_control
 
 
-def acc_hud_event(acc_hud_control, esp_hold, speed_limit_predicative, speed_limit):
+def acc_hud_event(acc_hud_control, esp_hold, speed_limit_predicative, speed_limit_predicative_type, speed_limit):
   acc_event = 0
   
   if esp_hold and acc_hud_control == ACC_HUD_ACTIVE:
     acc_event = 3 # acc ready message at standstill
   elif acc_hud_control in (ACC_HUD_ACTIVE, ACC_HUD_OVERRIDE) and speed_limit_predicative:
-    acc_event = 4 # acc limited by speed limit by nav (predicative)
+    if speed_limit_predicative_type == PSD_NEXT_TYPE_CURV_SPEED:
+      acc_event = 6 # acc limited by curve (predicative)
+    else:
+      acc_event = 4 # acc limited by speed limit by nav (predicative)
   elif acc_hud_control in (ACC_HUD_ACTIVE, ACC_HUD_OVERRIDE) and speed_limit:
     acc_event = 5 # acc limited by speed limit by camera (recently detected)
 
