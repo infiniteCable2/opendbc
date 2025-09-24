@@ -313,20 +313,36 @@ class SpeedLimitManager:
     self._dfs(current_id, 0, set(), current_speed_ms, best_result)
 
     now = time.time()
-    if self.predicative_curve and best_result["curv_limit"] != float('inf') and best_result["curv_limit"] < best_result["limit"]:
+    
+    type_to_set = NOT_SET
+    if best_result["curv_limit"] != float('inf') and best_result["limit"] != float('inf'):
+      if best_result["curv_limit"] < best_result["limit"]:
+        type_to_set = PSD_NEXT_TYPE_CURV_SPEED
+      elif best_result["limit"] < best_result["curv_limit"]:
+        type_to_set = PSD_NEXT_TYPE_SPEED_LIMIT
+      else:
+        type_to_set = self.v_limit_psd_next_type
+    elif best_result["curv_limit"] != float('inf'):
+      if self.v_limit_psd_next_last == NOT_SET or self.v_limit_psd_next_last > best_result["curv_limit"]:
+        type_to_set = PSD_NEXT_TYPE_CURV_SPEED
+    elif best_result["limit"] != float('inf'):
+      if self.v_limit_psd_next_last == NOT_SET or self.v_limit_psd_next_last > best_result["limit"]:
+        type_to_set = PSD_NEXT_TYPE_SPEED_LIMIT
+       
+    if self.predicative_curve and type_to_set == PSD_NEXT_TYPE_CURV_SPEED:
       self.v_limit_psd_next_type = PSD_NEXT_TYPE_CURV_SPEED
       self.v_limit_psd_next = best_result["curv_limit"]
       self.v_limit_psd_next_last = best_result["curv_limit"]
       self.v_limit_psd_next_last_timestamp = now
       self.v_limit_psd_next_decay_time = math.sqrt(2 * best_result["dist"] / DECELERATION_PREDICATIVE) + (self.v_limit_psd_next * best_result["curv_length"] / current_speed_ms)
       
-    elif self.predicative and best_result["limit"] != float('inf') and best_result["limit"] < best_result["curv_limit"]:
+    elif self.predicative and type_to_set == PSD_NEXT_TYPE_SPEED_LIMIT:
       self.v_limit_psd_next_type = PSD_NEXT_TYPE_SPEED_LIMIT
       self.v_limit_psd_next = best_result["limit"]
       self.v_limit_psd_next_last = best_result["limit"]
       self.v_limit_psd_next_last_timestamp = now
       self.v_limit_psd_next_decay_time = math.sqrt(2 * best_result["dist"] / DECELERATION_PREDICATIVE)
-    
+      
     else:
       if now - self.v_limit_psd_next_last_timestamp <= self.v_limit_psd_next_decay_time and self.v_limit_output_last > self.v_limit_psd_next_last and not self.v_limit_changed:
         self.v_limit_psd_next = self.v_limit_psd_next_last
