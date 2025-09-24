@@ -9,10 +9,10 @@ from opendbc.car import DT_CTRL
 class LongControlJerk():
   JERK_LIMIT_MIN = 0.7
   JERK_LIMIT_MAX = 5.0
-  FILTER_GAIN_DISTANCE = [0, 100]
+  FILTER_GAIN_DISTANCE = [10, 100]
   FILTER_GAIN_DISTANCE_CHANGE = [5, 25]
-  FILTER_GAIN_MAX = 0.97
-  FILTER_GAIN_MIN = 0.65
+  FILTER_GAIN_MAX = 1.
+  FILTER_GAIN_MIN = 0.7
   FILTER_GAIN_NO_LEAD = 0.95
   
   def __init__(self, dt=DT_CTRL):
