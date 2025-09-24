@@ -19,7 +19,7 @@ PSD_NEXT_TYPE_CURV_SPEED = 2
 
 
 class SpeedLimitManager:
-  def __init__(self, car_params, speed_limit_max_kph=SPEED_SUGGESTED_MAX_HIGHWAY_GER_KPH, predicative=False, predicative_speed=False):
+  def __init__(self, car_params, speed_limit_max_kph=SPEED_SUGGESTED_MAX_HIGHWAY_GER_KPH, predicative=False, predicative_curve=False):
     self.CP = car_params
     self.v_limit_psd = NOT_SET
     self.v_limit_psd_next = NOT_SET
@@ -31,7 +31,7 @@ class SpeedLimitManager:
     self.v_limit_output_last = NOT_SET
     self.v_limit_max = speed_limit_max_kph
     self.predicative = predicative
-    self.predicative_speed = predicative_speed
+    self.predicative_curve = predicative_curve
     self.predicative_segments = {}
     self.current_predicative_segment = {"ID": NOT_SET, "Length": NOT_SET, "Speed": NOT_SET, "StreetType": NOT_SET, "Curvature": NOT_SET}
     self.v_limit_psd_next_last_timestamp = 0
@@ -318,7 +318,7 @@ class SpeedLimitManager:
     self._dfs(current_id, 0, set(), current_speed_ms, best_result)
 
     now = time.time()
-    if self.predicative_speed and best_result["curv_limit"] != float('inf') and best_result["curv_limit"] < best_result["limit"]:
+    if self.predicative_curve and best_result["curv_limit"] != float('inf') and best_result["curv_limit"] < best_result["limit"]:
       self.v_limit_psd_next_type = PSD_NEXT_TYPE_CURV_SPEED
       self.v_limit_psd_next = best_result["curv_limit"]
       self.v_limit_psd_next_last = best_result["curv_limit"]
