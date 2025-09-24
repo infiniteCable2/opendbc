@@ -55,16 +55,11 @@ class SpeedLimitManager:
       self._get_speed_limit_psd_next(current_speed_ms)
 
   def get_speed_limit_predicative(self):
-    if self.v_limit_psd_next_type != PSD_NEXT_TYPE_SPEED_LIMIT:
-      return NOT_SET
     v_limit_output = self.v_limit_psd_next if self.predicative and self.v_limit_psd_next != NOT_SET and self.v_limit_psd_next < self.v_limit_output_last else NOT_SET
     return v_limit_output * CV.KPH_TO_MS
     
-  def get_curve_speed_predicative(self):
-    if self.v_limit_psd_next_type != PSD_NEXT_TYPE_CURV_SPEED:
-      return NOT_SET
-    v_limit_output = self.v_limit_psd_next if self.predicative and self.v_limit_psd_next != NOT_SET and self.v_limit_psd_next < self.v_limit_output_last else NOT_SET
-    return v_limit_output * CV.KPH_TO_MS
+  def get_speed_limit_predicative_type(self):
+    return self.v_limit_psd_next_type
 
   def get_speed_limit(self):
     candidates = {
