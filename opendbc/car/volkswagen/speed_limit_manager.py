@@ -268,7 +268,7 @@ class SpeedLimitManager:
     speed_curv_kmh = self._calculate_curve_speed(seg.get("Curvature", None))
     speed_kmh = seg.get("Speed", NOT_SET)
     
-    if seg.get("QualityFlag", False):
+    if seg.get("QualityFlag", False): # quality flag is used to detect valid speed limits
       if speed_kmh != NOT_SET:
         if speed_kmh < self.v_limit_output_last:
           v_target_ms = speed_kmh * CV.KPH_TO_MS
@@ -279,16 +279,16 @@ class SpeedLimitManager:
               best_result["limit"] = speed_kmh
               best_result["dist"] = total_dist
               
-      if speed_curv_kmh != NOT_SET:
-        if speed_curv_kmh < self.v_limit_output_last:
-          v_target_ms = speed_curv_kmh * CV.KPH_TO_MS
-          braking_distance = (current_speed_ms**2 - v_target_ms**2) / (2 * DECELERATION_PREDICATIVE)
+    if speed_curv_kmh != NOT_SET: # no quality flag used
+      if speed_curv_kmh < self.v_limit_output_last:
+        v_target_ms = speed_curv_kmh * CV.KPH_TO_MS
+        braking_distance = (current_speed_ms**2 - v_target_ms**2) / (2 * DECELERATION_PREDICATIVE)
           
-          if braking_distance > 0 and total_dist <= braking_distance:
-            if speed_curv_kmh < best_result["curv_limit"]:
-              best_result["curv_limit"] = speed_curv_kmh
-              best_result["curv_dist"] = total_dist
-              best_result["curv_length"] = seg.get("Length", 0)
+        if braking_distance > 0 and total_dist <= braking_distance:
+          if speed_curv_kmh < best_result["curv_limit"]:
+            best_result["curv_limit"] = speed_curv_kmh
+            best_result["curv_dist"] = total_dist
+            best_result["curv_length"] = seg.get("Length", 0)
 
     children = [sid for sid, s in self.predicative_segments.items() if s.get("ID_Prev") == seg_id]
     if len(children) > 1:
