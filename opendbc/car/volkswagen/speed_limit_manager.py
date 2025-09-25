@@ -139,19 +139,13 @@ class SpeedLimitManager:
     curv_begin = NOT_SET
     curv_end = NOT_SET
         
-    if psd_04["PSD_Anfangskruemmung"] != 255:
-      curv_begin = psd_04["PSD_Anfangskruemmung"] * SCALE
-      if psd_04["PSD_Anfangskruemmung_Vorz"] == 1:
-        curv_begin *= -1
-        
-    if psd_04["PSD_Endkruemmung"] != 255:
-      curv_end = psd_04["PSD_Endkruemmung"] * SCALE
-      if psd_04["PSD_Endkruemmung_Vorz"] == 1:
-        curv_end *= -1
-        
-    curvature = max(abs(curv_begin), abs(curv_end))
-    curvature *= -1 if (curv_begin < 0 or curv_end < 0) else 1
-    
+    curv_begin = psd_04["PSD_Anfangskruemmung"] * SCALE if psd_04["PSD_Anfangskruemmung"] not in (0, 255) else 0
+    curv_end = psd_04["PSD_Endkruemmung"] * SCALE if psd_04["PSD_Endkruemmung"] not in (0, 255) else 0
+    #if psd_04["PSD_Anfangskruemmung_Vorz"] == 1:
+    #  curv_begin *= -1
+    #if psd_04["PSD_Endkruemmung_Vorz"] == 1:
+    #  curv_end *= -1
+    curvature = abs(curv_begin - curv_end)
     return curvature
     
   def _calculate_curve_speed(self, curvature):
@@ -271,7 +265,7 @@ class SpeedLimitManager:
     
     if seg.get("QualityFlag", False): # quality flag is used to detect valid speed limits
       if speed_kmh != NOT_SET:
-        if speed_kmh < self.v_limit_output_last:
+        if speed_kmh < self.v_limit_output_last and speed_kmh < current_speed_ms * CV.MS_TO_KPH:
           v_target_ms = speed_kmh * CV.KPH_TO_MS
           braking_distance = (current_speed_ms**2 - v_target_ms**2) / (2 * DECELERATION_PREDICATIVE)
           
@@ -281,7 +275,7 @@ class SpeedLimitManager:
               best_result["dist"] = total_dist
               
     if speed_curv_kmh != NOT_SET: # no quality flag used
-      if speed_curv_kmh < self.v_limit_output_last:
+      if speed_curv_kmh < self.v_limit_output_last and speed_curv_kmh < current_speed_ms * CV.MS_TO_KPH:
         v_target_ms = speed_curv_kmh * CV.KPH_TO_MS
         braking_distance = (current_speed_ms**2 - v_target_ms**2) / (2 * DECELERATION_PREDICATIVE)
           
