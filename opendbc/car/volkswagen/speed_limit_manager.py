@@ -16,6 +16,7 @@ DECELERATION_PREDICATIVE = 1.0
 SEGMENT_DECAY = 10
 PSD_NEXT_TYPE_SPEED_LIMIT = 1
 PSD_NEXT_TYPE_CURV_SPEED = 2
+PSD_CURV_SPEED_DECAY = 10
 
 
 class SpeedLimitManager:
@@ -334,7 +335,9 @@ class SpeedLimitManager:
       self.v_limit_psd_next = best_result["curv_limit"]
       self.v_limit_psd_next_last = best_result["curv_limit"]
       self.v_limit_psd_next_last_timestamp = now
-      self.v_limit_psd_next_decay_time = math.sqrt(2 * best_result["dist"] / DECELERATION_PREDICATIVE) + (self.v_limit_psd_next * best_result["curv_length"] / current_speed_ms)
+      curv_speed_oncoming_decay = math.sqrt(2 * best_result["dist"] / DECELERATION_PREDICATIVE)
+      curv_speed_decay = max((self.v_limit_psd_next * best_result["curv_length"] / current_speed_ms), PSD_CURV_SPEED_DECAY)
+      self.v_limit_psd_next_decay_time = curv_speed_oncoming_decay + curv_speed_decay
       
     elif self.predicative and type_to_set == PSD_NEXT_TYPE_SPEED_LIMIT:
       self.v_limit_psd_next_type = PSD_NEXT_TYPE_SPEED_LIMIT
