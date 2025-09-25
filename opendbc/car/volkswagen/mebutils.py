@@ -24,6 +24,7 @@ class LongControlJerk():
     self.dt = dt
     self.accel_last = 0.
     self.distance_last = 0.
+    self.jerk_limit_min = self.JERK_LIMIT_MIN_NO_LEAD
     
   def update(self, enabled, override, distance, has_lead, accel, critical_state):
     # jerk limits by accel change and distance are used to improve comfort while ensuring a fast enough car reaction
@@ -51,10 +52,17 @@ class LongControlJerk():
         filter_gain_dist = np.interp(distance, self.FILTER_GAIN_DISTANCE, [self.FILTER_GAIN_MAX, self.FILTER_GAIN_MIN]) # gain by distance
         filter_gain_dist_change = np.interp(abs(distance_change), self.FILTER_GAIN_DISTANCE_CHANGE, [self.FILTER_GAIN_MIN, self.FILTER_GAIN_MAX]) # gain by distance change
         filter_gain = max(filter_gain_dist, filter_gain_dist_change) # use highest gain
-        jerk_limit_min = self.JERK_LIMIT_MIN
+        jerk_limit_min_target = self.JERK_LIMIT_MIN
       else:
         filter_gain = self.FILTER_GAIN_NO_LEAD
-        jerk_limit_min = self.JERK_LIMIT_MIN_NO_LEAD
+        jerk_limit_min_target = self.JERK_LIMIT_MIN_NO_LEAD
+
+      # jerk limit min base line
+      jerk_limit_min_delta = abs(self.JERK_LIMIT_MIN_NO_LEAD - self.JERK_LIMIT_MIN) * self.dt
+      if self.jerk_limit_min < jerk_limit_min_target:
+        self.jerk_limit_min = min(self.jerk_limit_min + jerk_limit_min_delta, jerk_limit_min_target)
+      elif self.jerk_limit_min > jerk_limit_min_target:
+        self.jerk_limit_min = max(self.jerk_limit_min - jerk_limit_min_delta, jerk_limit_min_target)
       
       j = (accel - self.accel_last) / self.dt
   
@@ -64,12 +72,12 @@ class LongControlJerk():
       # how fast does the car react to acceleration
       self.dy_up += filter_gain * (tgt_up - self.jerk_up - self.dy_up)
       self.jerk_up += self.dt * self.dy_up
-      self.jerk_up = np.clip(self.jerk_up, jerk_limit_min, self.JERK_LIMIT_MAX)
+      self.jerk_up = np.clip(self.jerk_up, self.jerk_limit_min, self.JERK_LIMIT_MAX)
   
       # how fast does the car react to braking
       self.dy_down += filter_gain * (tgt_down - self.jerk_down - self.dy_down)
       self.jerk_down += self.dt * self.dy_down
-      self.jerk_down = np.clip(self.jerk_down, jerk_limit_min, self.JERK_LIMIT_MAX)
+      self.jerk_down = np.clip(self.jerk_down, self.jerk_limit_min, self.JERK_LIMIT_MAX)
   
     self.accel_last = accel
     self.distance_last = distance
