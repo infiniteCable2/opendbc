@@ -7,11 +7,12 @@ from opendbc.car import DT_CTRL
 
 
 class LongControlJerk():
-  JERK_LIMIT_MIN = 0.7
+  JERK_LIMIT_MIN = 0.5
+  JERK_LIMIT_MIN_NO_LEAD = 0.7
   JERK_LIMIT_MAX = 5.0
-  FILTER_GAIN_DISTANCE = [10, 100]
-  FILTER_GAIN_DISTANCE_CHANGE = [0, 25]
-  FILTER_GAIN_MAX = 0.95
+  FILTER_GAIN_DISTANCE = [10, 50]
+  FILTER_GAIN_DISTANCE_CHANGE = [0, 15]
+  FILTER_GAIN_MAX = 1.
   FILTER_GAIN_MIN = 0.7
   FILTER_GAIN_NO_LEAD = 0.95
   
@@ -50,8 +51,10 @@ class LongControlJerk():
         filter_gain_dist = np.interp(distance, self.FILTER_GAIN_DISTANCE, [self.FILTER_GAIN_MAX, self.FILTER_GAIN_MIN]) # gain by distance
         filter_gain_dist_change = np.interp(abs(distance_change), self.FILTER_GAIN_DISTANCE_CHANGE, [self.FILTER_GAIN_MIN, self.FILTER_GAIN_MAX]) # gain by distance change
         filter_gain = max(filter_gain_dist, filter_gain_dist_change) # use highest gain
+        jerk_limit_min = self.JERK_LIMIT_MIN
       else:
         filter_gain = self.FILTER_GAIN_NO_LEAD
+        jerk_limit_min = self.JERK_LIMIT_MIN_NO_LEAD
       
       j = (accel - self.accel_last) / self.dt
   
@@ -61,12 +64,12 @@ class LongControlJerk():
       # how fast does the car react to acceleration
       self.dy_up += filter_gain * (tgt_up - self.jerk_up - self.dy_up)
       self.jerk_up += self.dt * self.dy_up
-      self.jerk_up = np.clip(self.jerk_up, self.JERK_LIMIT_MIN, self.JERK_LIMIT_MAX)
+      self.jerk_up = np.clip(self.jerk_up, jerk_limit_min, self.JERK_LIMIT_MAX)
   
       # how fast does the car react to braking
       self.dy_down += filter_gain * (tgt_down - self.jerk_down - self.dy_down)
       self.jerk_down += self.dt * self.dy_down
-      self.jerk_down = np.clip(self.jerk_down, self.JERK_LIMIT_MIN, self.JERK_LIMIT_MAX)
+      self.jerk_down = np.clip(self.jerk_down, jerk_limit_min, self.JERK_LIMIT_MAX)
   
     self.accel_last = accel
     self.distance_last = distance
