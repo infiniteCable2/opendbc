@@ -95,9 +95,9 @@ class LongControlLimit():
   UPPER_LIMIT_MAX = UPPER_LIMIT_FACTOR * 4
   LIMIT_MIN = 0.
   LIMIT_DISTANCE = [0, 100]
-  LIMIT_DISTANCE_CHANGE_DOWN = [5, 25] # high precision for worst case high speed approaching a stopped lead
+  LIMIT_DISTANCE_CHANGE_DOWN = [0, 20] # high precision for worst case high speed approaching a stopped lead
   LIMIT_DISTANCE_CHANGE_UP = [0, 5] # precisely follow an accelerating lead especially from stop
-  LIMIT_DISTANCE_CHANGE_UP_ACT = [0, 60]
+  LIMIT_DISTANCE_CHANGE_UP_ACT = [10, 60]
   DISTANCE_FILTER_RC = [0.15, 0.6] # smooth noisy distance signal for distant leads
   DISTANCE_TIMEOUT = 1. # seconds
   
