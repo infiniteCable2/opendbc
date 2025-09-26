@@ -368,7 +368,7 @@ class CarState(CarStateBase, MadsCarState):
     ret.cruiseState.speedLimitPredicative = self.speed_limit_mgr.get_speed_limit_predicative()
     self.speed_limit_predicative_type = self.speed_limit_mgr.get_speed_limit_predicative_type()
 
-    ret_sp.speedLimit = self.speed_limit_mgr.get_speed_limit() # sunnypilot speed limit display
+    ret_sp.speedLimit = self.speed_limit_mgr.get_speed_limit()
     
     # Update button states for turn signals and ACC controls, capture all ACC button state/config for passthrough
     # turn signal effect
