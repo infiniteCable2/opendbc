@@ -10,6 +10,8 @@ from opendbc.car.volkswagen.values import VolkswagenSafetyFlags
 
 MAX_ACCEL = 2.0
 MIN_ACCEL = -3.5
+INACTIVE_ACCEL = 3.01
+ACCEL_OVERRIDE = 0
 
 # MEB message IDs
 MSG_ESC_51        = 0xFC
@@ -136,8 +138,6 @@ class TestVolkswagenMebCurvatureSafety(TestVolkswagenMebSafetyBase, common.Curva
   FWD_BLACKLISTED_ADDRS = {0: [MSG_LH_EPS_03], 2: [MSG_HCA_03, MSG_LDW_02]}
   RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02)}
 
-  
-
   def setUp(self):
     self.packer = CANPackerPanda("vw_meb")
     self.safety = libsafety_py.libsafety
@@ -146,8 +146,6 @@ class TestVolkswagenMebCurvatureSafety(TestVolkswagenMebSafetyBase, common.Curva
 
 
 class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
-  INACTIVE_ACCEL = 3.01
-  ACCEL_OVERRIDE = 0
   ALLOW_OVERRIDE = True
   
   TX_MSGS = [[MSG_HCA_03, 0], [MSG_LDW_02, 0], [MSG_ACC_18, 0],
