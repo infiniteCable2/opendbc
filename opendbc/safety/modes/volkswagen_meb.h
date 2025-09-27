@@ -317,7 +317,7 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
     // WARNING: IF WE TAKE THE SIGNAL FROM THE CAR WHILE ACC ACTIVE AND BELOW ABOUT 3km/h, THE CAR ERRORS AND PUTS ITSELF IN PARKING MODE WITH EPB!
     int desired_accel = ((((msg->data[4] & 0x7U) << 8) | msg->data[3]) * 5U) - 7220U;
 
-    if (longitudinal_accel_checks_override(desired_accel, VOLKSWAGEN_MEB_LONG_LIMITS)) {
+    if (longitudinal_accel_checks(desired_accel, VOLKSWAGEN_MEB_LONG_LIMITS)) {
       tx = false;
     }
   }
