@@ -34,27 +34,36 @@ MSG_EA_02         = 0x1F0
 class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.SteerCurvatureSafetyTest):
   # === limits ===
   MAX_CURVATURE = 29105
+  CURVATURE_TO_CAN = 149253.7313
+  INACTIVE_CURVATURE_IS_ZERO = True
+  MAX_POWER = 125  # 50% bei (0.4,0) Skalierung -> 50/0.4 = 125
+
+  # Diese Felder sind in Curvature-Tests aus common i.d.R. irrelevant,
+  # bleiben aber hier für Konsistenz mit anderen Safety-Tests stehen.
   MAX_RT_DELTA = 75
   MAX_RATE_UP = 4
   MAX_RATE_DOWN = 10
 
-  CURVATURE_TO_CAN = 149253.7313
-  INACTIVE_CURVATURE_IS_ZERO = True
-  ROLL_TO_CAN = 10000.0
-
-  # Steering driver torque
+  # Steering driver torque (nur für Messpfad-Test genutzt)
   DRIVER_TORQUE_ALLOWANCE = 80
   DRIVER_TORQUE_FACTOR = 3
 
   # === helper messages ===
-  def _speed_msg(self, speed):
+  def _speed_msg(self, speed_mps: float):
+    # ESC_51 ist in km/h (dbc: 0.0075 -> phys = raw*0.0075 km/h)
+    # common.VehicleSpeedSafetyTest sendet m/s -> hier m/s -> km/h umrechnen
+    spd_kph = speed_mps * 3.6
     values = {
-      "HL_Radgeschw": speed,
-      "HR_Radgeschw": speed,
-      "VL_Radgeschw": speed,
-      "VR_Radgeschw": speed,
+      "HL_Radgeschw": spd_kph,
+      "HR_Radgeschw": spd_kph,
+      "VL_Radgeschw": spd_kph,
+      "VR_Radgeschw": spd_kph,
     }
     return self.packer.make_can_msg_panda("ESC_51", 0, values)
+
+  # Für Speed-Mismatch-Tests optional; None -> Test wird geskippt
+  def _speed_msg_2(self, speed: float):
+    return None
 
   def _torque_driver_msg(self, torque):
     values = {"EPS_Lenkmoment": abs(torque), "EPS_VZ_Lenkmoment": torque < 0}
@@ -74,6 +83,7 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.SteerCurvatu
     return self.packer.make_can_msg_panda("HCA_03", 0, values)
 
   def _user_gas_msg(self, gas):
+    # DBC skaliert physisch (%), Safety liest raw[21]-37 != 0 -> genügt, hier physisch setzen
     values = {"Accelerator_Pressure": gas}
     return self.packer.make_can_msg_panda("Motor_54", 0, values)
 
@@ -95,6 +105,10 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.SteerCurvatu
     return self.packer.make_can_msg_panda("ACC_18", 0, values)
 
   # === basic tests ===
+  def setUp(self):
+    # Wird von Unterklassen überschrieben, aber wir initialisieren hier schon mal den packer
+    self.packer = CANPackerPanda("vw_meb")
+
   def test_torque_measurements(self):
     self._rx(self._torque_driver_msg(100))
     self._rx(self._torque_driver_msg(-50))
@@ -102,7 +116,7 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.SteerCurvatu
     self._rx(self._torque_driver_msg(0))
     self.assertEqual(-50, self.safety.get_torque_driver_min())
     self.assertEqual(100, self.safety.get_torque_driver_max())
-    # decay to 0
+    # decay zu 0
     self._rx(self._torque_driver_msg(0))
     self._rx(self._torque_driver_msg(0))
     self.assertEqual(0, self.safety.get_torque_driver_max())
@@ -120,6 +134,21 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.SteerCurvatu
     self._rx(self._user_brake_msg(True))
     self.assertTrue(self.safety.get_brake_pressed_prev())
 
+  # === neue Power-Checks passend zu steer_power_cmd_checks(..., max_power) ===
+  def test_power_limit(self):
+    self.safety.set_controls_allowed(True)
+    # über Limit -> blockiert
+    self.assertFalse(self._tx(self._curvature_cmd_msg(0, steer_req=True, power=self.MAX_POWER + 10)))
+    # innerhalb Limit -> erlaubt
+    self.assertTrue(self._tx(self._curvature_cmd_msg(0, steer_req=True, power=self.MAX_POWER - 10)))
+
+  def test_power_without_control(self):
+    # Power > 0 ohne Steuerfreigabe -> blockiert
+    self.safety.set_controls_allowed(False)
+    self.assertFalse(self._tx(self._curvature_cmd_msg(0, steer_req=False, power=self.MAX_POWER // 2)))
+    # Power == 0 ohne Steuerfreigabe -> erlaubt
+    self.assertTrue(self._tx(self._curvature_cmd_msg(0, steer_req=False, power=0)))
+
 
 class TestVolkswagenMebStockSafety(TestVolkswagenMebSafetyBase):
   TX_MSGS = [
@@ -136,9 +165,9 @@ class TestVolkswagenMebStockSafety(TestVolkswagenMebSafetyBase):
 
   def test_cancel_only_when_controls_off(self):
     self.safety.set_controls_allowed(0)
-    # cancel allowed
+    # Cancel erlaubt
     self.assertTrue(self._tx(self._gra_acc_01_msg(cancel=1)))
-    # set/resume blocked
+    # Set/Resume blockiert
     self.assertFalse(self._tx(self._gra_acc_01_msg(resume=1)))
     self.assertFalse(self._tx(self._gra_acc_01_msg(_set=1)))
 
@@ -154,7 +183,7 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
   def setUp(self):
     self.packer = CANPackerPanda("vw_meb")
     self.safety = libsafety_py.libsafety
-    self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagen, VolkswagenSafetyFlags.LONG_CONTROL)
+    self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagen, VolkswagenSafetyFlags.LongControl)
     self.safety.init_tests()
 
   def test_set_and_resume_buttons(self):
@@ -179,7 +208,8 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
 
   def test_accel_safety_check(self):
     for controls_allowed in [True, False]:
-      for accel in np.concatenate((np.arange(MIN_ACCEL-1, MAX_ACCEL+1, 0.1), [0, INACTIVE_ACCEL, ACCEL_OVERRIDE])):
+      # inkl. 0 (Override-Wert) und INACTIVE_ACCEL
+      for accel in np.concatenate((np.arange(MIN_ACCEL - 1, MAX_ACCEL + 1, 0.1), [0, INACTIVE_ACCEL, ACCEL_OVERRIDE])):
         accel = round(accel, 2)
         send = ((controls_allowed and MIN_ACCEL <= accel <= MAX_ACCEL) or accel == INACTIVE_ACCEL)
         self.safety.set_controls_allowed(controls_allowed)
