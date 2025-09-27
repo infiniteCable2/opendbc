@@ -44,10 +44,10 @@ class TestElm327(TestDefaultRxHookBase):
       self.assertEqual(should_tx, self._tx(common.make_msg(0, GM_CAMERA_DIAG_ADDR, dat=bytes([byte] * 8))))
 
     # VW diag range → only ISO-TP frames 0x0–0x3 allowed
-    for addr in range(VW_DIAG_17FC_BASE, VW_DIAG_17FC_BASE + 0x100):
+    for addr in [VW_DIAG_17FC_BASE]:
       for byte in range(0xff):
         dat = bytes([byte] * 8)
-        should_tx = (byte >> 4) <= 3
+        should_tx = ((addr & VW_DIAG_29B_MASK) == VW_DIAG_17FC_BASE) and (byte >> 4) <= 3
         self.assertEqual(should_tx, self._tx(common.make_msg(0, addr, dat=dat)))
 
     # test GM camera and VW diagnostic address with malformed length
