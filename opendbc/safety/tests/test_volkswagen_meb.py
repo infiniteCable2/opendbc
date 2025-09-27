@@ -37,6 +37,7 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
   CURVATURE_TO_CAN = 149253.7313
   INACTIVE_CURVATURE_IS_ZERO = True
   MAX_POWER = 125  # 50% bei (0.4,0) Skalierung -> 50/0.4 = 125
+  SEND_RATE = 0.02
   ALLOW_OVERRIDE = True
 
   MAX_RT_DELTA = 75
@@ -160,6 +161,8 @@ class TestVolkswagenMebCurvatureSafety(TestVolkswagenMebSafetyBase, common.Curva
   TX_MSGS = [[MSG_HCA_03, 0]]
   FWD_BLACKLISTED_ADDRS = {0: [MSG_LH_EPS_03], 2: [MSG_HCA_03, MSG_LDW_02]}
   RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02)}
+
+  
 
   def setUp(self):
     self.packer = CANPackerPanda("vw_meb")
