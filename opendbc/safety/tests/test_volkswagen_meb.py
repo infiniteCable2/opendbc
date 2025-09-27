@@ -8,6 +8,9 @@ import opendbc.safety.tests.common as common
 from opendbc.safety.tests.common import CANPackerPanda
 from opendbc.car.volkswagen.values import VolkswagenSafetyFlags
 
+MAX_ACCEL = 2.0
+MIN_ACCEL = -3.5
+
 # MEB message IDs
 MSG_ESC_51        = 0xFC
 MSG_LH_EPS_03     = 0x9F
@@ -33,12 +36,6 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
   INACTIVE_CURVATURE_IS_ZERO = True
   MAX_POWER = 125  # 50% bei (0.4,0) Skalierung -> 50/0.4 = 125
   SEND_RATE = 0.02
-
-  MAX_ACCEL = 2.0
-  MIN_ACCEL = -3.5
-  INACTIVE_ACCEL = 3.01
-  ACCEL_OVERRIDE = 0
-  ALLOW_OVERRIDE = True
 
   MAX_RT_DELTA = 75
   MAX_RATE_UP = 4
@@ -178,6 +175,10 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
   FWD_BLACKLISTED_ADDRS = {0: [MSG_LH_EPS_03],
                            2: [MSG_HCA_03, MSG_LDW_02, MSG_ACC_18, MSG_MEB_ACC_01]}
   RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02, MSG_ACC_18, MSG_MEB_ACC_01)}
+
+  INACTIVE_ACCEL = 3.01
+  ACCEL_OVERRIDE = 0
+  ALLOW_OVERRIDE = True
   
   def setUp(self):
     self.packer = CANPackerPanda("vw_meb")
