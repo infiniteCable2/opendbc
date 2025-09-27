@@ -820,6 +820,80 @@ class AngleSteeringSafetyTest(VehicleSpeedSafetyTest):
       self.assertTrue(self._tx(self._angle_cmd_msg(0, True, increment_timer=False)))
 
 
+class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
+
+  MAX_CURVATURE: float
+  CURVATURE_TO_CAN: float
+  INACTIVE_CURVATURE_IS_ZERO: bool
+  MAX_POWER: int
+
+  SEND_RATE: float = 0.02  # aus VOLKSWAGEN_MEB_STEERING_LIMITS
+  JERK_LIMIT: float = ISO_LATERAL_JERK  # 2.9 m/s^3 normalerweise
+
+  @classmethod
+  def setUpClass(cls):
+    if cls.__name__ == "CurvatureSteeringSafetyTest":
+      cls.safety = None
+      raise unittest.SkipTest
+
+  @abc.abstractmethod
+  def _curvature_cmd_msg(self, curvature: float, steer_req: bool, power: int):
+    pass
+
+  @abc.abstractmethod
+  def _curvature_meas_msg(self, curvature: float):
+    pass
+
+  def _reset_curvature_measurement(self, curvature: float):
+    for _ in range(MAX_SAMPLE_VALS):
+      self._rx(self._curvature_meas_msg(curvature))
+
+  def test_curvature_measurements(self):
+    self._common_measurement_test(self._curvature_meas_msg,
+                                  -self.MAX_CURVATURE, self.MAX_CURVATURE,
+                                  self.CURVATURE_TO_CAN,
+                                  self.safety.get_curvature_meas_min,
+                                  self.safety.get_curvature_meas_max)
+
+  def test_power_limit(self):
+    self.safety.set_controls_allowed(True)
+    # oberhalb von max_power -> blockieren
+    self.assertFalse(self._tx(self._curvature_cmd_msg(0, steer_req=True, power=self.MAX_POWER + 1)))
+    # innerhalb -> erlauben
+    self.assertTrue(self._tx(self._curvature_cmd_msg(0, steer_req=True, power=self.MAX_POWER - 1)))
+
+  def test_power_without_control(self):
+    self.safety.set_controls_allowed(False)
+    # nicht null bei disabled -> blockiert
+    self.assertFalse(self._tx(self._curvature_cmd_msg(0, steer_req=False, power=self.MAX_POWER // 2)))
+    # null erlaubt
+    self.assertTrue(self._tx(self._curvature_cmd_msg(0, steer_req=False, power=0)))
+
+  def test_curvature_cmd_active(self):
+    # wenn lateral aktiv und erlaubt -> Limits gelten
+    self.safety.set_controls_allowed(True)
+    self._reset_speed_measurement(10.0)  # 10 m/s
+    self._reset_curvature_measurement(0)
+
+    # innerhalb max_curvature
+    self.assertTrue(self._tx(self._curvature_cmd_msg(self.MAX_CURVATURE - 100, True, power=self.MAX_POWER // 2)))
+    # oberhalb max_curvature
+    self.assertFalse(self._tx(self._curvature_cmd_msg(self.MAX_CURVATURE + 1000, True, power=self.MAX_POWER // 2)))
+
+  def test_curvature_cmd_inactive(self):
+    self.safety.set_controls_allowed(False)
+    self._reset_curvature_measurement(100)
+
+    if self.INACTIVE_CURVATURE_IS_ZERO:
+      # nur 0 erlaubt
+      self.assertTrue(self._tx(self._curvature_cmd_msg(0, False, power=0)))
+      self.assertFalse(self._tx(self._curvature_cmd_msg(50, False, power=0)))
+    else:
+      # sollte auf Messung clampen
+      self.assertTrue(self._tx(self._curvature_cmd_msg(100, False, power=0)))
+      self.assertFalse(self._tx(self._curvature_cmd_msg(2000, False, power=0)))
+
+
 class PandaSafetyTest(PandaSafetyTestBase):
   TX_MSGS: list[list[int]] | None = None
   SCANNED_ADDRS = [*range(0x800),                      # Entire 11-bit CAN address space
