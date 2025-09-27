@@ -103,6 +103,12 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
     values = {"ACC_Sollbeschleunigung_02": accel}
     return self.packer.make_can_msg_panda("ACC_18", 0, values)
 
+  def _pcm_status_msg(self, enable):
+    return self._tsk_status_msg(enable)
+
+  def _user_brake_msg(self, brake):
+    return self._motor_14_msg(brake)
+
   def setUp(self):
     self.packer = CANPackerPanda("vw_meb")
 
