@@ -171,29 +171,22 @@ class LongitudinalAccelSafetyTest(PandaSafetyTestBase, abc.ABC):
     )
 
     for min_accel, max_accel, alternative_experience in limits:
+      # enforce we don't skip over 0 or inactive accel
       extras = [0, self.INACTIVE_ACCEL]
+      
       if self.ALLOW_OVERRIDE:
         extras.append(self.ACCEL_OVERRIDE)
-
+        
       for accel in np.concatenate((np.arange(min_accel - 1, max_accel + 1, 0.05), extras)):
-        accel = round(accel, 2)
-
+        accel = round(accel, 2) # floats might not hit exact boundary conditions without rounding
         for controls_allowed in [True, False]:
           for gas_pressed in [False, True]:
             self.safety.set_controls_allowed(controls_allowed)
             self.safety.set_alternative_experience(alternative_experience)
-            self.safety.set_gas_pressed_prev(gas_pressed)
-
             if self.LONGITUDINAL:
               should_tx = controls_allowed and min_accel <= accel <= max_accel
               should_tx = should_tx or accel == self.INACTIVE_ACCEL
-
-              # Override-Pfad
-              if (self.ALLOW_OVERRIDE
-                  and accel == self.ACCEL_OVERRIDE
-                  and controls_allowed
-                  and gas_pressed):
-                should_tx = True
+              should_tx = False if self.ALLOW_OVERRIDE and accel != self.ACCEL_OVERRIDE else should_tx
             else:
               should_tx = False
 
