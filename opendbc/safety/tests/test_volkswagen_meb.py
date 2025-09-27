@@ -46,6 +46,8 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
   DRIVER_TORQUE_ALLOWANCE = 80
   DRIVER_TORQUE_FACTOR = 3
 
+  RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02)}
+
   def _speed_msg(self, speed_mps: float):
     # ESC_51 ist in km/h, Tests liefern m/s -> m/s -> km/h
     spd_kph = speed_mps * 3.6
@@ -57,8 +59,11 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
     }
     return self.packer.make_can_msg_panda("ESC_51", 0, values)
 
-  def _speed_msg_2(self, speed: float):
-    return None
+  def _speed_msg_2(self, speed_mps: float):
+    return self._speed_msg(speed_mps)
+
+  def _vehicle_moving_msg(self, speed_mps: float):
+    return self._speed_msg(speed_mps)
 
   def _torque_driver_msg(self, torque):
     values = {"EPS_Lenkmoment": abs(torque), "EPS_VZ_Lenkmoment": torque < 0}
@@ -127,11 +132,10 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
 
 
 class TestVolkswagenMebStockSafety(TestVolkswagenMebSafetyBase):
-  TX_MSGS = [
-    [MSG_HCA_03, 0], [MSG_LDW_02, 0], [MSG_GRA_ACC_01, 0],
-    [MSG_EA_01, 0], [MSG_EA_02, 0], [MSG_KLR_01, 0], [MSG_KLR_01, 2]
-  ]
+  TX_MSGS = [[MSG_HCA_03, 0], [MSG_LDW_02, 0], [MSG_GRA_ACC_01, 0],
+             [MSG_EA_01, 0], [MSG_EA_02, 0], [MSG_KLR_01, 0], [MSG_KLR_01, 2]]
   FWD_BLACKLISTED_ADDRS = {0: [MSG_LH_EPS_03], 2: [MSG_HCA_03, MSG_LDW_02]}
+  RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02)}
 
   def setUp(self):
     self.packer = CANPackerPanda("vw_meb")
@@ -147,10 +151,9 @@ class TestVolkswagenMebStockSafety(TestVolkswagenMebSafetyBase):
 
 
 class TestVolkswagenMebCurvatureSafety(TestVolkswagenMebSafetyBase, common.CurvatureSteeringSafetyTest):
-  TX_MSGS = [
-    [MSG_HCA_03, 0],
-  ]
-  FWD_BLACKLISTED_ADDRS = {0: [MSG_LH_EPS_03], 2: [MSG_HCA_03]}
+  TX_MSGS = [[MSG_HCA_03, 0]]
+  FWD_BLACKLISTED_ADDRS = {0: [MSG_LH_EPS_03], 2: [MSG_HCA_03, MSG_LDW_02]}
+  RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02)}
 
   def setUp(self):
     self.packer = CANPackerPanda("vw_meb")
@@ -160,13 +163,13 @@ class TestVolkswagenMebCurvatureSafety(TestVolkswagenMebSafetyBase, common.Curva
 
 
 class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
-  TX_MSGS = [
-    [MSG_HCA_03, 0], [MSG_LDW_02, 0], [MSG_ACC_18, 0],
-    [MSG_MEB_ACC_01, 0], [MSG_TA_01, 0], [MSG_EA_01, 0], [MSG_EA_02, 0],
-    [MSG_KLR_01, 0], [MSG_KLR_01, 2]
-  ]
-  FWD_BLACKLISTED_ADDRS = {0: [MSG_LH_EPS_03], 2: [MSG_HCA_03, MSG_LDW_02, MSG_ACC_18, MSG_MEB_ACC_01]}
-
+  TX_MSGS = [[MSG_HCA_03, 0], [MSG_LDW_02, 0], [MSG_ACC_18, 0],
+             [MSG_MEB_ACC_01, 0], [MSG_TA_01, 0], [MSG_EA_01, 0], [MSG_EA_02, 0],
+             [MSG_KLR_01, 0], [MSG_KLR_01, 2]]
+  FWD_BLACKLISTED_ADDRS = {0: [MSG_LH_EPS_03],
+                           2: [MSG_HCA_03, MSG_LDW_02, MSG_ACC_18, MSG_MEB_ACC_01]}
+  RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02, MSG_ACC_18, MSG_MEB_ACC_01)}
+  
   def setUp(self):
     self.packer = CANPackerPanda("vw_meb")
     self.safety = libsafety_py.libsafety
