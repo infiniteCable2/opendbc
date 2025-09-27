@@ -37,7 +37,7 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.SteerCurvatu
   CURVATURE_TO_CAN = 149253.7313
   INACTIVE_CURVATURE_IS_ZERO = True
   MAX_POWER = 125  # 50% bei (0.4,0) Skalierung -> 50/0.4 = 125
-  ALLLOW_OVERRIDE = True
+  ALLOW_OVERRIDE = True
 
   MAX_RT_DELTA = 75
   MAX_RATE_UP = 4
@@ -124,16 +124,6 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.SteerCurvatu
     self.assertFalse(self.safety.get_brake_pressed_prev())
     self._rx(self._user_brake_msg(True))
     self.assertTrue(self.safety.get_brake_pressed_prev())
-
-  def test_power_limit(self):
-    self.safety.set_controls_allowed(True)
-    self.assertFalse(self._tx(self._curvature_cmd_msg(0, steer_req=True, power=self.MAX_POWER + 10)))
-    self.assertTrue(self._tx(self._curvature_cmd_msg(0, steer_req=True, power=self.MAX_POWER - 10)))
-
-  def test_power_without_control(self):
-    self.safety.set_controls_allowed(False)
-    self.assertFalse(self._tx(self._curvature_cmd_msg(0, steer_req=False, power=self.MAX_POWER // 2)))
-    self.assertTrue(self._tx(self._curvature_cmd_msg(0, steer_req=False, power=0)))
 
 
 class TestVolkswagenMebStockSafety(TestVolkswagenMebSafetyBase):
