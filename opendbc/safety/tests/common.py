@@ -174,7 +174,7 @@ class LongitudinalAccelSafetyTest(PandaSafetyTestBase, abc.ABC):
       # enforce we don't skip over 0 or inactive accel
       extras = [0, self.INACTIVE_ACCEL]
       
-      if self.ALLOW_OVERRIDE:
+      if self.ALLOW_OVERRIDE and self.ACCEL_OVERRIDE not in extras:
         extras.append(self.ACCEL_OVERRIDE)
         
       for accel in np.concatenate((np.arange(min_accel - 1, max_accel + 1, 0.05), extras)):
