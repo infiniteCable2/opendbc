@@ -17,7 +17,6 @@
 #define MSG_EA_01            0x1A4U   // TX, for EA mitigation
 #define MSG_EA_02            0x1F0U   // TX, for EA mitigation
 #define MSG_KLR_01           0x25DU   // TX, for capacitive steering wheel
-#define MSG_Panda_Data_01    0x50A6EDAU   // internal use, data for panda from OP sensors
 
 // PANDA SAFETY SHOULD INTRODUCE A .ignore_length flag (ALLOWED ONLY IF CHECKSUM CHECK IS REQUIRED TO BE SAFE)
 #define VW_MEB_COMMON_RX_CHECKS                                                                     \
@@ -36,22 +35,6 @@
   {.msg = {{MSG_ESC_51, 0, 64, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
 
 static uint8_t volkswagen_crc8_lut_8h2f[256]; // Static lookup table for CRC8 poly 0x2F, aka 8H2F/AUTOSAR
-
-static bool vw_meb_get_longitudinal_allowed_override(void) {
-  return controls_allowed && gas_pressed_prev;
-}
-
-static bool vw_meb_max_limit_check(int val, const int MAX_VAL, const int MIN_VAL) {
-  return (val > MAX_VAL) || (val < MIN_VAL);
-}
-
-// Safety checks for longitudinal actuation
-static bool vw_meb_longitudinal_accel_checks(int desired_accel, const LongitudinalLimits limits, const int override_accel) {
-  bool accel_valid = get_longitudinal_allowed() && !vw_meb_max_limit_check(desired_accel, limits.max_accel, limits.min_accel);
-  bool accel_valid_override = vw_meb_get_longitudinal_allowed_override() && desired_accel == override_accel;
-  bool accel_inactive = desired_accel == limits.inactive_accel;
-  return !(accel_valid || accel_inactive || accel_valid_override);
-}
 
 static uint32_t volkswagen_meb_get_checksum(const CANPacket_t *msg) {
   return (uint8_t)msg->data[0];
@@ -304,24 +287,10 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
     .max_accel = 2000,
     .min_accel = -3500,
     .inactive_accel = 3010,  // VW sends one increment above the max range when inactive
+	.override_accel = 0,
   };
-
-  const int volkswagen_accel_override = 0;
   
   bool tx = true;
-
-  // PANDA DATA is a custom CAN messages for internal use only, transferring roll from OP for safety checks
-  if (msg->addr == MSG_Panda_Data_01) {
-    int current_roll = (msg->data[0] | ((msg->data[1] & 0x7F) << 8));
-
-    bool current_roll_sign = GET_BIT(msg, 15U);
-    if (!current_roll_sign) {
-      current_roll *= -1;
-    }
-    
-    update_sample(&roll, current_roll);
-    tx = false;
-  }
 
   // Safety check for HCA_03 Heading Control Assist curvature
   if (msg->addr == MSG_HCA_03) {
@@ -347,7 +316,7 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
     // WARNING: IF WE TAKE THE SIGNAL FROM THE CAR WHILE ACC ACTIVE AND BELOW ABOUT 3km/h, THE CAR ERRORS AND PUTS ITSELF IN PARKING MODE WITH EPB!
     int desired_accel = ((((msg->data[4] & 0x7U) << 8) | msg->data[3]) * 5U) - 7220U;
 
-    if (vw_meb_longitudinal_accel_checks(desired_accel, VOLKSWAGEN_MEB_LONG_LIMITS, volkswagen_accel_override)) {
+    if (longitudinal_accel_checks_override(desired_accel, VOLKSWAGEN_MEB_LONG_LIMITS)) {
       tx = false;
     }
   }
