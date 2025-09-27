@@ -156,6 +156,19 @@ class TestVolkswagenMebStockSafety(TestVolkswagenMebSafetyBase):
     self.assertFalse(self._tx(self._gra_acc_01_msg(_set=1)))
 
 
+class TestVolkswagenMebCurvatureSafety(TestVolkswagenMebSafetyBase, common.CurvatureSteeringSafetyTest):
+  TX_MSGS = [
+    [MSG_HCA_03, 0],
+  ]
+  FWD_BLACKLISTED_ADDRS = {0: [MSG_LH_EPS_03], 2: [MSG_HCA_03]}
+
+  def setUp(self):
+    self.packer = CANPackerPanda("vw_meb")
+    self.safety = libsafety_py.libsafety
+    self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagen, 0)
+    self.safety.init_tests()
+
+
 class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
   TX_MSGS = [
     [MSG_HCA_03, 0], [MSG_LDW_02, 0], [MSG_ACC_18, 0],
