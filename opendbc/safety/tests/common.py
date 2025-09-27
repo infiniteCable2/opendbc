@@ -189,11 +189,7 @@ class LongitudinalAccelSafetyTest(PandaSafetyTestBase, abc.ABC):
               should_tx = accel == self.ACCEL_OVERRIDE and controls_allowed
           else:
             should_tx = False
-
-          self.assertEqual(
-            should_tx, self._tx(self._accel_msg(accel)),
-            (controls_allowed, gas_pressed, accel),
-          )
+          self.assertEqual(should_tx, self._tx(self._accel_msg(accel)))
 
 
 class LongitudinalGasBrakeSafetyTest(PandaSafetyTestBase, abc.ABC):
