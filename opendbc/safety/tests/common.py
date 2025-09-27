@@ -985,6 +985,12 @@ class PandaSafetyTest(PandaSafetyTestBase):
               continue
             if {attr, current_test}.issubset({'TestVolkswagenPqSafety', 'TestVolkswagenPqStockSafety', 'TestVolkswagenPqLongSafety'}):
               continue
+            if {attr, current_test}.issubset({
+              'TestVolkswagenPqSafety', 'TestVolkswagenPqStockSafety', 'TestVolkswagenPqLongSafety',
+              'TestVolkswagenMqbSafety', 'TestVolkswagenMqbStockSafety', 'TestVolkswagenMqbLongSafety',
+              'TestVolkswagenMebSafety', 'TestVolkswagenMebStockSafety', 'TestVolkswagenMebLongSafety',
+              'TestVolkswagenMebCurvatureSafety'}):
+              continue
             if {attr, current_test}.issubset({'TestGmCameraSafety', 'TestGmCameraLongitudinalSafety', 'TestGmAscmSafety',
                                               'TestGmCameraEVSafety', 'TestGmCameraLongitudinalEVSafety', 'TestGmAscmEVSafety'}):
               continue
@@ -1018,13 +1024,6 @@ class PandaSafetyTest(PandaSafetyTestBase):
             # Volkswagen MQB and Honda Bosch Radarless ACC HUD messages overlap
             if attr == 'TestVolkswagenMqbLongSafety' and current_test.startswith('TestHondaBoschRadarless'):
               tx = list(filter(lambda m: m[0] not in [0x30c, ], tx))
-
-            # Volkswagen MQB and MEB share some ACC/steering IDs, but they're for different platforms
-            if attr.startswith('TestVolkswagenMqb') and current_test.startswith('TestVolkswagenMeb'):
-              tx = list(filter(lambda m: m[0] not in [0x122, 0x397, 0x126], tx))
-            
-            if attr.startswith('TestVolkswagenMeb') and current_test.startswith('TestVolkswagenMqb'):
-              tx = list(filter(lambda m: m[0] not in [0x397, 0x126], tx))
             
             # TODO: Temporary, should be fixed in panda firmware, safety_honda.h
             if attr.startswith('TestHonda'):
