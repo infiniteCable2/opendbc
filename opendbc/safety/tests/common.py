@@ -147,7 +147,7 @@ class LongitudinalAccelSafetyTest(PandaSafetyTestBase, abc.ABC):
   MAX_ACCEL: float = 2.0
   MIN_ACCEL: float = -3.5
   INACTIVE_ACCEL: float = 0.0
-  ACCEL_OVERRIDE: float | None = None
+  ACCEL_OVERRIDE: float = 0.0
   ALLOW_OVERRIDE: bool = False
 
   @classmethod
@@ -172,7 +172,7 @@ class LongitudinalAccelSafetyTest(PandaSafetyTestBase, abc.ABC):
 
     for min_accel, max_accel, alternative_experience in limits:
       extras = [0, self.INACTIVE_ACCEL]
-      if self.ACCEL_OVERRIDE is not None:
+      if self.ALLOW_OVERRIDE:
         extras.append(self.ACCEL_OVERRIDE)
 
       for accel in np.concatenate((np.arange(min_accel - 1, max_accel + 1, 0.05), extras)):
@@ -190,7 +190,6 @@ class LongitudinalAccelSafetyTest(PandaSafetyTestBase, abc.ABC):
 
               # Override-Pfad
               if (self.ALLOW_OVERRIDE
-                  and self.ACCEL_OVERRIDE is not None
                   and accel == self.ACCEL_OVERRIDE
                   and controls_allowed
                   and gas_pressed):
