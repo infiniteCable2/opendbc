@@ -29,7 +29,6 @@ MSG_TA_01         = 0x26B
 MSG_KLR_01        = 0x25D
 MSG_EA_01         = 0x1A4
 MSG_EA_02         = 0x1F0
-MSG_PANDA_DATA_01 = 0x50A6EDA
 
 
 class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.SteerCurvatureSafetyTest):
@@ -94,10 +93,6 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.SteerCurvatu
   def _accel_msg(self, accel):
     values = {"ACC_Sollbeschleunigung_02": accel}
     return self.packer.make_can_msg_panda("ACC_18", 0, values)
-
-  def _panda_data_msg(self, roll):
-    values = {"OP_Roll": roll}
-    return self.packer.make_can_msg_panda("Panda_Data_01", 0, values)
 
   # === basic tests ===
   def test_torque_measurements(self):
