@@ -894,6 +894,20 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
       too_high_step = int(max_curvature_delta_can * 1.1)
       self.assertFalse(self._tx(self._curvature_cmd_msg(too_high_step, True, self.MAX_POWER // 2)))
 
+  def test_power_limit(self):
+    self.safety.set_controls_allowed(True)
+    # oberhalb max_power blockieren
+    self.assertFalse(self._tx(self._curvature_cmd_msg(0, steer_req=True, power=self.MAX_POWER + 1)))
+    # innerhalb max_power erlauben
+    self.assertTrue(self._tx(self._curvature_cmd_msg(0, steer_req=True, power=self.MAX_POWER - 1)))
+
+  def test_power_without_control(self):
+    self.safety.set_controls_allowed(False)
+    # nicht-null Power ohne Freigabe -> blockiert
+    self.assertFalse(self._tx(self._curvature_cmd_msg(0, steer_req=False, power=self.MAX_POWER // 2)))
+    # null Power ohne Freigabe -> erlaubt
+    self.assertTrue(self._tx(self._curvature_cmd_msg(0, steer_req=False, power=0)))
+
 
 class PandaSafetyTest(PandaSafetyTestBase):
   TX_MSGS: list[list[int]] | None = None
