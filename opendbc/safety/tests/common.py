@@ -186,7 +186,7 @@ class LongitudinalAccelSafetyTest(PandaSafetyTestBase, abc.ABC):
             should_tx = controls_allowed and min_accel <= accel <= max_accel
             should_tx = should_tx or accel == self.INACTIVE_ACCEL
             if self.ALLOW_OVERRIDE:
-              should_tx = accel == self.ACCEL_OVERRIDE and controls_allowed
+              should_tx = should_tx or (accel == self.ACCEL_OVERRIDE and controls_allowed)
           else:
             should_tx = False
           self.assertEqual(should_tx, self._tx(self._accel_msg(accel)))
@@ -830,8 +830,8 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
 
   MAX_CURVATURE: float
   CURVATURE_TO_CAN: float
-  INACTIVE_CURVATURE_IS_ZERO: bool
-  MAX_POWER: int
+  INACTIVE_CURVATURE_IS_ZERO: bool = False
+  MAX_POWER: int = 0
   SEND_RATE: float
 
   @classmethod
