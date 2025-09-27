@@ -5,7 +5,7 @@ bool get_longitudinal_allowed(void) {
 }
 
 bool get_longitudinal_allowed_override(void) {
-  return controls_allowed && gas_pressed_prev;
+  return controls_allowed;
 }
 
 // Safety checks for longitudinal actuation
