@@ -288,6 +288,7 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
     .min_accel = -3500,
     .inactive_accel = 3010,  // VW sends one increment above the max range when inactive
 	.override_accel = 0,
+	.allow_override = true,
   };
   
   bool tx = true;
