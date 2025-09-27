@@ -147,14 +147,16 @@ class TestVolkswagenPqLongSafety(TestVolkswagenPqSafetyBase, common.Longitudinal
     self.safety.init_tests()
 
   # stock cruise controls are entirely bypassed under openpilot longitudinal control
-  def test_disable_control_allowed_from_cruise(self):
-    pass
+  def test_disable_control_allowed_from_cruise(self): pass
+  def test_enable_control_allowed_from_cruise(self): pass
+  def test_cruise_engaged_prev(self): pass
 
-  def test_enable_control_allowed_from_cruise(self):
-    pass
-
-  def test_cruise_engaged_prev(self):
-    pass
+  # override tests that do not apply to PQ safety
+  def test_allow_engage_with_gas_pressed(self): pass
+  def test_no_disengage_on_gas(self): pass
+  def test_not_allow_user_brake_when_moving(self): pass
+  def test_allow_user_brake_at_zero_speed(self): pass
+  def test_enable_lateral_control_with_controls_allowed_rising_edge(self): pass
 
   def test_set_and_resume_buttons(self):
     for button in ["set", "resume"]:
