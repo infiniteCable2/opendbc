@@ -183,10 +183,11 @@ class LongitudinalAccelSafetyTest(PandaSafetyTestBase, abc.ABC):
           for gas_pressed in [False, True]:
             self.safety.set_controls_allowed(controls_allowed)
             self.safety.set_alternative_experience(alternative_experience)
+            self.safety.set_gas_pressed_prev(gas_pressed)
             if self.LONGITUDINAL:
               should_tx = controls_allowed and min_accel <= accel <= max_accel
               should_tx = should_tx or accel == self.INACTIVE_ACCEL
-              should_tx = False if self.ALLOW_OVERRIDE and accel != self.ACCEL_OVERRIDE else should_tx
+              should_tx = False if self.ALLOW_OVERRIDE and accel != self.ACCEL_OVERRIDE and gas_pressed else should_tx
             else:
               should_tx = False
 
