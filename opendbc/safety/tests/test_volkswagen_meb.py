@@ -37,6 +37,7 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.SteerCurvatu
   CURVATURE_TO_CAN = 149253.7313
   INACTIVE_CURVATURE_IS_ZERO = True
   MAX_POWER = 125  # 50% bei (0.4,0) Skalierung -> 50/0.4 = 125
+  ALLLOW_OVERRIDE = True
 
   MAX_RT_DELTA = 75
   MAX_RATE_UP = 4
@@ -192,8 +193,16 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
     for controls_allowed in [True, False]:
       for accel in np.concatenate((np.arange(MIN_ACCEL - 1, MAX_ACCEL + 1, 0.1), [0, INACTIVE_ACCEL, ACCEL_OVERRIDE])):
         accel = round(accel, 2)
-        send = ((controls_allowed and MIN_ACCEL <= accel <= MAX_ACCEL) or accel == INACTIVE_ACCEL)
+        send = False
+        if accel == INACTIVE_ACCEL:
+          send = True
+        elif controls_allowed and MIN_ACCEL <= accel <= MAX_ACCEL:
+          send = True
+        elif controls_allowed and accel == ACCEL_OVERRIDE and self.safety.get_gas_pressed_prev():
+          send = True
         self.safety.set_controls_allowed(controls_allowed)
+        # Gas nur simulieren, wenn ACCEL_OVERRIDE getestet wird
+        self.safety.set_gas_pressed_prev(accel == ACCEL_OVERRIDE)
         self.assertEqual(send, self._tx(self._accel_msg(accel)), (controls_allowed, accel))
 
   def test_accel_override_with_gas(self):
