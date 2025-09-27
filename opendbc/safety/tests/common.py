@@ -185,7 +185,7 @@ class LongitudinalAccelSafetyTest(PandaSafetyTestBase, abc.ABC):
           if self.LONGITUDINAL:
             should_tx = controls_allowed and min_accel <= accel <= max_accel
             should_tx = should_tx or accel == self.INACTIVE_ACCEL
-            if self.ALLOW_OVERRIDE:
+            if self.ALLOW_OVERRIDE and self.ACCEL_OVERRIDE != self.INACTIVE_ACCEL:
               should_tx = should_tx or (accel == self.ACCEL_OVERRIDE and controls_allowed)
           else:
             should_tx = False
