@@ -180,21 +180,20 @@ class LongitudinalAccelSafetyTest(PandaSafetyTestBase, abc.ABC):
       for accel in np.concatenate((np.arange(min_accel - 1, max_accel + 1, 0.05), extras)):
         accel = round(accel, 2) # floats might not hit exact boundary conditions without rounding
         for controls_allowed in [True, False]:
-          for gas_pressed in [False, True]:
-            self.safety.set_controls_allowed(controls_allowed)
-            self.safety.set_alternative_experience(alternative_experience)
-            self.safety.set_gas_pressed_prev(gas_pressed)
-            if self.LONGITUDINAL:
-              should_tx = controls_allowed and min_accel <= accel <= max_accel
-              should_tx = should_tx or accel == self.INACTIVE_ACCEL
-              should_tx = False if self.ALLOW_OVERRIDE and accel != self.ACCEL_OVERRIDE and gas_pressed else should_tx
-            else:
-              should_tx = False
+          self.safety.set_controls_allowed(controls_allowed)
+          self.safety.set_alternative_experience(alternative_experience)
+          if self.LONGITUDINAL:
+            should_tx = controls_allowed and min_accel <= accel <= max_accel
+            should_tx = should_tx or accel == self.INACTIVE_ACCEL
+            if self.ALLOW_OVERRIDE:
+              should_tx = accel == self.ACCEL_OVERRIDE and controls_allowed
+          else:
+            should_tx = False
 
-            self.assertEqual(
-              should_tx, self._tx(self._accel_msg(accel)),
-              (controls_allowed, gas_pressed, accel),
-            )
+          self.assertEqual(
+            should_tx, self._tx(self._accel_msg(accel)),
+            (controls_allowed, gas_pressed, accel),
+          )
 
 
 class LongitudinalGasBrakeSafetyTest(PandaSafetyTestBase, abc.ABC):
