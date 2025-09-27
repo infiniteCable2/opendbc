@@ -170,7 +170,7 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
   def setUp(self):
     self.packer = CANPackerPanda("vw_meb")
     self.safety = libsafety_py.libsafety
-    self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagen, VolkswagenSafetyFlags.LongControl)
+    self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagen, VolkswagenSafetyFlags.LONG_CONTROL)
     self.safety.init_tests()
 
   def test_set_and_resume_buttons(self):
