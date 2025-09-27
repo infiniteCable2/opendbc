@@ -4,7 +4,7 @@ bool get_longitudinal_allowed(void) {
   return controls_allowed && !gas_pressed_prev;
 }
 
-static bool get_longitudinal_allowed_override(void) {
+bool get_longitudinal_allowed_override(void) {
   return controls_allowed && gas_pressed_prev;
 }
 
