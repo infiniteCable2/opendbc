@@ -22,7 +22,7 @@ MSG_LDW_1 = 0x5BE             # TX by OP, Lane line recognition and text alerts
 class TestVolkswagenPqSafetyBase(common.PandaCarSafetyTest, common.DriverTorqueSteeringSafetyTest):
   cruise_engaged = False
 
-  RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_1, MSG_LDW_1)}
+  RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_1, MSG_LDW_1, MSG_GRA_NEU)}
 
   MAX_RATE_UP = 6
   MAX_RATE_DOWN = 10
@@ -110,8 +110,9 @@ class TestVolkswagenPqSafetyBase(common.PandaCarSafetyTest, common.DriverTorqueS
 
 
 class TestVolkswagenPqStockSafety(TestVolkswagenPqSafetyBase):
-  # Transmit of GRA_Neu is allowed on bus 0 and 2 to keep compatibility with gateway and camera integration
-  TX_MSGS = [[MSG_HCA_1, 0], [MSG_GRA_NEU, 0], [MSG_GRA_NEU, 2], [MSG_LDW_1, 0]]
+  # Transmit of GRA_Neu is allowed on bus 0, 1 and 2 to keep compatibility with gateway and camera integration
+  TX_MSGS = [[MSG_HCA_1, 0], [MSG_GRA_NEU, 0], [MSG_GRA_NEU, 1], [MSG_GRA_NEU, 2], [MSG_LDW_1, 0]]
+  RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_1, MSG_LDW_1, MSG_GRA_NEU)}
   FWD_BLACKLISTED_ADDRS = {2: [MSG_HCA_1, MSG_LDW_1]}
 
   def setUp(self):
@@ -131,9 +132,12 @@ class TestVolkswagenPqStockSafety(TestVolkswagenPqSafetyBase):
 
 
 class TestVolkswagenPqLongSafety(TestVolkswagenPqSafetyBase, common.LongitudinalAccelSafetyTest):
-  TX_MSGS = [[MSG_HCA_1, 0], [MSG_LDW_1, 0], [MSG_ACC_SYSTEM, 0], [MSG_ACC_GRA_ANZEIGE, 0]]
+  # Transmit of GRA_Neu is allowed on bus 0, 1 and 2 under long control as well
+  TX_MSGS = [[MSG_HCA_1, 0], [MSG_LDW_1, 0],
+             [MSG_GRA_NEU, 0], [MSG_GRA_NEU, 1], [MSG_GRA_NEU, 2],
+             [MSG_ACC_SYSTEM, 0], [MSG_ACC_GRA_ANZEIGE, 0]]
+  RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_1, MSG_LDW_1, MSG_GRA_NEU, MSG_ACC_SYSTEM, MSG_ACC_GRA_ANZEIGE)}
   FWD_BLACKLISTED_ADDRS = {2: [MSG_HCA_1, MSG_LDW_1, MSG_ACC_SYSTEM, MSG_ACC_GRA_ANZEIGE]}
-  RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_1, MSG_LDW_1, MSG_ACC_SYSTEM, MSG_ACC_GRA_ANZEIGE)}
   INACTIVE_ACCEL = 3.01
 
   def setUp(self):
