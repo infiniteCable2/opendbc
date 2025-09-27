@@ -149,6 +149,7 @@ typedef struct {
   const float curvature_to_can;
   const float send_rate;
   const bool inactive_curvature_is_zero; // if false, enforces angle near meas when disabled (default)
+  const int max_power;
 } CurvatureSteeringLimits;
 
 typedef struct {
@@ -242,7 +243,7 @@ void gen_crc_lookup_table_8(uint8_t poly, uint8_t crc_lut[]);
 void gen_crc_lookup_table_16(uint16_t poly, uint16_t crc_lut[]);
 bool steer_torque_cmd_checks(int desired_torque, int steer_req, const TorqueSteeringLimits limits);
 bool steer_angle_cmd_checks(int desired_angle, bool steer_control_enabled, const AngleSteeringLimits limits);
-bool steer_power_cmd_checks(int desired_steer_power, bool steer_control_enabled);
+bool steer_power_cmd_checks(int desired_steer_power, bool steer_control_enabled, const CurvatureSteeringLimits limits);
 //bool steer_curvature_cmd_checks_roll(int desired_curvature, bool steer_control_enabled, const CurvatureSteeringLimits limits);
 bool steer_curvature_cmd_checks_average(int desired_curvature, bool steer_control_enabled, const CurvatureSteeringLimits limits);
 bool steer_angle_cmd_checks_vm(int desired_angle, bool steer_control_enabled, const AngleSteeringLimits limits,
