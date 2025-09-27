@@ -186,7 +186,7 @@ static const CurvatureSteeringLimits VOLKSWAGEN_MEB_STEERING_LIMITS = {
   .curvature_to_can = 149253.7313, // 1 / 6.7e-6 rad/m to can
   .send_rate = 0.02,
   .inactive_curvature_is_zero = true,
-  .roll_to_can = 10000.0,
+  .max_power = 125 // 50%
 };
 
 static void volkswagen_meb_rx_hook(const CANPacket_t *msg) {
