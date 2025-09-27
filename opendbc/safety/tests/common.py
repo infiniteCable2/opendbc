@@ -983,9 +983,11 @@ class PandaSafetyTest(PandaSafetyTestBase):
               continue
             if attr.startswith('TestSubaruPreglobal') and current_test.startswith('TestSubaruPreglobal'):
               continue
-            if {attr, current_test}.issubset({'TestVolkswagenPqSafety', 'TestVolkswagenPqStockSafety', 'TestVolkswagenPqLongSafety'}):
+            if {attr, current_test}.issubset({'TestVolkswagenPqSafety', 'TestVolkswagenPqStockSafety', 'TestVolkswagenPqLongSafety',
+                                              'TestVolkswagenMqbSafety', 'TestVolkswagenMqbStockSafety', 'TestVolkswagenMqbLongSafety',
+                                              'TestVolkswagenMebSafety', 'TestVolkswagenMebStockSafety', 'TestVolkswagenMebLongSafety', 'TestVolkswagenMebCurvatureSafety'}):
               continue
-            if {attr, current_test}.issubset({ 'TestVolkswagenMebSafety', 'TestVolkswagenMebStockSafety', 'TestVolkswagenMebLongSafety', 'TestVolkswagenMebCurvatureSafety'}):
+            if {attr, current_test}.issubset({'TestVolkswagenPqSafety', 'TestVolkswagenPqStockSafety', 'TestVolkswagenPqLongSafety'}):
               continue
             if {attr, current_test}.issubset({'TestGmCameraSafety', 'TestGmCameraLongitudinalSafety', 'TestGmAscmSafety',
                                               'TestGmCameraEVSafety', 'TestGmCameraLongitudinalEVSafety', 'TestGmAscmEVSafety'}):
