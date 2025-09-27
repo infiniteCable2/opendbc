@@ -4,17 +4,10 @@ bool get_longitudinal_allowed(void) {
   return controls_allowed && !gas_pressed_prev;
 }
 
-bool get_longitudinal_allowed_override(void) {
-  return controls_allowed;
-}
-
 // Safety checks for longitudinal actuation
 bool longitudinal_accel_checks(int desired_accel, const LongitudinalLimits limits) {
   bool accel_valid = get_longitudinal_allowed() && !max_limit_check(desired_accel, limits.max_accel, limits.min_accel);
-  bool accel_valid_override = true;
-  if (limits.allow_override) {
-    accel_valid_override = get_longitudinal_allowed_override() && desired_accel == limits.override_accel;
-  }
+  bool accel_valid_override = controls_allowed && desired_accel == limits.override_accel && limits.allow_override;
   bool accel_inactive = desired_accel == limits.inactive_accel;
   return !(accel_valid || accel_inactive || accel_valid_override);
 }
