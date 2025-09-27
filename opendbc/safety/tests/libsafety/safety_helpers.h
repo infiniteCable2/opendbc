@@ -197,6 +197,13 @@ int get_angle_meas_max(void){
   return angle_meas.max;
 }
 
+int get_curvature_meas_min(void){
+  return curvature_meas.min;
+}
+
+int get_curvature_meas_max(void){
+  return curvature_meas.max;
+}
 
 // ***** car specific helpers *****
 
