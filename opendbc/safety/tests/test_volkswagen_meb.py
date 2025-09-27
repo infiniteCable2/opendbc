@@ -86,9 +86,12 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
     values = {"Accelerator_Pressure": gas}
     return self.packer.make_can_msg_panda("Motor_54", 0, values)
 
-  def _user_brake_msg(self, brake):
+  def _motor_14_msg(self, brake):
     values = {"MO_Fahrer_bremst": brake}
     return self.packer.make_can_msg_panda("Motor_14", 0, values)
+
+  def _user_brake_msg(self, brake):
+    return self._motor_14_msg(brake)
 
   def _tsk_status_msg(self, enable, main_switch=True):
     acc_status = 3 if enable else (2 if main_switch else 0)
@@ -105,9 +108,6 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
 
   def _pcm_status_msg(self, enable):
     return self._tsk_status_msg(enable)
-
-  def _user_brake_msg(self, brake):
-    return self._motor_14_msg(brake)
 
   def setUp(self):
     self.packer = CANPackerPanda("vw_meb")
