@@ -826,9 +826,7 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
   CURVATURE_TO_CAN: float
   INACTIVE_CURVATURE_IS_ZERO: bool
   MAX_POWER: int
-
-  SEND_RATE: float = 0.02  # aus VOLKSWAGEN_MEB_STEERING_LIMITS
-  JERK_LIMIT: float = ISO_LATERAL_JERK  # 2.9 m/s^3 normalerweise
+  SEND_RATE: float
 
   @classmethod
   def setUpClass(cls):
