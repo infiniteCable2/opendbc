@@ -37,13 +37,6 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
   MAX_POWER = 125  # 50% bei (0.4,0) Skalierung -> 50/0.4 = 125
   SEND_RATE = 0.02
 
-  MAX_RT_DELTA = 75
-  MAX_RATE_UP = 4
-  MAX_RATE_DOWN = 10
-
-  DRIVER_TORQUE_ALLOWANCE = 80
-  DRIVER_TORQUE_FACTOR = 3
-
   RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02)}
 
   def _speed_msg(self, speed_mps: float):
@@ -62,10 +55,6 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
 
   def _vehicle_moving_msg(self, speed_mps: float):
     return self._speed_msg(speed_mps)
-
-  def _torque_driver_msg(self, torque):
-    values = {"EPS_Lenkmoment": abs(torque), "EPS_VZ_Lenkmoment": torque < 0}
-    return self.packer.make_can_msg_panda("LH_EPS_03", 0, values)
 
   def _curvature_meas_msg(self, curvature):
     values = {"Curvature": abs(curvature), "Curvature_VZ": curvature < 0}
@@ -109,18 +98,6 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
 
   def setUp(self):
     self.packer = CANPackerPanda("vw_meb")
-
-  def test_torque_measurements(self):
-    self._rx(self._torque_driver_msg(100))
-    self._rx(self._torque_driver_msg(-50))
-    self._rx(self._torque_driver_msg(0))
-    self._rx(self._torque_driver_msg(0))
-    self.assertEqual(-50, self.safety.get_torque_driver_min())
-    self.assertEqual(100, self.safety.get_torque_driver_max())
-    self._rx(self._torque_driver_msg(0))
-    self._rx(self._torque_driver_msg(0))
-    self.assertEqual(0, self.safety.get_torque_driver_max())
-    self.assertEqual(0, self.safety.get_torque_driver_min())
 
   def test_curvature_measurements(self):
     self._rx(self._curvature_meas_msg(1500))
