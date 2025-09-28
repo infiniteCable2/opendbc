@@ -144,6 +144,39 @@ class TestVolkswagenMebCurvatureSafety(TestVolkswagenMebSafetyBase, common.Curva
     self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagen, 0)
     self.safety.init_tests()
 
+  def test_iso_accel_limit(self):
+    self.safety.set_controls_allowed(True)
+    self._pcm_status_msg(True)
+    
+    speeds = [0., 1., 5., 10., 15., 50.]
+    for v in speeds:
+      self._reset_speed_measurement(v)
+
+      max_curvature = ISO_LATERAL_ACCEL / max(v**2, 1e-3)
+      max_curvature_can = int(max_curvature * self.CURVATURE_TO_CAN)
+
+      self._tx(self._curvature_cmd_msg(max_curvature_can, True, 0))
+      self.assertTrue(self._tx(self._curvature_cmd_msg(max_curvature_can, True, 0)))
+      too_high = int(max_curvature_can * 1.1)
+      self._tx(self._curvature_cmd_msg(too_high, True, 0))
+      self.assertFalse(self._tx(self._curvature_cmd_msg(too_high, True, 0)))
+
+  def test_iso_jerk_limit(self):
+    self.safety.set_controls_allowed(True)
+    self._pcm_status_msg(True)
+
+    speeds = [0., 1., 5., 10., 15., 50.]
+    for v in speeds:
+      self._reset_speed_measurement(v)
+
+      max_curvature_rate = ISO_LATERAL_JERK / max(v**2, 1e-3)
+      max_curvature_delta = max_curvature_rate * self.SEND_RATE
+      max_curvature_delta_can = int(max_curvature_delta * self.CURVATURE_TO_CAN)
+
+      self._tx(self._curvature_cmd_msg(max_curvature_delta_can, True, 0))
+      self.assertTrue(self._tx(self._curvature_cmd_msg(max_curvature_delta_can * 2, True, 0)))
+      self.assertFalse(self._tx(self._curvature_cmd_msg(max_curvature_delta_can * 4, True, 0)))
+
 
 class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
   ALLOW_OVERRIDE = True
