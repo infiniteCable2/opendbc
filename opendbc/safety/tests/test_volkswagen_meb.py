@@ -11,7 +11,6 @@ from opendbc.car.lateral import ISO_LATERAL_ACCEL, ISO_LATERAL_JERK
 
 MAX_ACCEL = 2.0
 MIN_ACCEL = -3.5
-INACTIVE_ACCEL = 3.01
 ACCEL_OVERRIDE = 0
 
 # MEB message IDs
@@ -167,14 +166,15 @@ class TestVolkswagenMebCurvatureSafety(TestVolkswagenMebSafetyBase, common.Curva
     
 
 class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
-  ALLOW_OVERRIDE = True
-  
   TX_MSGS = [[MSG_HCA_03, 0], [MSG_LDW_02, 0], [MSG_ACC_18, 0],
              [MSG_MEB_ACC_01, 0], [MSG_TA_01, 0], [MSG_EA_01, 0], [MSG_EA_02, 0],
              [MSG_KLR_01, 0], [MSG_KLR_01, 2]]
   FWD_BLACKLISTED_ADDRS = {0: [MSG_LH_EPS_03],
                            2: [MSG_HCA_03, MSG_LDW_02, MSG_ACC_18, MSG_MEB_ACC_01]}
   RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02, MSG_ACC_18, MSG_MEB_ACC_01)}
+
+  ALLOW_OVERRIDE = True
+  INACTIVE_ACCEL = 3.01
   
   def setUp(self):
     self.packer = CANPackerPanda("vw_meb")
