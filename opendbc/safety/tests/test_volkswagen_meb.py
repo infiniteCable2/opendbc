@@ -228,7 +228,7 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
         send = (controls_allowed and MIN_ACCEL <= accel <= MAX_ACCEL) or is_inactive_accel
         self.safety.set_controls_allowed(controls_allowed)
         # accel request used by ECU
-        self.assertEqual(send, self._tx(self._acc_18_msg(accel)), (controls_allowed, accel))
+        self.assertEqual(send, self._tx(self._acccel_msg(accel)), (controls_allowed, accel))
 
   def test_accel_override_with_gas(self):
     if not self.ALLOW_OVERRIDE:
