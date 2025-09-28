@@ -7,6 +7,7 @@ from opendbc.safety.tests.libsafety import libsafety_py
 import opendbc.safety.tests.common as common
 from opendbc.safety.tests.common import CANPackerPanda
 from opendbc.car.volkswagen.values import VolkswagenSafetyFlags
+from opendbc.car.lateral import ISO_LATERAL_ACCEL, ISO_LATERAL_JERK
 
 MAX_ACCEL = 2.0
 MIN_ACCEL = -3.5
