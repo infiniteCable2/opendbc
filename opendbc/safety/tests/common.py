@@ -9,6 +9,7 @@ from collections.abc import Callable
 from opendbc.can import CANPacker
 from opendbc.safety import ALTERNATIVE_EXPERIENCE
 from opendbc.safety.tests.libsafety import libsafety_py
+from opendbc.car.lateral import ISO_LATERAL_ACCEL, ISO_LATERAL_JERK, AVERAGE_ROAD_ROLL
 
 from opendbc.safety.tests.mads_common import MadsSafetyTestBase
 
@@ -16,12 +17,6 @@ MAX_WRONG_COUNTERS = 5
 MAX_SAMPLE_VALS = 6
 VEHICLE_SPEED_FACTOR = 1000
 RT_INTERVAL = 250000  # 250ms
-
-# ISO 11270
-ISO_LATERAL_ACCEL = 3.0 # m/s^2
-ISO_LATERAL_JERK = 5.0 # m/s^3
-EARTH_G = 9.81
-AVERAGE_ROAD_ROLL = 0.06
 
 # Max allowed delta between car speeds
 MAX_SPEED_DELTA = 2.0  # m/s
