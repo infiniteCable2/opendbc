@@ -42,19 +42,26 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
 
   RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02)}
 
+  # Wheel speeds
   def _speed_msg(self, speed_mps: float):
-    # ESC_51 ist in km/h, Tests liefern m/s -> m/s -> km/h
     spd_kph = speed_mps * 3.6
-    values = {
-      "HL_Radgeschw": spd_kph,
-      "HR_Radgeschw": spd_kph,
-      "VL_Radgeschw": spd_kph,
-      "VR_Radgeschw": spd_kph,
-    }
+    values = { "HL_Radgeschw": spd_kph, "HR_Radgeschw": spd_kph, "VL_Radgeschw": spd_kph, "VR_Radgeschw": spd_kph}
     return self.packer.make_can_msg_panda("ESC_51", 0, values)
 
-  def _speed_msg_2(self, speed_mps: float):
-    return self._speed_msg(speed_mps)
+  # Brake pedal switch
+  def _motor_14_msg(self, brake):
+    values = {"MO_Fahrer_bremst": brake}
+    return self.packer.make_can_msg_panda("Motor_14", 0, values)
+
+  def _user_brake_msg(self, brake):
+    return self._motor_14_msg(brake)
+
+  # Driver throttle input
+  def _user_gas_msg(self, gas):
+    values = {"Accelerator_Pressure": gas}
+    return self.packer.make_can_msg_panda("Motor_54", 0, values)
+
+  # ACC engagement status
 
   def _vehicle_moving_msg(self, speed_mps: float):
     return self._speed_msg(speed_mps)
@@ -72,32 +79,30 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
     }
     return self.packer.make_can_msg_panda("HCA_03", 0, values)
 
-  def _user_gas_msg(self, gas):
-    values = {"Accelerator_Pressure": gas}
-    return self.packer.make_can_msg_panda("Motor_54", 0, values)
-
-  def _motor_14_msg(self, brake):
-    values = {"MO_Fahrer_bremst": brake}
-    return self.packer.make_can_msg_panda("Motor_14", 0, values)
-
-  def _user_brake_msg(self, brake):
-    return self._motor_14_msg(brake)
-
   def _tsk_status_msg(self, enable, main_switch=True):
-    acc_status = 3 if enable else (2 if main_switch else 0)
-    values = {"TSK_Status": acc_status}
+    if main_switch:
+      tsk_status = 3 if enable else 2
+    else:
+      tsk_status = 0
+    values = {"TSK_Status": tsk_status}
     return self.packer.make_can_msg_panda("Motor_51", 0, values)
 
-  def _gra_acc_01_msg(self, cancel=0, resume=0, _set=0):
+  def _pcm_status_msg(self, enable):
+    return self._tsk_status_msg(enable)
+
+  # Driver steering input torque
+  def _torque_driver_msg(self, torque):
+    values = {"EPS_Lenkmoment": abs(torque), "EPS_VZ_Lenkmoment": torque < 0}
+    return self.packer.make_can_msg_panda("LH_EPS_03", 0, values)
+
+  # Cruise control buttons
+  def _button_msg(self, cancel=0, resume=0, _set=0, bus=2):
     values = {"GRA_Abbrechen": cancel, "GRA_Tip_Setzen": _set, "GRA_Tip_Wiederaufnahme": resume}
-    return self.packer.make_can_msg_panda("GRA_ACC_01", 0, values)
+    return self.packer.make_can_msg_panda("GRA_ACC_01", bus, values)
 
   def _accel_msg(self, accel):
     values = {"ACC_Sollbeschleunigung_02": accel}
     return self.packer.make_can_msg_panda("ACC_18", 0, values)
-
-  def _pcm_status_msg(self, enable):
-    return self._tsk_status_msg(enable)
 
   def setUp(self):
     self.packer = CANPackerPanda("vw_meb")
@@ -105,8 +110,21 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
   def test_curvature_measurements(self):
     self._rx(self._curvature_meas_msg(1500))
     self._rx(self._curvature_meas_msg(-500))
+    self._rx(self._curvature_meas_msg(0))
+    self._rx(self._curvature_meas_msg(0))
+    self._rx(self._curvature_meas_msg(0))
+    self._rx(self._curvature_meas_msg(0))
+
     self.assertEqual(-500, self.safety.get_curvature_meas_min())
     self.assertEqual(1500, self.safety.get_curvature_meas_max())
+
+    self._rx(self._curvature_meas_msg(0))
+    self.assertEqual(0, self.safety.get_curvature_meas_max())
+    self.assertEqual(-500, self.safety.get_curvature_meas_min())
+    
+    self._rx(self._curvature_meas_msg(0))
+    self.assertEqual(0, self.safety.get_curvature_meas_max())
+    self.assertEqual(0, self.safety.get_curvature_meas_min())
 
   def test_brake_signal(self):
     self._rx(self._user_brake_msg(False))
@@ -127,11 +145,14 @@ class TestVolkswagenMebStockSafety(TestVolkswagenMebSafetyBase):
     self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagen, 0)
     self.safety.init_tests()
 
-  def test_cancel_only_when_controls_off(self):
+  def test_spam_cancel_safety_check(self):
     self.safety.set_controls_allowed(0)
-    self.assertTrue(self._tx(self._gra_acc_01_msg(cancel=1)))
-    self.assertFalse(self._tx(self._gra_acc_01_msg(resume=1)))
-    self.assertFalse(self._tx(self._gra_acc_01_msg(_set=1)))
+    self.assertTrue(self._tx(self._button_msg(cancel=1)))
+    self.assertFalse(self._tx(self._button_msg(resume=1)))
+    self.assertFalse(self._tx(self._button_msg(_set=1)))
+    # do not block resume if we are engaged already
+    self.safety.set_controls_allowed(1)
+    self.assertTrue(self._tx(self._button_msg(resume=1)))
 
 
 class TestVolkswagenMebCurvatureSafety(TestVolkswagenMebSafetyBase, common.CurvatureSteeringSafetyTest):
@@ -162,48 +183,62 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
     self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagen, VolkswagenSafetyFlags.LONG_CONTROL)
     self.safety.init_tests()
 
+  # stock cruise controls are entirely bypassed under openpilot longitudinal control
+  def test_disable_control_allowed_from_cruise(self):
+    pass
+
+  def test_enable_control_allowed_from_cruise(self):
+    pass
+
+  def test_cruise_engaged_prev(self):
+    pass
+
   def test_set_and_resume_buttons(self):
     for button in ["set", "resume"]:
+      # ACC main switch must be on, engage on falling edge
       self.safety.set_controls_allowed(0)
+      self._rx(self._tsk_status_msg(False, main_switch=False))
+      self._rx(self._button_msg(_set=(button == "set"), resume=(button == "resume"), bus=0))
+      self.assertFalse(self.safety.get_controls_allowed(), f"controls allowed on {button} with main switch off")
       self._rx(self._tsk_status_msg(False, main_switch=True))
-      self._rx(self._gra_acc_01_msg(_set=(button == "set"), resume=(button == "resume")))
-      self.assertFalse(self.safety.get_controls_allowed())
-      self._rx(self._gra_acc_01_msg())  # falling edge
-      self.assertTrue(self.safety.get_controls_allowed())
+      self._rx(self._button_msg(_set=(button == "set"), resume=(button == "resume"), bus=0))
+      self.assertFalse(self.safety.get_controls_allowed(), f"controls allowed on {button} rising edge")
+      self._rx(self._button_msg(bus=0))
+      self.assertTrue(self.safety.get_controls_allowed(), f"controls not allowed on {button} falling edge")
 
   def test_cancel_button(self):
+    # Disable on rising edge of cancel button
+    self._rx(self._tsk_status_msg(False, main_switch=True))
     self.safety.set_controls_allowed(1)
-    self._rx(self._gra_acc_01_msg(cancel=1))
-    self.assertFalse(self.safety.get_controls_allowed())
+    self._rx(self._button_msg(cancel=True, bus=0))
+    self.assertFalse(self.safety.get_controls_allowed(), "controls allowed after cancel")
 
   def test_main_switch(self):
+    # Disable as soon as main switch turns off
+    self._rx(self._tsk_status_msg(False, main_switch=True))
     self.safety.set_controls_allowed(1)
     self._rx(self._tsk_status_msg(False, main_switch=False))
-    self.assertFalse(self.safety.get_controls_allowed())
+    self.assertFalse(self.safety.get_controls_allowed(), "controls allowed after ACC main switch off")
 
   def test_accel_safety_check(self):
     for controls_allowed in [True, False]:
-      for accel in np.concatenate((np.arange(MIN_ACCEL - 1, MAX_ACCEL + 1, 0.1), [0, INACTIVE_ACCEL, ACCEL_OVERRIDE])):
-        accel = round(accel, 2)
-        send = False
-        if accel == INACTIVE_ACCEL:
-          send = True
-        elif controls_allowed and MIN_ACCEL <= accel <= MAX_ACCEL:
-          send = True
-        elif controls_allowed and accel == ACCEL_OVERRIDE and self.safety.get_gas_pressed_prev():
-          send = True
+      # enforce we don't skip over 0 or inactive accel
+      for accel in np.concatenate((np.arange(MIN_ACCEL - 2, MAX_ACCEL + 2, 0.03), [0, self.INACTIVE_ACCEL])):
+        accel = round(accel, 2)  # floats might not hit exact boundary conditions without rounding
+        is_inactive_accel = accel == self.INACTIVE_ACCEL
+        send = (controls_allowed and MIN_ACCEL <= accel <= MAX_ACCEL) or is_inactive_accel
         self.safety.set_controls_allowed(controls_allowed)
-        # Gas nur simulieren, wenn ACCEL_OVERRIDE getestet wird
-        self.safety.set_gas_pressed_prev(accel == ACCEL_OVERRIDE)
-        self.assertEqual(send, self._tx(self._accel_msg(accel)), (controls_allowed, accel))
+        # accel request used by ECU
+        self.assertEqual(send, self._tx(self._acc_18_msg(accel)), (controls_allowed, accel))
 
   def test_accel_override_with_gas(self):
-    # expliziter Override-Pfad: Gas gedrückt + ACCEL_OVERRIDE erlaubt
+    if not self.ALLOW_OVERRIDE:
+      pass
     self.safety.set_controls_allowed(True)
     self.safety.set_gas_pressed_prev(True)
+    # override accel has to be spcific value
     self.assertTrue(self._tx(self._accel_msg(ACCEL_OVERRIDE)))
-    # falscher Wert trotz Override -> blockiert
-    self.assertFalse(self._tx(self._accel_msg(ACCEL_OVERRIDE + 1)))
+    self.assertFalse(self._tx(self._accel_msg(MAX_ACCEL)))
 
 
 if __name__ == "__main__":
