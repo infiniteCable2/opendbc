@@ -271,12 +271,11 @@ static void volkswagen_meb_rx_hook(const CANPacket_t *msg) {
       brake_pressed = GET_BIT(msg, 28U);
     }
 
-    // update accel pedal
+	// update accel pedal
     if (msg->addr == MSG_Motor_54) {
-      int accel_pedal_value = msg->data[21] - 37;
-      gas_pressed = accel_pedal_value != 0;
+	  int accel_pedal_value = (msg->data[21] * 4) - 140;
+      gas_pressed = accel_pedal_value > 0;
     }
-
   }
 }
 
