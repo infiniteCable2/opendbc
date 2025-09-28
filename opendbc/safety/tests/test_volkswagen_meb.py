@@ -11,7 +11,6 @@ from opendbc.car.lateral import ISO_LATERAL_ACCEL, ISO_LATERAL_JERK
 
 MAX_ACCEL = 2.0
 MIN_ACCEL = -3.5
-ACCEL_OVERRIDE = 0
 
 # MEB message IDs
 MSG_ESC_51        = 0xFC
@@ -174,6 +173,7 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
   RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02, MSG_ACC_18, MSG_MEB_ACC_01)}
 
   ALLOW_OVERRIDE = True
+  ACCEL_OVERRIDE = 0
   INACTIVE_ACCEL = 3.01
   
   def setUp(self):
@@ -222,7 +222,7 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
   def test_accel_safety_check(self):
     for controls_allowed in [True, False]:
       # enforce we don't skip over 0 or inactive accel
-      for accel in np.concatenate((np.arange(MIN_ACCEL - 2, MAX_ACCEL + 2, 0.03), [0, INACTIVE_ACCEL])):
+      for accel in np.concatenate((np.arange(MIN_ACCEL - 2, MAX_ACCEL + 2, 0.03), [0, self.INACTIVE_ACCEL])):
         accel = round(accel, 2)  # floats might not hit exact boundary conditions without rounding
         is_inactive_accel = accel == self.INACTIVE_ACCEL
         send = (controls_allowed and MIN_ACCEL <= accel <= MAX_ACCEL) or is_inactive_accel
@@ -236,7 +236,7 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
     self.safety.set_controls_allowed(True)
     self.safety.set_gas_pressed_prev(True)
     # override accel has to be spcific value
-    self.assertTrue(self._tx(self._accel_msg(ACCEL_OVERRIDE)))
+    self.assertTrue(self._tx(self._accel_msg(self.ACCEL_OVERRIDE)))
     self.assertFalse(self._tx(self._accel_msg(MAX_ACCEL)))
 
 
