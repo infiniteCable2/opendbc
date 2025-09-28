@@ -61,8 +61,6 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
     values = {"Accelerator_Pressure": gas}
     return self.packer.make_can_msg_panda("Motor_54", 0, values)
 
-  # ACC engagement status
-
   def _vehicle_moving_msg(self, speed_mps: float):
     return self._speed_msg(speed_mps)
 
@@ -78,7 +76,8 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
       "Power": power,
     }
     return self.packer.make_can_msg_panda("HCA_03", 0, values)
-
+    
+  # ACC engagement status
   def _tsk_status_msg(self, enable, main_switch=True):
     if main_switch:
       tsk_status = 3 if enable else 2
