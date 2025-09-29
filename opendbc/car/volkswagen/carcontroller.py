@@ -7,7 +7,7 @@ from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.interfaces import CarControllerBase
 from opendbc.car.volkswagen import mqbcan, pqcan, mebcan, pandacan
 from opendbc.car.volkswagen.values import CanBus, CarControllerParams, VolkswagenFlags
-from opendbc.car.volkswagen.mebutils import get_long_jerk_limits, get_long_control_limits, map_speed_to_acc_tempolimit, LatControlCurvature
+from opendbc.car.volkswagen.mebutils import LongControlJerk, LongControlLimit, map_speed_to_acc_tempolimit, LatControlCurvature
 
 VisualAlert = structs.CarControl.HUDControl.VisualAlert
 LongCtrlState = structs.CarControl.Actuators.LongControlState
@@ -28,10 +28,8 @@ class CarController(CarControllerBase):
     self.steering_power_last = 0
     self.steering_offset = 0.
     self.accel_last = 0.
-    self.long_jerk_up_last = 0.
-    self.long_jerk_down_last = 0.
-    self.long_dy_up_last = 0.
-    self.long_dy_down_last = 0.
+    self.long_jerk_control = LongControlJerk(dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if self.CP.flags & VolkswagenFlags.MEB else None
+    self.long_limit_control = LongControlLimit(dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if self.CP.flags & VolkswagenFlags.MEB else None
     self.long_override_counter = 0
     self.long_disabled_counter = 0
     self.gra_acc_counter_last = None
@@ -52,7 +50,7 @@ class CarController(CarControllerBase):
       if (CP.flags & VolkswagenFlags.MEB)
       else None
     )
-
+    
   def update(self, CC, CC_SP, CS, now_nanos):
     actuators = CC.actuators
     hud_control = CC.hudControl
@@ -186,7 +184,7 @@ class CarController(CarControllerBase):
           # Logic to prevent car error with EPB:
           #   * send a few frames of HMS RAMP RELEASE command at the very begin of long override and right at the end of active long control -> clean exit of ACC car controls
           #   * (1 frame of HMS RAMP RELEASE is enough, but lower the possibility of panda safety blocking it)
-          starting = actuators.longControlState == LongCtrlState.starting if self.long_override_counter == 0 else False # openpilot sets starting state after overriding ...
+          starting = actuators.longControlState == LongCtrlState.starting and CS.out.vEgo <= self.CP.vEgoStarting # openpilot sets starting state after overriding, ensure being in range
           accel = float(np.clip(actuators.accel, self.CCP.ACCEL_MIN, self.CCP.ACCEL_MAX) if CC.enabled else 0)
 
           long_override = CC.cruiseControl.override or CS.out.gasPressed
@@ -197,20 +195,15 @@ class CarController(CarControllerBase):
           long_disabling = not CC.enabled and self.long_disabled_counter < 5
 
           critical_state = hud_control.visualAlert == VisualAlert.fcw
-          upper_control_limit, lower_control_limit = get_long_control_limits(CC.enabled, CS.out.vEgo, hud_control.setSpeed, hud_control.leadDistance, hud_control.leadVisible, critical_state)
-          self.long_jerk_up_last, self.long_jerk_down_last, self.long_dy_up_last, self.long_dy_down_last = get_long_jerk_limits(CC.enabled, long_override,
-                                                                                                                                hud_control.leadDistance, hud_control.leadVisible,
-                                                                                                                                accel, self.accel_last, self.long_jerk_up_last,
-                                                                                                                                self.long_jerk_down_last, self.long_dy_up_last,
-                                                                                                                                self.long_dy_down_last,
-                                                                                                                                DT_CTRL * self.CCP.ACC_CONTROL_STEP,
-                                                                                                                                critical_state)
-
+          self.long_jerk_control.update(CC.enabled, long_override, hud_control.leadDistance, hud_control.leadVisible, accel, critical_state)
+          self.long_limit_control.update(CC.enabled, CS.out.vEgoRaw, hud_control.setSpeed, hud_control.leadDistance, hud_control.leadVisible, critical_state)
+          
           acc_control = self.CCS.acc_control_value(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, long_override)          
           acc_hold_type = self.CCS.acc_hold_type(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, starting, stopping,
                                                  CS.esp_hold_confirmation, long_override, long_override_begin, long_disabling)
           can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, self.CAN.pt, self.CP, CS.acc_type, CC.enabled,
-                                                             self.long_jerk_up_last, self.long_jerk_down_last, upper_control_limit, lower_control_limit,
+                                                             self.long_jerk_control.get_jerk_up(), self.long_jerk_control.get_jerk_down(),
+                                                             self.long_limit_control.get_upper_limit(), self.long_limit_control.get_lower_limit(),
                                                              accel, acc_control, acc_hold_type, stopping, starting, CS.esp_hold_confirmation,
                                                              CS.out.vEgoRaw * CV.MS_TO_KPH, long_override, CS.travel_assist_available))
 
