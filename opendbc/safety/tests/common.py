@@ -915,7 +915,9 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
     self.assertTrue(self._tx(self._curvature_cmd_msg(0, steer_req=False, power=0)))
     self._set_prev_desired_power(self.MAX_POWER - 1)
     self.assertFalse(self._tx(self._curvature_cmd_msg(0, steer_req=False, power=self.MAX_POWER)))
-    self.assertTrue(self._tx(self._curvature_cmd_msg(0, steer_req=False, power=self.MAX_POWER - 2))) # decrease allowed
+    self.assertFalse(self._tx(self._curvature_cmd_msg(0, steer_req=True, power=self.MAX_POWER))) # increase not allowed
+    self.assertFalse(self._tx(self._curvature_cmd_msg(0, steer_req=True, power=self.MAX_POWER - 1))) # equal not allowd
+    self.assertTrue(self._tx(self._curvature_cmd_msg(0, steer_req=True, power=self.MAX_POWER - 2))) # decrease allowed
 
 class PandaSafetyTest(PandaSafetyTestBase):
   TX_MSGS: list[list[int]] | None = None
