@@ -112,12 +112,12 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
     self._rx(self._curvature_meas_msg(0))
     self._rx(self._curvature_meas_msg(0))
 
-    self.assertEqual(-0.1, self.safety.get_curvature_meas_min())
-    self.assertEqual(0.15, self.safety.get_curvature_meas_max())
+    self.assertEqual(int(-0.1 * self.CURVATURE_TO_CAN), self.safety.get_curvature_meas_min())
+    self.assertEqual(int(0.15 * self.CURVATURE_TO_CAN), self.safety.get_curvature_meas_max())
 
     self._rx(self._curvature_meas_msg(0))
     self.assertEqual(0, self.safety.get_curvature_meas_max())
-    self.assertEqual(-0.1, self.safety.get_curvature_meas_min())
+    self.assertEqual(int(-0.1 * self.CURVATURE_TO_CAN), self.safety.get_curvature_meas_min())
     
     self._rx(self._curvature_meas_msg(0))
     self.assertEqual(0, self.safety.get_curvature_meas_max())
