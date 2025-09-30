@@ -105,19 +105,19 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
     self.packer = CANPackerPanda("vw_meb")
 
   def test_curvature_measurements(self):
-    self._rx(self._curvature_meas_msg(1500))
-    self._rx(self._curvature_meas_msg(-500))
+    self._rx(self._curvature_meas_msg(0.15))
+    self._rx(self._curvature_meas_msg(-0.1))
     self._rx(self._curvature_meas_msg(0))
     self._rx(self._curvature_meas_msg(0))
     self._rx(self._curvature_meas_msg(0))
     self._rx(self._curvature_meas_msg(0))
 
-    self.assertEqual(-500, self.safety.get_curvature_meas_min())
-    self.assertEqual(1500, self.safety.get_curvature_meas_max())
+    self.assertEqual(-0.1, self.safety.get_curvature_meas_min())
+    self.assertEqual(0.15, self.safety.get_curvature_meas_max())
 
     self._rx(self._curvature_meas_msg(0))
     self.assertEqual(0, self.safety.get_curvature_meas_max())
-    self.assertEqual(-500, self.safety.get_curvature_meas_min())
+    self.assertEqual(-0.1, self.safety.get_curvature_meas_min())
     
     self._rx(self._curvature_meas_msg(0))
     self.assertEqual(0, self.safety.get_curvature_meas_max())
