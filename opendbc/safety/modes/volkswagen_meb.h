@@ -205,7 +205,7 @@ static void volkswagen_meb_rx_hook(const CANPacket_t *msg) {
     }
 
     if (msg->addr == MSG_QFK_01) { // we do not need conversion deg to can, same scaling as HCA_03 curvature
-      int current_curvature = ((msg->data[5] & 0x7F) << 8 | msg->data[4]);
+      int current_curvature = ((msg->data[6] & 0x7F) << 8) | msg->data[5];
       
       bool current_curvature_sign = GET_BIT(msg, 55U);
       if (!current_curvature_sign) {
