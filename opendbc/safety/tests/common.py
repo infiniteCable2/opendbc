@@ -865,7 +865,7 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
     for v in speeds:
       v_fudged = max(v-1, 1)
       max_curvature_fudged = int(ISO_LATERAL_ACCEL / v_fudged**2)
-      max_curvature_rate_fudged = ISO_LATERAL_JERK / v_fudged**2)
+      max_curvature_rate_fudged = ISO_LATERAL_JERK / v_fudged**2
       max_curvature_delta_fudged = int(max_curvature_rate_fudged * self.SEND_RATE)
       
       self._reset_speed_measurement(v)
