@@ -35,7 +35,7 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
   MAX_CURVATURE = 29105
   CURVATURE_TO_CAN = 149253.7313
   INACTIVE_CURVATURE_IS_ZERO = True
-  MAX_POWER = 125  # 50% bei (0.4,0) Skalierung -> 50/0.4 = 125
+  MAX_POWER = 50 # percent
   SEND_RATE = 0.02
 
   RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02, MSG_EA_02, MSG_TA_01, MSG_KLR_01)}
