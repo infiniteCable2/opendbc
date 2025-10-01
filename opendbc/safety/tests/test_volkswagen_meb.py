@@ -69,7 +69,7 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
   def _curvature_cmd_msg(self, curvature, steer_req=1, power=50):
     values = {
       "Curvature": abs(curvature),
-      "Curvature_VZ": curvature < 0,
+      "Curvature_VZ": curvature > 0,
       "RequestStatus": 4 if steer_req else 0,
       "Power": power,
     }
