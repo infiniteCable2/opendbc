@@ -63,7 +63,7 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
     return self._speed_msg(speed_mps)
 
   def _curvature_meas_msg(self, curvature):
-    values = {"Curvature": abs(curvature), "Curvature_VZ": curvature < 0}
+    values = {"Curvature": abs(curvature), "Curvature_VZ": curvature > 0}
     return self.packer.make_can_msg_panda("QFK_01", 0, values)
 
   def _curvature_cmd_msg(self, curvature, steer_req=1, power=50):
