@@ -9,7 +9,7 @@ from collections.abc import Callable
 from opendbc.can import CANPacker
 from opendbc.safety import ALTERNATIVE_EXPERIENCE
 from opendbc.safety.tests.libsafety import libsafety_py
-from opendbc.car.lateral import ISO_LATERAL_ACCEL, ISO_LATERAL_JERK, AVERAGE_ROAD_ROLL
+from opendbc.car.lateral import ISO_LATERAL_ACCEL, ISO_LATERAL_JERK, AVERAGE_ROAD_ROLL, EARTH_G
 
 from opendbc.safety.tests.mads_common import MadsSafetyTestBase
 
@@ -825,6 +825,7 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
   CURVATURE_TO_CAN: float
   INACTIVE_CURVATURE_IS_ZERO: bool = False
   MAX_POWER: float = 0
+  POWER_TO_CAN: float = 0
   SEND_RATE: float
 
   @classmethod
@@ -841,12 +842,13 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
   def _curvature_meas_msg(self, curvature: float):
     pass
 
-  def _set_prev_desired_power(self, power: int):
-    self.safety.set_desired_steer_power_last( power)
+  def _set_prev_desired_power(self, power: float):
+    power_can = int(round(power * self.POWER_TO_CAN))
+    self.safety.set_desired_steer_power_last(power)
 
   def _set_prev_desired_curvature(self, curvature: float):
-    curvature = round(curvature * self.CURVATURE_TO_CAN)
-    self.safety.set_desired_curvature_last(curvature)
+    curvature_can = int(round(curvature * self.CURVATURE_TO_CAN))
+    self.safety.set_desired_curvature_last(curvature_can)
 
   def _reset_curvature_measurement(self, curvature: float):
     for _ in range(MAX_SAMPLE_VALS):
@@ -861,9 +863,10 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
                                   self.safety.get_curvature_meas_min, self.safety.get_curvature_meas_max)
 
   def test_iso_accel_limit(self):
+    max_lateral_accel = ISO_LATERAL_ACCEL + (EARTH_G * AVERAGE_ROAD_ROLL)
     speeds = [1., 5., 10., 15., 50.]
     for v in speeds:
-      max_curvature = ISO_LATERAL_ACCEL / v**2
+      max_curvature = max_lateral_accel / v**2
       max_curvature_rate = ISO_LATERAL_JERK / v**2
       max_curvature_delta = max_curvature_rate * self.SEND_RATE
       
