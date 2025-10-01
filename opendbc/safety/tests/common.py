@@ -863,9 +863,9 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
   def test_iso_accel_limit(self):
     speeds = [0., 1., 5., 10., 15., 50.]
     for v in speeds:
-      v_fudged = v - 1
-      max_curvature_fudged = int(ISO_LATERAL_ACCEL / max(v_fudged**2, 1e-3))
-      max_curvature_rate_fudged = ISO_LATERAL_JERK / max(v_fudged**2, 1e-3)
+      v_fudged = max(v-1, 1)
+      max_curvature_fudged = int(ISO_LATERAL_ACCEL / v_fudged**2)
+      max_curvature_rate_fudged = ISO_LATERAL_JERK / v_fudged**2)
       max_curvature_delta_fudged = int(max_curvature_rate_fudged * self.SEND_RATE)
       
       self._reset_speed_measurement(v)
@@ -880,8 +880,8 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
   def test_iso_jerk_limit(self):
     speeds = [0., 1., 5., 10., 15., 50.]
     for v in speeds:
-      v_fudged = v - 1
-      max_curvature_rate_fudged = ISO_LATERAL_JERK / max(v_fudged**2, 1e-3)
+      v_fudged = max(v-1, 1)
+      max_curvature_rate_fudged = ISO_LATERAL_JERK / v_fudged**2
       max_curvature_delta_fudged = int(max_curvature_rate_fudged * self.SEND_RATE)
       
       self._reset_speed_measurement(v)
