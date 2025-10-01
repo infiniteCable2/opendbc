@@ -863,44 +863,37 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
   def test_iso_accel_limit(self):
     speeds = [0., 1., 5., 10., 15., 50.]
     for v in speeds:
-      max_curvature = int((ISO_LATERAL_ACCEL / max(v**2, 1e-3)) / self.CURVATURE_TO_CAN)
       v_fudged = v - 1
-      max_curvature_fudged = int((ISO_LATERAL_ACCEL / max(v_fudged**2, 1e-3)) / self.CURVATURE_TO_CAN)
+      max_curvature_fudged = int(ISO_LATERAL_ACCEL / max(v_fudged**2, 1e-3))
+      max_curvature_rate_fudged = ISO_LATERAL_JERK / max(v_fudged**2, 1e-3)
+      max_curvature_delta_fudged = int(max_curvature_rate_fudged * self.SEND_RATE)
       
       self._reset_speed_measurement(v)
       self.safety.set_controls_allowed(True)
-      
-      # physically true curvature
-      self._set_prev_desired_curvature(max_curvature)
-      self.assertTrue(self._tx(self._curvature_cmd_msg(max_curvature - 1, True, 0))) # a step lower
-      self.assertTrue(self._tx(self._curvature_cmd_msg(max_curvature, True, 0))) # same
-      self.assertTrue(self._tx(self._curvature_cmd_msg(max_curvature + 1, True, 0))) # a step higher still in range (fudged v logic)
 
-      # curvature with fudged speed
       self._set_prev_desired_curvature(max_curvature_fudged)
-      self.assertTrue(self._tx(self._curvature_cmd_msg(max_curvature_fudged - 1, True, 0)))
+      self.assertTrue(self._tx(self._curvature_cmd_msg(max_curvature_fudged - max_curvature_delta_fudged, True, 0)))
       self.assertTrue(self._tx(self._curvature_cmd_msg(max_curvature_fudged, True, 0)))
-      self.assertFalse(self._tx(self._curvature_cmd_msg(max_curvature_fudged + 1, True, 0))) # not in range
+      self.assertFalse(self._tx(self._curvature_cmd_msg(max_curvature_fudged + max_curvature_delta_fudged, True, 0)))
+      self.assertTrue(self._tx(self._curvature_cmd_msg(max_curvature_fudged, True, 0)))
 
   def test_iso_jerk_limit(self):
     speeds = [0., 1., 5., 10., 15., 50.]
     for v in speeds:
-      max_curvature_rate = ISO_LATERAL_JERK / max(v**2, 1e-3)
-      max_curvature_delta = int((max_curvature_rate * self.SEND_RATE) / self.CURVATURE_TO_CAN)
       v_fudged = v - 1
       max_curvature_rate_fudged = ISO_LATERAL_JERK / max(v_fudged**2, 1e-3)
-      max_curvature_delta_fudged = int((max_curvature_rate_fudged * self.SEND_RATE) / self.CURVATURE_TO_CAN)
+      max_curvature_delta_fudged = int(max_curvature_rate_fudged * self.SEND_RATE)
       
       self._reset_speed_measurement(v)
-      self._set_prev_desired_curvature(0)
       self.safety.set_controls_allowed(True)
-      
-      self.assertTrue(self._tx(self._curvature_cmd_msg(max_curvature_delta, True, 0)))
+
+      self._set_prev_desired_curvature(max_curvature_delta)
+      self.assertTrue(self._tx(self._curvature_cmd_msg(max_curvature_delta_fudged, True, 0)))
       self.assertTrue(self._tx(self._curvature_cmd_msg(0, True, 0)))
-      self.assertTrue(self._tx(self._curvature_cmd_msg(-max_curvature_delta - 1, True, 0))) # still in range
-      self.assertTrue(self._tx(self._curvature_cmd_msg(0, True, 0))) # still in range
-      self.assertTrue(self._tx(self._curvature_cmd_msg(max_curvature_delta_fudged, True, 0))) # in range
-      self.assertFalse(self._tx(self._curvature_cmd_msg(-max_curvature_delta_fudged, True, 0))) # not in range
+      self.assertTrue(self._tx(self._curvature_cmd_msg(-max_curvature_delta_fudged, True, 0)))
+      self.assertFalse(self._tx(self._curvature_cmd_msg(max_curvature_delta_fudged , True, 0)))
+      self.assertFalse(self._tx(self._curvature_cmd_msg(-max_curvature_delta_fudged, True, 0)))
+      self.assertTrue(self._tx(self._curvature_cmd_msg(0, True, 0)))
 
   def test_power_limit(self):
     self._set_prev_desired_power(self.MAX_POWER)
