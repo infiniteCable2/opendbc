@@ -9,7 +9,7 @@ from collections.abc import Callable
 from opendbc.can import CANPacker
 from opendbc.safety import ALTERNATIVE_EXPERIENCE
 from opendbc.safety.tests.libsafety import libsafety_py
-from opendbc.car.lateral import ISO_LATERAL_ACCEL, ISO_LATERAL_JERK, AVERAGE_ROAD_ROLL, EARTH_G
+from opendbc.car.lateral import ISO_LATERAL_JERK, MAX_LATERAL_ACCEL
 
 from opendbc.safety.tests.mads_common import MadsSafetyTestBase
 
@@ -863,10 +863,9 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
                                   self.safety.get_curvature_meas_min, self.safety.get_curvature_meas_max)
 
   def test_iso_accel_limit(self):
-    max_lateral_accel = ISO_LATERAL_ACCEL + (EARTH_G * AVERAGE_ROAD_ROLL)
     speeds = [1., 5., 10., 15., 50.]
     for v in speeds:
-      max_curvature = max_lateral_accel / v**2
+      max_curvature = MAX_LATERAL_ACCEL / v**2
       max_curvature_rate = ISO_LATERAL_JERK / v**2
       max_curvature_delta = max_curvature_rate * self.SEND_RATE
       
