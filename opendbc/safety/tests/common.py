@@ -887,7 +887,7 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
       self._reset_speed_measurement(v)
       self.safety.set_controls_allowed(True)
 
-      self._set_prev_desired_curvature(max_curvature_delta)
+      self._set_prev_desired_curvature(max_curvature_delta_fudged)
       self.assertTrue(self._tx(self._curvature_cmd_msg(max_curvature_delta_fudged, True, 0)))
       self.assertTrue(self._tx(self._curvature_cmd_msg(0, True, 0)))
       self.assertTrue(self._tx(self._curvature_cmd_msg(-max_curvature_delta_fudged, True, 0)))
