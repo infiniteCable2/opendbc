@@ -88,9 +88,9 @@ class SpeedLimitManager:
       self.v_limit_vze_sanity_error = True
 
   def _receive_speed_factor_psd(self, psd_06):
-    if psd_06["PSD_06_Mux"] == 0:
+    if psd_06["PSD_06_Mux"] == 0 and psd_06["PSD_Sys_Segment_ID"] == self.current_predicative_segment["ID"]:
       unit = psd_06["PSD_Sys_Geschwindigkeit_Einheit"]
-      self.v_limit_speed_factor_psd = CV.MPH_TO_KPH if unit == 1 else 1 if unit == 0 else 0
+      self.v_limit_speed_factor_psd = 0.7 if unit == 1 else 1 if unit == 0 else 0 # TODO another mph mapping in _convert_raw_speed_psd
 
   def _convert_raw_speed_psd(self, raw_speed, street_type):
     if 0 < raw_speed < 11: # 0 - 45 kph
