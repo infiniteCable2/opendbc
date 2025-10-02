@@ -110,10 +110,7 @@ class SpeedLimitManager:
   def _receive_speed_limit_vze_meb(self, vze):
     if vze["VZE_Verkehrszeichen_1_Typ"] == 0:
       v_limit_vze = int(round(vze["VZE_Verkehrszeichen_1"])) # main traffic sign
-      if vze["VZE_Verkehrszeichen_Einheit"] == 1:
-        v_limit_vze *= 1
-      else:
-        v_limit_vze = int(round(v_limit_vze * CV.MPH_TO_KPH))
+      v_limit_vze = v_limit_vze * CV.MPH_TO_KPH if vze["VZE_Anzeigemodus"] == 1 else v_limit_vze
       self._speed_limit_vze_sanitiy_check(v_limit_vze)
       self.v_limit_vze = v_limit_vze
 
