@@ -108,11 +108,10 @@ class SpeedLimitManager:
     return int(round(speed * self.v_limit_speed_factor_psd))
 
   def _receive_speed_limit_vze_meb(self, vze):
-    if vze["VZE_Verkehrszeichen_1_Typ"] == 0:
-      v_limit_vze = int(round(vze["VZE_Verkehrszeichen_1"])) # main traffic sign
-      v_limit_vze = v_limit_vze * CV.MPH_TO_KPH if vze["VZE_Anzeigemodus"] == 1 else v_limit_vze
-      self._speed_limit_vze_sanitiy_check(v_limit_vze)
-      self.v_limit_vze = v_limit_vze
+    v_limit_vze = int(round(vze["VZE_Verkehrszeichen_1"])) # main traffic sign
+    v_limit_vze = v_limit_vze * CV.MPH_TO_KPH if vze["VZE_Anzeigemodus"] == 1 else v_limit_vze
+    self._speed_limit_vze_sanitiy_check(v_limit_vze)
+    self.v_limit_vze = v_limit_vze
 
   def _receive_current_segment_psd(self, psd_05):
     if psd_05["PSD_Pos_Standort_Eindeutig"] == 1 and psd_05["PSD_Pos_Segment_ID"] != NOT_SET:
