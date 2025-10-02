@@ -202,9 +202,8 @@ class CarController(CarControllerBase):
           acc_hold_type = self.CCS.acc_hold_type(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, starting, stopping,
                                                  CS.esp_hold_confirmation, long_override, long_override_begin, long_disabling)
           can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, self.CAN.pt, self.CP, CS.acc_type, CC.enabled,
-                                                             #4.0, 4.0, 0., 0.,
-                                                             self.long_jerk_control.get_jerk_up(), self.long_jerk_control.get_jerk_down(),
-                                                             self.long_limit_control.get_upper_limit(), self.long_limit_control.get_lower_limit(),
+                                                             self.long_jerk_control.get_jerk_up() if CC.longComfortMode else 4.0, self.long_jerk_control.get_jerk_down() if CC.longComfortMode else 4.0,
+                                                             self.long_limit_control.get_upper_limit() if CC.longComfortMode else 0., self.long_limit_control.get_lower_limit() if CC.longComfortMode else 0.,
                                                              accel, acc_control, acc_hold_type, stopping, starting, CS.esp_hold_confirmation,
                                                              CS.out.vEgoRaw * CV.MS_TO_KPH, long_override, CS.travel_assist_available))
 
