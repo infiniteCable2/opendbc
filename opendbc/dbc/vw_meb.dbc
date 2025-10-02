@@ -2004,8 +2004,8 @@ BO_ 316495015 MEB_VZE_01: 32 XXX
  SG_ VZE_Anzeigeunterdrueck_Zeichen_3 : 9|1@1+ (1,0) [0|1] "" Vector__XXX
  SG_ VZE_Anzeigeunterdrueck_Zeichen_2 : 10|1@1+ (1,0) [0|1] "" Vector__XXX
  SG_ VZE_Verkehrszeichen_1 : 11|8@1+ (5,0) [1|520] "" OTA_FC,ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
- SG_ VZE_Verkehrszeichen_2 : 19|8@1+ (10,0) [1|255] "" OTA_FC,ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
- SG_ VZE_Verkehrszeichen_3 : 27|8@1+ (10,0) [1|255] "" OTA_FC,ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
+ SG_ VZE_Verkehrszeichen_2 : 19|8@1+ (5,0) [1|255] "" OTA_FC,ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
+ SG_ VZE_Verkehrszeichen_3 : 27|8@1+ (5,0) [1|255] "" OTA_FC,ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
  SG_ VZE_Warnung_Verkehrszeichen_1 : 35|1@1+ (1,0) [0|1] "" ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
  SG_ VZE_Warnung_Verkehrszeichen_2 : 36|1@1+ (1,0) [0|1] "" ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
  SG_ VZE_Warnung_Verkehrszeichen_3 : 37|1@1+ (1,0) [0|1] "" ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
