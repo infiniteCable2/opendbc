@@ -195,8 +195,9 @@ class CarController(CarControllerBase):
           long_disabling = not CC.enabled and self.long_disabled_counter < 5
 
           critical_state = hud_control.visualAlert == VisualAlert.fcw
-          self.long_jerk_control.update(CC.enabled, long_override, hud_control.leadDistance, hud_control.leadVisible, accel, critical_state)
-          self.long_limit_control.update(CC.enabled, CS.out.vEgoRaw, hud_control.setSpeed, hud_control.leadDistance, hud_control.leadVisible, critical_state)
+          if CC.longComfortMode:
+            self.long_jerk_control.update(CC.enabled, long_override, hud_control.leadDistance, hud_control.leadVisible, accel, critical_state)
+            self.long_limit_control.update(CC.enabled, CS.out.vEgoRaw, hud_control.setSpeed, hud_control.leadDistance, hud_control.leadVisible, critical_state)
           
           acc_control = self.CCS.acc_control_value(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, long_override)          
           acc_hold_type = self.CCS.acc_hold_type(CS.out.cruiseState.available, CS.out.accFaulted, CC.enabled, starting, stopping,
