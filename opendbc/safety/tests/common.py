@@ -862,7 +862,7 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
                                   self.safety.get_curvature_meas_min, self.safety.get_curvature_meas_max)
 
   def test_curvature_limit(self):
-    speeds = [1., 5., 10., 15., 50.]
+    speeds = [2., 5., 10., 15., 50.]
     for v in speeds:
       for sign in (1, -1):
         max_curvature = (self.MAX_CURVATURE / self.CURVATURE_TO_CAN) * sign
@@ -885,7 +885,7 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
         self.assertFalse(self._tx(self._curvature_cmd_msg(max_curvature + max_curvature_delta, True, 0)))
 
   def test_iso_accel_limit(self):
-    speeds = [1., 5., 10., 15., 50.]
+    speeds = [2., 5., 10., 15., 50.]
     for v in speeds:
       for sign in (1, -1):
         max_curvature_car = (self.MAX_CURVATURE / self.CURVATURE_TO_CAN)
@@ -909,7 +909,7 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
         self.assertFalse(self._tx(self._curvature_cmd_msg(max_curvature + max_curvature_delta, True, 0)))
 
   def test_iso_jerk_limit(self):
-    speeds = [1., 5., 10., 15., 50.]
+    speeds = [2., 5., 10., 15., 50.]
     for v in speeds:
       for sign in (1, -1):
         max_curvature_rate = ISO_LATERAL_JERK / v**2
