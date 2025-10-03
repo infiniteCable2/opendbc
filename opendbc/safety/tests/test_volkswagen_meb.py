@@ -33,6 +33,7 @@ MSG_EA_02         = 0x1F0
 class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSteeringSafetyTest):
   # === limits ===
   MAX_CURVATURE = 29105
+  MAX_CURVATURE_TEST = 0.195
   CURVATURE_TO_CAN = 149253.7313
   INACTIVE_CURVATURE_IS_ZERO = True
   MAX_POWER = 125
