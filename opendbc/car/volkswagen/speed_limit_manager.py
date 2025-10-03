@@ -88,9 +88,9 @@ class SpeedLimitManager:
       self.v_limit_vze_sanity_error = True
 
   def _receive_speed_factor_psd(self, psd_06):
-    if psd_06["PSD_06_Mux"] == 0:
+    if psd_06["PSD_06_Mux"] == 0 and psd_06["PSD_Sys_Segment_ID"] == self.current_predicative_segment["ID"]:
       unit = psd_06["PSD_Sys_Geschwindigkeit_Einheit"]
-      self.v_limit_speed_factor_psd = CV.MPH_TO_KPH if unit == 1 else 1 if unit == 0 else 0
+      self.v_limit_speed_factor_psd = 0.7 if unit == 1 else 1 if unit == 0 else 0 # TODO another mph mapping in _convert_raw_speed_psd
 
   def _convert_raw_speed_psd(self, raw_speed, street_type):
     if 0 < raw_speed < 11: # 0 - 45 kph
@@ -108,14 +108,10 @@ class SpeedLimitManager:
     return int(round(speed * self.v_limit_speed_factor_psd))
 
   def _receive_speed_limit_vze_meb(self, vze):
-    if vze["VZE_Verkehrszeichen_1_Typ"] == 0:
-      v_limit_vze = int(round(vze["VZE_Verkehrszeichen_1"])) # main traffic sign
-      if vze["VZE_Verkehrszeichen_Einheit"] == 1:
-        v_limit_vze *= 1
-      else:
-        v_limit_vze = int(round(v_limit_vze * CV.MPH_TO_KPH))
-      self._speed_limit_vze_sanitiy_check(v_limit_vze)
-      self.v_limit_vze = v_limit_vze
+    v_limit_vze = int(round(vze["VZE_Verkehrszeichen_1"])) # main traffic sign
+    v_limit_vze = v_limit_vze * CV.MPH_TO_KPH if vze["VZE_Anzeigemodus"] == 1 else v_limit_vze
+    self._speed_limit_vze_sanitiy_check(v_limit_vze)
+    self.v_limit_vze = v_limit_vze
 
   def _receive_current_segment_psd(self, psd_05):
     if psd_05["PSD_Pos_Standort_Eindeutig"] == 1 and psd_05["PSD_Pos_Segment_ID"] != NOT_SET:
