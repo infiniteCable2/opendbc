@@ -883,7 +883,7 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
     speeds = [1., 5., 10., 15., 50.]
     for v in speeds:
       for sign in (1, -1):
-        max_curvature = np.clip((MAX_LATERAL_ACCEL / v**2) * sign), -self.MAX_CURVATURE, self.MAX_CURVATURE)
+        max_curvature = np.clip(((MAX_LATERAL_ACCEL / v**2) * sign), -self.MAX_CURVATURE, self.MAX_CURVATURE)
         max_curvature_rate = ISO_LATERAL_JERK / v**2
         max_curvature_delta = max_curvature_rate * self.SEND_RATE
       
