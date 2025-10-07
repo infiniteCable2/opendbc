@@ -110,7 +110,7 @@ class SpeedLimitManager:
       if 3 < raw_speed < 18:  # 0 - 70 mph
         speed = (5 * (raw_speed - 3)) * CV.MPH_TO_KPH
       elif 18 <= raw_speed < 23: # 75 - 105 mph
-        speed = ((5 * (raw_speed - 3)) + 10)* CV.MPH_TO_KPH
+        speed = ((5 * (raw_speed - 3)) + 10) * CV.MPH_TO_KPH
       elif raw_speed == 23: # explicitly no legal speed limit 
         if street_type == STREET_TYPE_HIGHWAY:
           speed = self.v_limit_max
