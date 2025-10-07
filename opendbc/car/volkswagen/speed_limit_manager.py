@@ -13,6 +13,8 @@ SANITY_CHECK_DIFF_PERCENT_LOWER = 30
 SPEED_LIMIT_UNLIMITED_VZE_KPH = int(round(144 * CV.MS_TO_KPH))
 DECELERATION_PREDICATIVE = 1.0
 SEGMENT_DECAY = 10
+PSD_UNIT_KPH = 0
+PSD_UNIT_MPH = 1
 
 
 class SpeedLimitManager:
@@ -22,7 +24,7 @@ class SpeedLimitManager:
     self.v_limit_psd_next = NOT_SET
     self.v_limit_psd_legal = NOT_SET
     self.v_limit_vze = NOT_SET
-    self.v_limit_speed_factor_psd = 1
+    self.v_limit_speed_unit_psd = PSD_UNIT_KPH
     self.v_limit_vze_sanity_error = False
     self.v_limit_output_last = NOT_SET
     self.v_limit_max = speed_limit_max_kph
@@ -87,25 +89,36 @@ class SpeedLimitManager:
     if speed_limit_vze_new > SPEED_LIMIT_UNLIMITED_VZE_KPH: # unlimited sign detected: use psd logic for setting maximum speed
       self.v_limit_vze_sanity_error = True
 
-  def _receive_speed_factor_psd(self, psd_06):
-    if psd_06["PSD_06_Mux"] == 0 and psd_06["PSD_Sys_Segment_ID"] == self.current_predicative_segment["ID"]:
-      unit = psd_06["PSD_Sys_Geschwindigkeit_Einheit"]
-      self.v_limit_speed_factor_psd = 0.7 if unit == 1 else 1 if unit == 0 else 0 # TODO another mph mapping in _convert_raw_speed_psd
+  def _receive_speed_unit_psd(self, psd_06):
+    # keep it simple for now, the unit is supplied shortly before the corresponding speed limits are supplied for given segment ID
+    if psd_06["PSD_06_Mux"] == 0 and psd_06["PSD_Sys_Segment_ID"] != NOT_SET:
+      self.v_limit_speed_unit_psd = psd_06["PSD_Sys_Geschwindigkeit_Einheit"]
 
   def _convert_raw_speed_psd(self, raw_speed, street_type):
-    if 0 < raw_speed < 11: # 0 - 45 kph
-      speed = (raw_speed - 1) * 5
-    elif 11 <= raw_speed < 23: # 50 - 160 kph
-      speed = 50 + (raw_speed - 11) * 10
-    elif raw_speed == 23: # explicitly no legal speed limit 
-      if street_type == STREET_TYPE_HIGHWAY:
-        speed = self.v_limit_max
-      else:
-        speed = NOT_SET
-    else:
-      speed = NOT_SET
+    # PSD raw_speed mapping:
+    #  KPH: 1–10 -> 0–45 km/h (steps of 5), 11–22 -> 50–160 km/h (steps of 10)
+    #  MPH: 1–10 -> 15–65 mph (steps of 5), 11–22 -> 70–120 mph (steps of 5)
+    speed = NOT_SET
+    
+    if self.v_limit_speed_unit_psd == PSD_UNIT_KPH:
+      if 0 < raw_speed < 11: # 0 - 45 kph
+        speed = (raw_speed - 1) * 5
+      elif 11 <= raw_speed < 23: # 50 - 160 kph
+        speed = 50 + (raw_speed - 11) * 10
+      elif raw_speed == 23: # explicitly no legal speed limit 
+        if street_type == STREET_TYPE_HIGHWAY:
+          speed = self.v_limit_max
 
-    return int(round(speed * self.v_limit_speed_factor_psd))
+    elif self.v_limit_speed_unit_psd == PSD_UNIT_MPH:
+      if 0 < raw_speed < 11:  # 15 - 65 mph
+        speed = (10 + raw_speed * 5) * CV.MPH_TO_KPH
+      elif 11 <= raw_speed < 23:  # 70 - 120 mph
+        speed = (15 + (raw_speed - 10) * 5 ) * CV.MPH_TO_KPH
+      elif raw_speed == 23:  # explicitly no legal speed limit
+        if street_type == STREET_TYPE_HIGHWAY:
+          speed = self.v_limit_max
+
+    return speed
 
   def _receive_speed_limit_vze_meb(self, vze):
     v_limit_vze = int(round(vze["VZE_Verkehrszeichen_1"])) # main traffic sign
