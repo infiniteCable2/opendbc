@@ -43,7 +43,7 @@ class SpeedLimitManager:
 
     # try reading speed from predicative street data
     if psd_04 and psd_05 and psd_06:
-      self._receive_speed_factor_psd(psd_06)
+      self._receive_speed_unit_psd(psd_06)
       self._receive_current_segment_psd(psd_05)
       self._refresh_current_segment()
       self._build_predicative_segments(psd_04, psd_06, raining)
