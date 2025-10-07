@@ -95,9 +95,6 @@ class SpeedLimitManager:
       self.v_limit_speed_unit_psd = psd_06["PSD_Sys_Geschwindigkeit_Einheit"]
 
   def _convert_raw_speed_psd(self, raw_speed, street_type):
-    # PSD raw_speed mapping:
-    #  KPH: 1–10 -> 0–45 km/h (steps of 5), 11–22 -> 50–160 km/h (steps of 10)
-    #  MPH: 1–10 -> 15–65 mph (steps of 5), 11–22 -> 70–120 mph (steps of 5)
     speed = NOT_SET
     
     if self.v_limit_speed_unit_psd == PSD_UNIT_KPH:
@@ -110,11 +107,11 @@ class SpeedLimitManager:
           speed = self.v_limit_max
 
     elif self.v_limit_speed_unit_psd == PSD_UNIT_MPH:
-      if 0 < raw_speed < 11:  # 15 - 65 mph
-        speed = (10 + raw_speed * 5) * CV.MPH_TO_KPH
-      elif 11 <= raw_speed < 23:  # 70 - 120 mph
-        speed = (15 + (raw_speed - 10) * 5 ) * CV.MPH_TO_KPH
-      elif raw_speed == 23:  # explicitly no legal speed limit
+      if 3 < raw_speed < 18:  # 0 - 70 mph
+        speed = (5 * (raw_speed - 3)) * CV.MPH_TO_KPH
+      elif 18 <= raw_speed < 23: # 75 - 105 mph
+        speed = ((5 * (raw_speed - 3)) + 10)* CV.MPH_TO_KPH
+      elif raw_speed == 23: # explicitly no legal speed limit 
         if street_type == STREET_TYPE_HIGHWAY:
           speed = self.v_limit_max
 
