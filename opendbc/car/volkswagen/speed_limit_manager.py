@@ -41,9 +41,13 @@ class SpeedLimitManager:
     if vze and self.CP.flags & VolkswagenFlags.MEB:
       self._receive_speed_limit_vze_meb(vze)
 
+    # read speed unit from PSD_06 and also use it for traffic sign recognition if present (for now always seen on bus 0)
+    # the vze location/unit flag is not stable and no corresponding flag has been found yet
+    if psd_06:
+      self._receive_speed_unit_psd(psd_06)
+
     # try reading speed from predicative street data
     if psd_04 and psd_05 and psd_06:
-      self._receive_speed_unit_psd(psd_06)
       self._receive_current_segment_psd(psd_05)
       self._refresh_current_segment()
       self._build_predicative_segments(psd_04, psd_06, raining)
@@ -91,7 +95,7 @@ class SpeedLimitManager:
 
   def _receive_speed_unit_psd(self, psd_06):
     # keep it simple for now, the unit is supplied shortly before the corresponding speed limits are supplied for given segment ID
-    if psd_06["PSD_06_Mux"] == 0 and psd_06["PSD_Sys_Segment_ID"] != NOT_SET:
+    if psd_06["PSD_06_Mux"] == 0 and psd_06["PSD_Sys_Segment_ID"] > 1:
       self.v_limit_speed_unit_psd = psd_06["PSD_Sys_Geschwindigkeit_Einheit"]
 
   def _convert_raw_speed_psd(self, raw_speed, street_type):
@@ -118,8 +122,11 @@ class SpeedLimitManager:
     return speed
 
   def _receive_speed_limit_vze_meb(self, vze):
-    v_limit_vze = int(round(vze["VZE_Verkehrszeichen_1"])) # main traffic sign
-    v_limit_vze = v_limit_vze * CV.MPH_TO_KPH if vze["VZE_Anzeigemodus"] == 1 else v_limit_vze
+    v_limit_vze = vze["VZE_Verkehrszeichen_1"] # main traffic sign
+    # "VZE_Anzeigemodus" has been seen not being stable for different drives in same USA mph car, no other flag has been found yet
+    # for now additionally assume a car with mph speed unit nav data sgements is also supplied with mph converted vze data ("PSD_06" is available on bus 0)
+    # mph speed unit set in signal "Einheiten_01" does not mean the speed data being supplied in mph unit!
+    v_limit_vze = v_limit_vze * CV.MPH_TO_KPH if vze["VZE_Anzeigemodus"] == 1 or self.v_limit_speed_unit_psd == PSD_UNIT_MPH else v_limit_vze
     self._speed_limit_vze_sanitiy_check(v_limit_vze)
     self.v_limit_vze = v_limit_vze
 
