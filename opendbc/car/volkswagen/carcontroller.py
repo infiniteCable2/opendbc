@@ -55,8 +55,10 @@ class CarController(CarControllerBase):
     actuators = CC.actuators
     hud_control = CC.hudControl
     can_sends = []
-    
+
+    # copy custom data to carstate
     CS.force_rhd_for_bsm = CC.forceRHDForBSM
+    CS.enable_predicative_speed_limit = CC.cruiseControl.speedLimitPredicative
 
     # **** Steering Controls ************************************************ #
 
