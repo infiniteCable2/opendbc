@@ -229,6 +229,7 @@ class VolkswagenFlags(IntFlag):
   KOMBI_PRESENT = 4
   STOCK_KLR_PRESENT = 8
   STOCK_PSD_PRESENT = 16
+  STOCK_PSD_06_PRESENT = 512
   ALT_GEAR = 32
 
   # Static flags
