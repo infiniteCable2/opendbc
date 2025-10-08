@@ -36,6 +36,9 @@ class SpeedLimitManager:
     self.v_limit_psd_next_decay_time = NOT_SET
     self.v_limit_changed = False
 
+  def enable_predicative_speed_limit(self, predicative):
+    self.predicative = predicative
+
   def update(self, current_speed_ms, psd_04, psd_05, psd_06, vze, raining):
     # try reading speed form traffic sign recognition
     if vze and self.CP.flags & VolkswagenFlags.MEB:
@@ -53,7 +56,8 @@ class SpeedLimitManager:
       self._build_predicative_segments(psd_04, psd_06, raining)
       self._receive_speed_limit_psd_legal(psd_06)
       self._get_speed_limit_psd()
-      self._get_speed_limit_psd_next(current_speed_ms)
+      if self.predicative: # this is very cpu heavy
+        self._get_speed_limit_psd_next(current_speed_ms)
 
   def get_speed_limit_predicative(self):
     v_limit_output = self.v_limit_psd_next if self.predicative and self.v_limit_psd_next != NOT_SET and self.v_limit_psd_next < self.v_limit_output_last else NOT_SET
