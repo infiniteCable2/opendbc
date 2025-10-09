@@ -80,8 +80,6 @@ class SpeedLimitManager:
   
     if v_limit_output > self.v_limit_max:
       v_limit_output = self.v_limit_max
-  
-    self.v_limit_vze_sanity_error = False
     
     self.v_limit_changed = True if self.v_limit_output_last != v_limit_output else False
     self.v_limit_output_last = v_limit_output
@@ -90,6 +88,7 @@ class SpeedLimitManager:
 
   def _speed_limit_vze_sanitiy_check(self, speed_limit_vze_new):
     if self.v_limit_output_last == NOT_SET:
+      self.v_limit_vze_sanity_error = False
       return
 
     diff_p = 100 * speed_limit_vze_new / self.v_limit_output_last
