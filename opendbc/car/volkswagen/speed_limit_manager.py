@@ -13,6 +13,8 @@ SANITY_CHECK_DIFF_PERCENT_LOWER = 30
 SPEED_LIMIT_UNLIMITED_VZE_KPH = int(round(144 * CV.MS_TO_KPH))
 DECELERATION_PREDICATIVE = 1.0
 SEGMENT_DECAY = 10
+PSD_UNIT_KPH = 0
+PSD_UNIT_MPH = 1
 
 
 class SpeedLimitManager:
@@ -22,7 +24,7 @@ class SpeedLimitManager:
     self.v_limit_psd_next = NOT_SET
     self.v_limit_psd_legal = NOT_SET
     self.v_limit_vze = NOT_SET
-    self.v_limit_speed_factor_psd = 1
+    self.v_limit_speed_unit_psd = PSD_UNIT_KPH
     self.v_limit_vze_sanity_error = False
     self.v_limit_output_last = NOT_SET
     self.v_limit_max = speed_limit_max_kph
@@ -34,20 +36,28 @@ class SpeedLimitManager:
     self.v_limit_psd_next_decay_time = NOT_SET
     self.v_limit_changed = False
 
+  def enable_predicative_speed_limit(self, predicative):
+    self.predicative = predicative
+
   def update(self, current_speed_ms, psd_04, psd_05, psd_06, vze, raining):
     # try reading speed form traffic sign recognition
     if vze and self.CP.flags & VolkswagenFlags.MEB:
       self._receive_speed_limit_vze_meb(vze)
 
+    # read speed unit from PSD_06 and also use it for traffic sign recognition if present (for now always seen on bus 0)
+    # the vze location/unit flag is not stable and no corresponding flag has been found yet
+    if psd_06:
+      self._receive_speed_unit_psd(psd_06)
+
     # try reading speed from predicative street data
     if psd_04 and psd_05 and psd_06:
-      self._receive_speed_factor_psd(psd_06)
       self._receive_current_segment_psd(psd_05)
       self._refresh_current_segment()
       self._build_predicative_segments(psd_04, psd_06, raining)
       self._receive_speed_limit_psd_legal(psd_06)
       self._get_speed_limit_psd()
-      self._get_speed_limit_psd_next(current_speed_ms)
+      if self.predicative: # this is very cpu heavy
+        self._get_speed_limit_psd_next(current_speed_ms)
 
   def get_speed_limit_predicative(self):
     v_limit_output = self.v_limit_psd_next if self.predicative and self.v_limit_psd_next != NOT_SET and self.v_limit_psd_next < self.v_limit_output_last else NOT_SET
@@ -70,8 +80,6 @@ class SpeedLimitManager:
   
     if v_limit_output > self.v_limit_max:
       v_limit_output = self.v_limit_max
-  
-    self.v_limit_vze_sanity_error = False
     
     self.v_limit_changed = True if self.v_limit_output_last != v_limit_output else False
     self.v_limit_output_last = v_limit_output
@@ -80,6 +88,7 @@ class SpeedLimitManager:
 
   def _speed_limit_vze_sanitiy_check(self, speed_limit_vze_new):
     if self.v_limit_output_last == NOT_SET:
+      self.v_limit_vze_sanity_error = False
       return
 
     diff_p = 100 * speed_limit_vze_new / self.v_limit_output_last
@@ -87,29 +96,40 @@ class SpeedLimitManager:
     if speed_limit_vze_new > SPEED_LIMIT_UNLIMITED_VZE_KPH: # unlimited sign detected: use psd logic for setting maximum speed
       self.v_limit_vze_sanity_error = True
 
-  def _receive_speed_factor_psd(self, psd_06):
-    if psd_06["PSD_06_Mux"] == 0 and psd_06["PSD_Sys_Segment_ID"] == self.current_predicative_segment["ID"]:
-      unit = psd_06["PSD_Sys_Geschwindigkeit_Einheit"]
-      self.v_limit_speed_factor_psd = 0.7 if unit == 1 else 1 if unit == 0 else 0 # TODO another mph mapping in _convert_raw_speed_psd
+  def _receive_speed_unit_psd(self, psd_06):
+    # keep it simple for now, the unit is supplied shortly before the corresponding speed limits are supplied for given segment ID
+    if psd_06["PSD_06_Mux"] == 0 and psd_06["PSD_Sys_Segment_ID"] > 1:
+      self.v_limit_speed_unit_psd = psd_06["PSD_Sys_Geschwindigkeit_Einheit"]
 
   def _convert_raw_speed_psd(self, raw_speed, street_type):
-    if 0 < raw_speed < 11: # 0 - 45 kph
-      speed = (raw_speed - 1) * 5
-    elif 11 <= raw_speed < 23: # 50 - 160 kph
-      speed = 50 + (raw_speed - 11) * 10
-    elif raw_speed == 23: # explicitly no legal speed limit 
-      if street_type == STREET_TYPE_HIGHWAY:
-        speed = self.v_limit_max
-      else:
-        speed = NOT_SET
-    else:
-      speed = NOT_SET
+    speed = NOT_SET
+    
+    if self.v_limit_speed_unit_psd == PSD_UNIT_KPH:
+      if 0 < raw_speed < 11: # 0 - 45 kph
+        speed = (raw_speed - 1) * 5
+      elif 11 <= raw_speed < 23: # 50 - 160 kph
+        speed = 50 + (raw_speed - 11) * 10
+      elif raw_speed == 23: # explicitly no legal speed limit 
+        if street_type == STREET_TYPE_HIGHWAY:
+          speed = self.v_limit_max
 
-    return int(round(speed * self.v_limit_speed_factor_psd))
+    elif self.v_limit_speed_unit_psd == PSD_UNIT_MPH:
+      if 3 < raw_speed < 18:  # 0 - 70 mph
+        speed = (5 * (raw_speed - 3)) * CV.MPH_TO_KPH
+      elif 18 <= raw_speed < 23: # 75 - 105 mph
+        speed = ((5 * (raw_speed - 3)) + 10) * CV.MPH_TO_KPH
+      elif raw_speed == 23: # explicitly no legal speed limit 
+        if street_type == STREET_TYPE_HIGHWAY:
+          speed = self.v_limit_max
+
+    return speed
 
   def _receive_speed_limit_vze_meb(self, vze):
-    v_limit_vze = int(round(vze["VZE_Verkehrszeichen_1"])) # main traffic sign
-    v_limit_vze = v_limit_vze * CV.MPH_TO_KPH if vze["VZE_Anzeigemodus"] == 1 else v_limit_vze
+    v_limit_vze = vze["VZE_Verkehrszeichen_1"] # main traffic sign
+    # "VZE_Anzeigemodus" has been seen not being stable for different drives in same USA mph car, no other flag has been found yet
+    # for now additionally assume a car with mph speed unit nav data sgements is also supplied with mph converted vze data ("PSD_06" is available on bus 0)
+    # mph speed unit set in signal "Einheiten_01" does not mean the speed data being supplied in mph unit!
+    v_limit_vze = v_limit_vze * CV.MPH_TO_KPH if vze["VZE_Anzeigemodus"] == 1 or self.v_limit_speed_unit_psd == PSD_UNIT_MPH else v_limit_vze
     self._speed_limit_vze_sanitiy_check(v_limit_vze)
     self.v_limit_vze = v_limit_vze
 
