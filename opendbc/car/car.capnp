@@ -375,6 +375,7 @@ struct CarControl {
   rollCompensation @19 :Float32;
   steerLimited @20: Bool;
   forceRHDForBSM @21: Bool;
+  longComfortMode @22: Bool;
 
   cruiseControl @4 :CruiseControl;
   hudControl @5 :HUDControl;

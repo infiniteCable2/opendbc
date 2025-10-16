@@ -68,6 +68,9 @@ class CarInterface(CarInterfaceBase):
       if all(msg in fingerprint[1] for msg in (0x462, 0x463, 0x464)):  # PSD_04, PSD_05, PSD_06
         ret.flags |= VolkswagenFlags.STOCK_PSD_PRESENT.value
 
+      if any(0x464 in msg for msg in (fingerprint[0], fingerprint[1])):  # PSD_06, used additionally for mph detection as long as no native speed limit unit flag is found
+        ret.flags |= VolkswagenFlags.STOCK_PSD_06_PRESENT.value
+
       if 0x3DC in fingerprint[0]:  # Gatway_73
        ret.flags |= VolkswagenFlags.ALT_GEAR.value
 
@@ -114,10 +117,10 @@ class CarInterface(CarInterfaceBase):
     if ret.flags & VolkswagenFlags.MEB:
       ret.longitudinalActuatorDelay = 0.5
       ret.radarDelay = 0.8
-      ret.longitudinalTuning.kpBP = [0., 5.]
+      #ret.longitudinalTuning.kpBP = [0., 5.]
       ret.longitudinalTuning.kiBP = [0., 30.]
-      ret.longitudinalTuning.kpV = [0.4, 0.] # (with usage of starting state otherwise starting jerk)
-      ret.longitudinalTuning.kiV = [0.8, 0.]
+      #ret.longitudinalTuning.kpV = [0.2, 0.] # (with usage of starting state otherwise starting jerk)
+      ret.longitudinalTuning.kiV = [0.4, 0.]
 
     ret.alphaLongitudinalAvailable = ret.networkLocation == NetworkLocation.gateway or docs
     if alpha_long:
