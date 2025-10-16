@@ -358,6 +358,19 @@ bool steer_angle_cmd_checks_vm(int desired_angle, bool steer_control_enabled, co
   return violation;
 }
 
+bool steer_power_cmd_checks(int desired_steer_power, bool steer_control_enabled, const CurvatureSteeringLimits limits) {
+  bool violation = false;
+
+  violation |= max_limit_check(desired_steer_power, limits.max_power, 0);
+  violation |= desired_steer_power > 0 && !steer_control_enabled;
+  violation |= !is_lat_active() && steer_control_enabled && desired_steer_power != 0 && desired_steer_power >= desired_steer_power_last;
+  violation |= !is_lat_active() && !steer_control_enabled && desired_steer_power != 0;
+
+  desired_steer_power_last = desired_steer_power;
+ 
+  return violation;
+}
+
 // Safety checks for curvature-based steering commands
 bool steer_curvature_cmd_checks_roll(int desired_curvature, bool steer_control_enabled, const CurvatureSteeringLimits limits) {
   bool violation = false;
@@ -401,19 +414,6 @@ bool steer_curvature_cmd_checks_roll(int desired_curvature, bool steer_control_e
     violation |= (limits.inactive_curvature_is_zero ? (desired_curvature != 0) :
                   max_limit_check(desired_curvature, max_inactive_curvature, min_inactive_curvature));
   }
- 
-  return violation;
-}
-
-bool steer_power_cmd_checks(int desired_steer_power, bool steer_control_enabled, const CurvatureSteeringLimits limits) {
-  bool violation = false;
-
-  violation |= max_limit_check(desired_steer_power, limits.max_power, 0);
-  violation |= desired_steer_power > 0 && !steer_control_enabled;
-  violation |= !is_lat_active() && steer_control_enabled && desired_steer_power != 0 && desired_steer_power >= desired_steer_power_last;
-  violation |= !is_lat_active() && !steer_control_enabled && desired_steer_power != 0;
-
-  desired_steer_power_last = desired_steer_power;
  
   return violation;
 }
