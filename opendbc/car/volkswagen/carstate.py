@@ -373,7 +373,8 @@ class CarState(CarStateBase, MadsCarState):
     vze_01_values = cam_cp.vl["MEB_VZE_01"] # Traffic Sign Recognition
     psd_04_values = main_cp.vl["PSD_04"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {} # Predicative Street Data
     psd_05_values = main_cp.vl["PSD_05"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {}
-    psd_06_values = (main_cp.vl["PSD_06"] if "PSD_06" in main_cp.vl else pt_cp.vl["PSD_06"]) if self.CP.flags & VolkswagenFlags.STOCK_PSD_06_PRESENT else {}
+    psd_06_values = main_cp.vl["PSD_06"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {}
+    psd_06_values = pt_cp.vl["PSD_06"] if not psd_06_values and self.CP.flags & VolkswagenFlags.STOCK_PSD_06_PRESENT else psd_06_values # try to get from bus 0
 
     self.speed_limit_mgr.enable_predicative_speed_limit(self.enable_predicative_speed_limit)
     self.speed_limit_mgr.update(ret.vEgo, psd_04_values, psd_05_values, psd_06_values, vze_01_values, raining)
