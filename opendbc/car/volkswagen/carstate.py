@@ -10,6 +10,8 @@ from opendbc.sunnypilot.car.volkswagen.mads import MadsCarState
 
 ButtonType = structs.CarState.ButtonEvent.Type
 
+DYNAMIC_BUS_DETECTION_TIMER_MAX = 1000 # for 10 seconds do not read signal to keep the can parser happy for dynamic bus detection 
+
 
 class CarState(CarStateBase, MadsCarState):
   def __init__(self, CP, CP_SP):
@@ -27,6 +29,7 @@ class CarState(CarStateBase, MadsCarState):
     self.enable_predicative_speed_limit = False
     self.speed_limit_mgr = SpeedLimitManager(CP, speed_limit_max_kph=120, predicative=self.enable_predicative_speed_limit)
     self.force_rhd_for_bsm = False
+    self.allow_reading_dyn_bus_signals = False
 
   def update_button_enable(self, buttonEvents: list[structs.CarState.ButtonEvent]):
     if not self.CP.pcmCruise:
@@ -55,6 +58,11 @@ class CarState(CarStateBase, MadsCarState):
     main_cp = can_parsers[Bus.main]
     cam_cp = can_parsers[Bus.cam]
     ext_cp = pt_cp if self.CP.networkLocation == NetworkLocation.fwdCamera else cam_cp
+
+    # can parser is not happy when directly trying to read a signal
+    # dynamically from wrong bus when relay has not been switched yet
+    if self.frame > DYNAMIC_BUS_DETECTION_TIMER_MAX:
+      self.allow_reading_dyn_bus_signals = True
 
     if self.CP.flags & VolkswagenFlags.PQ:
       return self.update_pq(pt_cp, cam_cp, main_cp, ext_cp)
@@ -312,7 +320,7 @@ class CarState(CarStateBase, MadsCarState):
 
     # Consume blind-spot monitoring info/warning LED states, if available.
     # Infostufe: BSM LED on, Warnung: BSM LED flashing
-    if self.CP.enableBsm:
+    if self.CP.enableBsm and self.allow_reading_dyn_bus_signals:
       bsm_bus = pt_cp if "MEB_Side_Assist_01" in pt_cp.vl else cam_cp # bsm is at pt bus for newer models
       blindspot_driver    = bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Info_Driver"]) or bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Warn_Driver"])
       blindspot_passenger = bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Info_Passenger"]) or bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Warn_Passenger"])
