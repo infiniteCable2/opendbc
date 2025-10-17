@@ -465,22 +465,22 @@ BO_ 591 MEB_Distance_01: 64 XXX
  SG_ Unknown_03 : 54|10@1+ (1,0) [0|3] "" XXX
  SG_ Same_Lane_01_Long_Distance : 64|12@1+ (0.07,-6) [0|300] "Unit_Meter" XXX
  SG_ Same_Lane_01_Lat_Distance : 76|10@1+ (0.065,-33.28) [-50|50] "Unit_Meter" XXX
- SG_ Same_Lane_01_Rel_Velo : 86|10@1+ (0.25,-128) [-100|100] "Unit_MeterPerSecond" XXX
+ SG_ Same_Lane_01_Rel_Velo : 86|10@1+ (0.28,-143.36) [-150|150] "Unit_MeterPerSecond" XXX
  SG_ Left_Lane_01_Long_Distance : 96|12@1+ (0.07,-6) [0|300] "Unit_Meter" XXX
  SG_ Left_Lane_01_Lat_Distance : 108|10@1+ (0.065,-33.28) [-50|50] "Unit_Meter" XXX
- SG_ Left_Lane_01_Rel_Velo : 118|10@1+ (0.25,-128) [-100|100] "Unit_MeterPerSecond" XXX
+ SG_ Left_Lane_01_Rel_Velo : 118|10@1+ (0.28,-143.36) [-150|150] "Unit_MeterPerSecond" XXX
  SG_ Right_Lane_01_Long_Distance : 128|12@1+ (0.07,-6) [0|300] "Unit_Meter" XXX
  SG_ Right_Lane_01_Lat_Distance : 140|10@1+ (0.065,-33.28) [-50|50] "Unit_Meter" XXX
- SG_ Right_Lane_01_Rel_Velo : 150|10@1+ (0.25,-128) [-100|100] "Unit_MeterPerSecond" XXX
+ SG_ Right_Lane_01_Rel_Velo : 150|10@1+ (0.28,-143.36) [-150|150] "Unit_MeterPerSecond" XXX
  SG_ Same_Lane_02_Long_Distance : 160|12@1+ (0.07,-6) [0|300] "Unit_Meter" XXX
  SG_ Same_Lane_02_Lat_Distance : 172|10@1+ (0.065,-33.28) [-50|50] "Unit_Meter" XXX
- SG_ Same_Lane_02_Rel_Velo : 182|10@1+ (0.25,-128) [-100|100] "Unit_MeterPerSecond" XXX
+ SG_ Same_Lane_02_Rel_Velo : 182|10@1+ (0.28,-143.36) [-150|150] "Unit_MeterPerSecond" XXX
  SG_ Left_Lane_02_Long_Distance : 192|12@1+ (0.07,-6) [0|300] "Unit_Meter" XXX
  SG_ Left_Lane_02_Lat_Distance : 204|10@1+ (0.065,-33.28) [-50|50] "Unit_Meter" XXX
- SG_ Left_Lane_02_Rel_Velo : 214|10@1+ (0.25,-128) [-100|100] "Unit_MeterPerSecond" XXX
+ SG_ Left_Lane_02_Rel_Velo : 214|10@1+ (0.28,-143.36) [-150|150] "Unit_MeterPerSecond" XXX
  SG_ Right_Lane_02_Long_Distance : 224|12@1+ (0.07,-6) [0|300] "Unit_Meter" XXX
  SG_ Right_Lane_02_Lat_Distance : 236|10@1+ (0.065,-33.28) [-50|50] "Unit_Meter" XXX
- SG_ Right_Lane_02_Rel_Velo : 246|10@1+ (0.25,-128) [-100|100] "Unit_MeterPerSecond" XXX
+ SG_ Right_Lane_02_Rel_Velo : 246|10@1+ (0.28,-143.36) [-150|150] "Unit_MeterPerSecond" XXX
  SG_ Same_Lane_01_Unknown_01 : 256|8@1+ (1,-128) [0|31] "" XXX
  SG_ Same_Lane_01_Unknown_02 : 264|6@1+ (1,-15) [0|31] "" XXX
  SG_ Same_Lane_01_Unknown_03 : 270|6@1+ (1,0) [0|127] "" XXX
@@ -2000,15 +2000,12 @@ BO_ 1716 VIN_01: 8 Gateway_MQB
 
 BO_ 316495015 MEB_VZE_01: 32 XXX
  SG_ VZE_Anzeigemodus : 0|2@1+ (1,0) [0|3] "" ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
- SG_ VZE_Verkehrszeichen_Einheit : 8|1@1+ (1,0) [0|1] "" ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
+ SG_ Detected_01 : 8|1@0+ (1,0) [0|1] "" XXX
  SG_ VZE_Anzeigeunterdrueck_Zeichen_3 : 9|1@1+ (1,0) [0|1] "" Vector__XXX
  SG_ VZE_Anzeigeunterdrueck_Zeichen_2 : 10|1@1+ (1,0) [0|1] "" Vector__XXX
- SG_ VZE_Verkehrszeichen_1_Typ : 11|1@0+ (1,0) [0|1] "" XXX
- SG_ VZE_Verkehrszeichen_1 : 12|7@1+ (10,0) [1|520] "" OTA_FC,ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
- SG_ VZE_Verkehrszeichen_2_Typ : 19|1@0+ (1,0) [0|1] "" XXX
- SG_ VZE_Verkehrszeichen_2 : 20|7@1+ (10,0) [1|255] "" OTA_FC,ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
- SG_ VZE_Verkehrszeichen_3_Typ : 27|1@0+ (1,0) [0|1] "" XXX
- SG_ VZE_Verkehrszeichen_3 : 28|7@1+ (10,0) [1|255] "" OTA_FC,ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
+ SG_ VZE_Verkehrszeichen_1 : 11|8@1+ (5,0) [1|520] "" OTA_FC,ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
+ SG_ VZE_Verkehrszeichen_2 : 19|8@1+ (5,0) [1|255] "" OTA_FC,ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
+ SG_ VZE_Verkehrszeichen_3 : 27|8@1+ (5,0) [1|255] "" OTA_FC,ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
  SG_ VZE_Warnung_Verkehrszeichen_1 : 35|1@1+ (1,0) [0|1] "" ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
  SG_ VZE_Warnung_Verkehrszeichen_2 : 36|1@1+ (1,0) [0|1] "" ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
  SG_ VZE_Warnung_Verkehrszeichen_3 : 37|1@1+ (1,0) [0|1] "" ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
@@ -3428,7 +3425,7 @@ BO_ 258 ESC_50: 48 XXX
  SG_ Brake_01 : 90|1@0+ (1,0) [0|1] "" XXX
  SG_ Regen_Braking : 123|1@1+ (1,0) [0|7] "" XXX
  SG_ Brake_02 : 125|1@0+ (1,0) [0|1] "" XXX
- SG_ Standstill : 171|1@0+ (1,0) [0|1] "" XXX
+ SG_ Motion_State : 171|2@0+ (1,0) [0|1] "" XXX
  SG_ NEW_SIGNAL_3 : 180|1@0+ (1,0) [0|1] "" XXX
  SG_ Longitudinal_Speed : 181|10@1+ (0.25,0) [0|255] "Unit_KilometerPerHour" XXX
  SG_ Brake_Power_02 : 226|8@1+ (1,-100) [0|63] "" XXX
@@ -3515,6 +3512,7 @@ BO_ 619 TA_01: 8 XXX
  SG_ Travel_Assist_Request : 19|3@1+ (1,0) [0|7] "" XXX
  SG_ Travel_Assist_Available : 23|1@1+ (1,0) [0|1] "" XXX
 
+VAL_ 258 Motion_State 1 "Forwards" 2 "Reversing" 3 "Stopped";
 VAL_ 258 EPB_Status 0 "offen" 1 "geschlossen_Parken" 2 "teilgespannt_Halten" 3 "im_Lauf_oeffnen" 4 "im_Lauf_schliessen" 5 "tbd" 6 "Init" 7 "unbekannt";
 VAL_ 267 TSK_Status 0 "init" 1 "disabled" 2 "enabled" 3 "regulating" 4 "accel_pedal_override" 5 "brake_only" 6 "temp_fault" 7 "perm_fault";
 VAL_ 317 LatCon_HCA_Status 0 "disabled" 1 "initializing" 2 "ready" 3 "fault" 4 "active" 5 "preempted" 6 "fault" 7 "rejected";

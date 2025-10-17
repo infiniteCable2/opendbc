@@ -68,6 +68,9 @@ class CarInterface(CarInterfaceBase):
       if all(msg in fingerprint[1] for msg in (0x462, 0x463, 0x464)):  # PSD_04, PSD_05, PSD_06
         ret.flags |= VolkswagenFlags.STOCK_PSD_PRESENT.value
 
+      if 0x464 in fingerprint[0]:  # PSD_06 on bus 0, used additionally for mph detection as long as no native stable speed limit unit flag is found
+        ret.flags |= VolkswagenFlags.STOCK_PSD_06_PRESENT.value
+
       if 0x3DC in fingerprint[0]:  # Gatway_73
        ret.flags |= VolkswagenFlags.ALT_GEAR.value
 
@@ -101,12 +104,6 @@ class CarInterface(CarInterfaceBase):
       CarInterfaceBase.configure_torque_tune(candidate, ret.lateralTuning)
     elif ret.flags & VolkswagenFlags.MEB:
       ret.steerActuatorDelay = 0.3
-      ret.useCarSteerCurvature = True
-      ret.lateralTuning.pid.kpBP = [10., 40.]
-      ret.lateralTuning.pid.kiBP = [10., 40.]
-      ret.lateralTuning.pid.kf = 1.
-      ret.lateralTuning.pid.kpV = [0., 1.45]
-      ret.lateralTuning.pid.kiV = [0., 0.12]
     else:
       ret.steerActuatorDelay = 0.1
       ret.lateralTuning.pid.kpBP = [0.]
@@ -118,12 +115,12 @@ class CarInterface(CarInterfaceBase):
     # Global longitudinal tuning defaults, can be overridden per-vehicle
 
     if ret.flags & VolkswagenFlags.MEB:
-      ret.longitudinalActuatorDelay = 0.4
-      ret.radarDelay = 0.4
-      ret.longitudinalTuning.kpBP = [0., 20.]
-      ret.longitudinalTuning.kiBP = [0., 10.]
-      ret.longitudinalTuning.kpV = [0.6, 0.]
-      ret.longitudinalTuning.kiV = [0.1, 0.]
+      ret.longitudinalActuatorDelay = 0.5
+      ret.radarDelay = 0.8
+      #ret.longitudinalTuning.kpBP = [0., 5.]
+      ret.longitudinalTuning.kiBP = [0., 30.]
+      #ret.longitudinalTuning.kpV = [0.2, 0.] # (with usage of starting state otherwise starting jerk)
+      ret.longitudinalTuning.kiV = [0.4, 0.]
 
     ret.alphaLongitudinalAvailable = ret.networkLocation == NetworkLocation.gateway or docs
     if alpha_long:
@@ -137,11 +134,11 @@ class CarInterface(CarInterfaceBase):
     ret.autoResumeSng = ret.minEnableSpeed == -1
 
     if ret.flags & VolkswagenFlags.MEB:
-      ret.startingState = True # OP long starting state is used
-      ret.startAccel = 0.85 # ~0.85 m/s^2 for brake release
+      ret.startingState = True # OP long starting state is used: for very slow start the car can go into error (EPB car shutting down bug)
+      ret.startAccel = 0.8
       ret.vEgoStarting = 0.5 # minimum ~0.5 m/s acc starting state is neccessary to not fault the car
       ret.vEgoStopping = 0.1
-      ret.stopAccel = -1.1 # stock stopped accel
+      ret.stopAccel = -0.55 # different stopping accels seen, good working value
     else:
       ret.vEgoStarting = 0.1
       ret.vEgoStopping = 0.5

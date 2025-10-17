@@ -24,7 +24,9 @@ class CarState(CarStateBase, MadsCarState):
     self.upscale_lead_car_signal = False
     self.eps_stock_values = False
     self.curvature = 0.
-    self.speed_limit_mgr = SpeedLimitManager(CP, speed_limit_max_kph=120, predicative=True)
+    self.enable_predicative_speed_limit = False
+    self.speed_limit_mgr = SpeedLimitManager(CP, speed_limit_max_kph=120, predicative=self.enable_predicative_speed_limit)
+    self.force_rhd_for_bsm = False
 
   def update_button_enable(self, buttonEvents: list[structs.CarState.ButtonEvent]):
     if not self.CP.pcmCruise:
@@ -158,7 +160,7 @@ class CarState(CarStateBase, MadsCarState):
     ret_sp = structs.CarStateSP()
 
     # vEgo obtained from Bremse_1 vehicle speed rather than Bremse_3 wheel speeds because Bremse_3 isn't present on NSF
-    ret.vEgoRaw = pt_cp.vl["Bremse_1"]["Geschwindigkeit_neu__Bremse_1_"] * CV.KPH_TO_MS
+    ret.vEgoRaw = pt_cp.vl["Bremse_1"]["BR1_Rad_kmh"] * CV.KPH_TO_MS
     ret.vEgo, ret.aEgo = self.update_speed_kf(ret.vEgoRaw)
     ret.standstill = ret.vEgoRaw == 0
 
@@ -167,7 +169,7 @@ class CarState(CarStateBase, MadsCarState):
     #steeringAngleDeg = pt_cp.vl["Lenkhilfe_3"]["LH3_BLW"] * (1, -1)[int(pt_cp.vl["Lenkhilfe_3"]["LH3_BLWSign"])]
     #ret.steeringAngleDeg = steeringAngleDeg - ret.steeringAngleOffsetDeg
     ret.steeringAngleDeg = pt_cp.vl["Lenkhilfe_3"]["LH3_BLW"] * (1, -1)[int(pt_cp.vl["Lenkhilfe_3"]["LH3_BLWSign"])]
-    ret.steeringRateDeg = pt_cp.vl["Lenkwinkel_1"]["Lenkradwinkel_Geschwindigkeit"] * (1, -1)[int(pt_cp.vl["Lenkwinkel_1"]["Lenkradwinkel_Geschwindigkeit_S"])]
+    ret.steeringRateDeg = pt_cp.vl["Lenkwinkel_1"]["LW1_Lenk_Gesch"] * (1, -1)[int(pt_cp.vl["Lenkwinkel_1"]["LW1_Gesch_Sign"])]
     ret.steeringTorque = pt_cp.vl["Lenkhilfe_3"]["LH3_LM"] * (1, -1)[int(pt_cp.vl["Lenkhilfe_3"]["LH3_LMSign"])]
     ret.steeringPressed = abs(ret.steeringTorque) > self.CCP.STEER_DRIVER_ALLOWANCE
     hca_status = self.CCP.hca_status_values.get(pt_cp.vl["Lenkhilfe_2"]["LH2_Sta_HCA"])
@@ -176,7 +178,7 @@ class CarState(CarStateBase, MadsCarState):
     # Update gas, brakes, and gearshift.
     ret.gasPressed = pt_cp.vl["Motor_3"]["Fahrpedal_Rohsignal"] > 0
     ret.brake = pt_cp.vl["Bremse_5"]["BR5_Bremsdruck"] / 250.0  # FIXME: this is pressure in Bar, not sure what OP expects
-    ret.brakePressed = bool(pt_cp.vl["Motor_2"]["Bremslichtschalter"])
+    ret.brakePressed = bool(pt_cp.vl["Motor_2"]["MO2_BLS"])
     ret.parkingBrake = bool(pt_cp.vl["Kombi_1"]["Bremsinfo"])
 
     # Update gear and/or clutch position data.
@@ -222,11 +224,11 @@ class CarState(CarStateBase, MadsCarState):
     # Update ACC radar status.
     self.acc_type = ext_cp.vl["ACC_System"]["ACS_Typ_ACC"]
     ret.cruiseState.available = bool(pt_cp.vl["Motor_5"]["GRA_Hauptschalter"])
-    ret.cruiseState.enabled = pt_cp.vl["Motor_2"]["GRA_Status"] in (1, 2)
+    ret.cruiseState.enabled = pt_cp.vl["Motor_2"]["MO2_Sta_GRA"] in (1, 2)
     if self.CP.pcmCruise:
       ret.accFaulted = main_cp.vl["ACC_GRA_Anzeige"]["ACA_StaACC"] in (6, 7)
     else:
-      ret.accFaulted = pt_cp.vl["Motor_2"]["GRA_Status"] == 3
+      ret.accFaulted = pt_cp.vl["Motor_2"]["MO2_Sta_GRA"] == 3
 
     # Update ACC setpoint. When the setpoint reads as 255, the driver has not
     # yet established an ACC setpoint, so treat it as zero.
@@ -241,7 +243,7 @@ class CarState(CarStateBase, MadsCarState):
     self.gra_stock_values = pt_cp.vl["GRA_Neu"]
 
     # Additional safety checks performed in CarInterface.
-    ret.espDisabled = bool(pt_cp.vl["Bremse_1"]["ESP_Passiv_getastet"])
+    ret.espDisabled = bool(pt_cp.vl["Bremse_1"]["BR1_ESPASR_passive"])
 
     ret.lowSpeedAlert = self.update_low_speed_alert(ret.vEgo)
 
@@ -271,7 +273,7 @@ class CarState(CarStateBase, MadsCarState):
     ret.steeringPressed  = abs(ret.steeringTorque) > self.CCP.STEER_DRIVER_ALLOWANCE
     ret.steeringCurvature = -pt_cp.vl["QFK_01"]["Curvature"] * (1, -1)[int(pt_cp.vl["QFK_01"]["Curvature_VZ"])]
     
-    ret.yawRate = pt_cp.vl["ESC_50"]["Yaw_Rate"] * (1, -1)[int(pt_cp.vl["ESC_50"]["Yaw_Rate_Sign"])] * CV.DEG_TO_RAD
+    ret.yawRate = -pt_cp.vl["ESC_50"]["Yaw_Rate"] * (1, -1)[int(pt_cp.vl["ESC_50"]["Yaw_Rate_Sign"])] * CV.DEG_TO_RAD
     
     # Update gear and/or clutch position data.
     if self.CP.flags & VolkswagenFlags.ALT_GEAR:
@@ -311,11 +313,12 @@ class CarState(CarStateBase, MadsCarState):
     # Consume blind-spot monitoring info/warning LED states, if available.
     # Infostufe: BSM LED on, Warnung: BSM LED flashing
     if self.CP.enableBsm:
-      # TODO get side assignment
       bsm_bus = pt_cp if self.CP.flags & VolkswagenFlags.MEB_GEN2 else ext_cp
-      #bsm_bus = pt_cp if "MEB_Side_Assist_01" in pt_cp.vl else ext_cp # do this if not differentiable by model years
-      ret.leftBlindspot  = bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Info_Driver"]) or bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Warn_Driver"])
-      ret.rightBlindspot = bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Info_Passenger"]) or bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Warn_Passenger"])
+      blindspot_driver    = bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Info_Driver"]) or bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Warn_Driver"])
+      blindspot_passenger = bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Info_Passenger"]) or bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Warn_Passenger"])
+      car_is_lhd = True if not self.force_rhd_for_bsm else False # TODO
+      ret.leftBlindspot  = blindspot_driver if car_is_lhd else blindspot_passenger
+      ret.rightBlindspot = blindspot_passenger if car_is_lhd else blindspot_driver
 
     # Consume factory LDW data relevant for factory SWA (Lane Change Assist)
     # and capture it for forwarding to the blind spot radar controller
@@ -341,7 +344,9 @@ class CarState(CarStateBase, MadsCarState):
     accFaulted = pt_cp.vl["Motor_51"]["TSK_Status"] in (6, 7)
     ret.accFaulted = self.update_acc_fault(accFaulted, parking_brake=ret.parkingBrake, drive_mode=drive_mode)
 
-    self.esp_hold_confirmation = bool(pt_cp.vl["VMM_02"]["ESP_Hold"]) # observe for newer gen
+    # for hold detection: VMM_02 ESP_Hold Signal is off timing and probably wrong
+    # use a motion state signal instead for now
+    self.esp_hold_confirmation = pt_cp.vl["ESC_50"]["Motion_State"] == 3 # full stop
     ret.cruiseState.standstill = self.CP.pcmCruise and self.esp_hold_confirmation
 
     # Update ACC setpoint. When the setpoint is zero or there's an error, the
@@ -357,10 +362,14 @@ class CarState(CarStateBase, MadsCarState):
     psd_04_values = main_cp.vl["PSD_04"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {} # Predicative Street Data
     psd_05_values = main_cp.vl["PSD_05"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {}
     psd_06_values = main_cp.vl["PSD_06"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {}
+    psd_06_values = pt_cp.vl["PSD_06"] if not psd_06_values and self.CP.flags & VolkswagenFlags.STOCK_PSD_06_PRESENT else psd_06_values # try to get from bus 0
 
+    self.speed_limit_mgr.enable_predicative_speed_limit(self.enable_predicative_speed_limit)
     self.speed_limit_mgr.update(ret.vEgo, psd_04_values, psd_05_values, psd_06_values, vze_01_values, raining)
     ret.cruiseState.speedLimit = self.speed_limit_mgr.get_speed_limit()
     ret.cruiseState.speedLimitPredicative = self.speed_limit_mgr.get_speed_limit_predicative()
+
+    ret_sp.speedLimit = ret.cruiseState.speedLimit
     
     # Update button states for turn signals and ACC controls, capture all ACC button state/config for passthrough
     # turn signal effect
