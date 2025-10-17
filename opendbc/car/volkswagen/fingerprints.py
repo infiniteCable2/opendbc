@@ -380,9 +380,11 @@ FW_VERSIONS = {
     (Ecu.eps, 0x712, None): [],
     (Ecu.cornerRadar, 0x74e, None): [ # rear radar right
       b'\xf1\x872Q0907686E \xf1\x890284', # Seat Leon MK4 (1)
+      b'\xf1\x872Q0907686J \xf1\x890288', # Golf 8 2024 (2)
     ],
     (Ecu.adas, 0x769, None): [ # rear camera
       b'\xf1\x875WA980556C \xf1\x890314', # Golf 8 2022 (1)
+      b'\xf1\x875WA980556D \xf1\x890364', # Golf 8 2024 (2)
       b'\xf1\x875WA980556D \xf1\x890344', # Seat Leon MK4 (1)
     ],
     (Ecu.parkingAdas, 0x70a, None): [ # park distance control
@@ -390,10 +392,12 @@ FW_VERSIONS = {
     ],
     (Ecu.fwdRadar, 0x757, None): [
       b'\xf1\x875WA907572B \xf1\x890395', # Golf 8 2022 (1)
+      b'\xf1\x875WA907572C \xf1\x890461', # Golf 8 2024 (2)
       #b'\xf1\x875WA907572B \xf1\x890395', # Seat Leon MK4 (1)
     ],
     (Ecu.fwdCamera, 0x74f, None): [
       b'\xf1\x875WA980653C \xf1\x893301', # Golf 8 2022 (1)
+      b'\xf1\x875WA980653D \xf1\x893405', # Golf 8 2024 (2)
       b'\xf1\x875WA980653A \xf1\x893129', # Seat Leon MK4 (1)
     ],
   },
