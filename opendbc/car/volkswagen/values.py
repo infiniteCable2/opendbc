@@ -254,7 +254,6 @@ class VolkswagenMEBPlatformConfig(PlatformConfig):
   chassis_codes: set[str] = field(default_factory=set)
   wmis: set[WMI] = field(default_factory=set)
   model_years: set[str] = field(default_factory=set)
-  variants: set[str] = field(default_factory=set)
 
   def init(self):
     self.flags |= VolkswagenFlags.MEB
@@ -404,7 +403,6 @@ class CAR(Platforms):
     chassis_codes={"E2"},
     wmis={WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR, VOLKSWAGEN_EUROPE_SUV},
     model_years={"M","N","P"},
-    variants={"A"},
   )
   VOLKSWAGEN_ID4_MK2 = VolkswagenMEBPlatformConfig(
     [VWCarDocs("Volkswagen ID.4 2024-25")],
@@ -412,17 +410,15 @@ class CAR(Platforms):
     chassis_codes={"E8"},
     wmis={WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR, VOLKSWAGEN_EUROPE_SUV},
     model_years={"R","S"},
-    variants={"A"},
     flags=VolkswagenFlags.MEB_GEN2,
   )
-  VOLKSWAGEN_ID5_MK1 = VolkswagenMEBPlatformConfig(
-    [VWCarDocs("Volkswagen ID.5 2022-23")],
-    VolkswagenCarSpecs(mass=2242, wheelbase=2.77),
-    chassis_codes={"E2"},
-    wmis={WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR, VOLKSWAGEN_EUROPE_SUV},
-    model_years={"N","P"},
-    variants={"C"},
-  )
+  #VOLKSWAGEN_ID5_MK1 = VolkswagenMEBPlatformConfig(
+  #  [VWCarDocs("Volkswagen ID.5 2022-23")],
+  #  VolkswagenCarSpecs(mass=2242, wheelbase=2.77),
+  #  chassis_codes={"E2"},
+  #  wmis={WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR, VOLKSWAGEN_EUROPE_SUV},
+  #  model_years={"N","P"},
+  #)
   VOLKSWAGEN_JETTA_MK6 = VolkswagenPQPlatformConfig(
     [VWCarDocs("Volkswagen Jetta 2015-18")],
     VolkswagenCarSpecs(mass=1518, wheelbase=2.65, minSteerSpeed=50 * CV.KPH_TO_MS, minEnableSpeed=20 * CV.KPH_TO_MS),
@@ -635,8 +631,6 @@ def match_fw_to_car_fuzzy(live_fw_versions, vin, offline_fw_versions) -> set[str
 
     if vin_obj.wmi in platform.config.wmis and chassis_code in platform.config.chassis_codes:
       if platform.config.model_years and model_year not in platform.config.model_years:
-        continue
-      if platform.config.variants and variant not in platform.config.variants:
         continue
       candidates.add(platform)
 
