@@ -401,14 +401,14 @@ class CAR(Platforms):
     [VWCarDocs("Volkswagen ID.4 2021-23")],
     VolkswagenCarSpecs(mass=2224, wheelbase=2.77),
     chassis_codes={"E2"},
-    wmis={WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR, VOLKSWAGEN_EUROPE_SUV},
+    wmis={WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR, WMI.VOLKSWAGEN_EUROPE_SUV},
     model_years={"M","N","P"},
   )
   VOLKSWAGEN_ID4_MK2 = VolkswagenMEBPlatformConfig(
     [VWCarDocs("Volkswagen ID.4 2024-25")],
     VolkswagenCarSpecs(mass=2224, wheelbase=2.77),
     chassis_codes={"E8"},
-    wmis={WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR, VOLKSWAGEN_EUROPE_SUV},
+    wmis={WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR, WMI.VOLKSWAGEN_EUROPE_SUV},
     model_years={"R","S"},
     flags=VolkswagenFlags.MEB_GEN2,
   )
@@ -416,7 +416,7 @@ class CAR(Platforms):
   #  [VWCarDocs("Volkswagen ID.5 2022-23")],
   #  VolkswagenCarSpecs(mass=2242, wheelbase=2.77),
   #  chassis_codes={"E2"},
-  #  wmis={WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR, VOLKSWAGEN_EUROPE_SUV},
+  #  wmis={WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR, WMI.VOLKSWAGEN_EUROPE_SUV},
   #  model_years={"N","P"},
   #)
   VOLKSWAGEN_JETTA_MK6 = VolkswagenPQPlatformConfig(
@@ -550,6 +550,21 @@ class CAR(Platforms):
     model_years={"N","P"},
     wmis={WMI.SEAT},
   )
+  SKODA_ENYAQ_MK1 = VolkswagenMEBPlatformConfig(
+    [VWCarDocs("Škoda Enyaq 2021-23"),],
+    VolkswagenCarSpecs(mass=1965, wheelbase=2.77),
+    chassis_codes={"NY"},
+    model_years={"M","N","P"},
+    wmis={WMI.SKODA},
+  )
+   SKODA_ENYAQ_MK2 = VolkswagenMEBPlatformConfig(
+    [VWCarDocs("Škoda Enyaq 2024"),],
+    VolkswagenCarSpecs(mass=1965, wheelbase=2.77),
+    chassis_codes={"NY"},
+    model_years={"R"},
+    wmis={WMI.SKODA},
+    flags=VolkswagenFlags.MEB_GEN2,
+  )
   SKODA_FABIA_MK4 = VolkswagenMQBPlatformConfig(
     [VWCarDocs("Škoda Fabia 2022-23", footnotes=[Footnote.VW_MQB_A0])],
     VolkswagenCarSpecs(mass=1266, wheelbase=2.56),
@@ -609,7 +624,6 @@ def match_fw_to_car_fuzzy(live_fw_versions, vin, offline_fw_versions) -> set[str
   vin_obj = Vin(vin)
   chassis_code = vin_obj.vds[3:5]
   model_year = vin_obj.vis[0]
-  variant = vin_obj.vds[5]
 
   for platform in CAR:
     valid_ecus = set()
