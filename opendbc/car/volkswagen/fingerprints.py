@@ -425,8 +425,12 @@ FW_VERSIONS = {
     ],
   },
   CAR.VOLKSWAGEN_ID4_MK2: {
-    (Ecu.inverter, 0x17fc007c, None): [],
-    (Ecu.engine, 0x17fc0076, None): [],
+    (Ecu.inverter, 0x17fc007c, None): [
+      b'\xf1\x870ET907121D \xf1\x897246\xf1\x82010',
+    ],
+    (Ecu.engine, 0x17fc0076, None): [
+      b'\xf1\x870EA906014DR\xf1\x893630',
+    ],
     (Ecu.transmission, 0x7e1, None): [],
     (Ecu.srs, 0x715, None): [],
     (Ecu.eps, 0x712, None): [],
