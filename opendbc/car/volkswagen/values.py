@@ -559,7 +559,7 @@ class CAR(Platforms):
     wmis={WMI.SEAT},
   )
   CUPRA_BORN_MK1 = VolkswagenMEBPlatformConfig(
-    [VWCarDocs("CUPRA Born 2022-23"),],
+    [VWCarDocs("CUPRA Born 2022"),],
     VolkswagenCarSpecs(mass=1950, wheelbase=2.766, steerRatio=15.9),
     chassis_codes={"K1"},
     model_years={"N","P"},
