@@ -398,7 +398,10 @@ class CAR(Platforms):
     flags=VolkswagenFlags.MEB_GEN2,
   )
   VOLKSWAGEN_ID4_MK1 = VolkswagenMEBPlatformConfig(
-    [VWCarDocs("Volkswagen ID.4 2021-23")],
+    [
+      VWCarDocs("Volkswagen ID.4 2021-23"),
+      VWCarDocs("Volkswagen ID.5 2022-23"),
+    ],
     VolkswagenCarSpecs(mass=2224, wheelbase=2.77),
     chassis_codes={"E2"},
     wmis={WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR, WMI.VOLKSWAGEN_EUROPE_SUV},
@@ -412,13 +415,6 @@ class CAR(Platforms):
     #model_years={"R","S"},
     flags=VolkswagenFlags.MEB_GEN2,
   )
-  #VOLKSWAGEN_ID5_MK1 = VolkswagenMEBPlatformConfig(
-  #  [VWCarDocs("Volkswagen ID.5 2022-23")],
-  #  VolkswagenCarSpecs(mass=2242, wheelbase=2.77),
-  #  chassis_codes={"E2"},
-  #  wmis={WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR, WMI.VOLKSWAGEN_EUROPE_SUV},
-  #  model_years={"N","P"},
-  #)
   VOLKSWAGEN_JETTA_MK6 = VolkswagenPQPlatformConfig(
     [VWCarDocs("Volkswagen Jetta 2015-18")],
     VolkswagenCarSpecs(mass=1518, wheelbase=2.65, minSteerSpeed=50 * CV.KPH_TO_MS, minEnableSpeed=20 * CV.KPH_TO_MS),
