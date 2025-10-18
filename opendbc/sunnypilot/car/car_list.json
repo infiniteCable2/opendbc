@@ -4085,6 +4085,17 @@
     ],
     "package": "Adaptive Cruise Control (ACC) & Lane Assist"
   },
+  "Volkswagen ID.5 2022-23": {
+    "platform": "VOLKSWAGEN_ID4_MK1",
+    "make": "Volkswagen",
+    "brand": "volkswagen",
+    "model": "ID.5",
+    "year": [
+      "2022",
+      "2023"
+    ],
+    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
+  },
   "Volkswagen Jetta 2018-23": {
     "platform": "VOLKSWAGEN_JETTA_MK7",
     "make": "Volkswagen",
