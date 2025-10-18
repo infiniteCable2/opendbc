@@ -557,7 +557,7 @@ class CAR(Platforms):
     model_years={"M","N","P"},
     wmis={WMI.SKODA},
   )
-   SKODA_ENYAQ_MK2 = VolkswagenMEBPlatformConfig(
+  SKODA_ENYAQ_MK2 = VolkswagenMEBPlatformConfig(
     [VWCarDocs("Škoda Enyaq 2024"),],
     VolkswagenCarSpecs(mass=1965, wheelbase=2.77),
     chassis_codes={"NY"},
