@@ -561,7 +561,7 @@ class CAR(Platforms):
     [VWCarDocs("Škoda Enyaq 2024"),],
     VolkswagenCarSpecs(mass=1965, wheelbase=2.77),
     chassis_codes={"NY"},
-    model_years={"R"},
+    model_years={"R", "S"},
     wmis={WMI.SKODA},
     flags=VolkswagenFlags.MEB_GEN2,
   )
