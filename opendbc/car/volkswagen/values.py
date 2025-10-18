@@ -533,6 +533,21 @@ class CAR(Platforms):
     chassis_codes={"8U", "F3", "FS"},
     wmis={WMI.AUDI_EUROPE_MPV, WMI.AUDI_GERMANY_CAR},
   )
+  AUDI_Q4_MK1 = VolkswagenMEBPlatformConfig(
+    [VWCarDocs("Audi Q4 2021-23")],
+    VolkswagenCarSpecs(mass=1965, wheelbase=2.764),
+    chassis_codes={"FZ"},
+    wmis={WMI.AUDI_EUROPE_MPV},
+    model_years={"M","N","P"},
+  )
+  AUDI_Q4_MK2 = VolkswagenMEBPlatformConfig(
+    [VWCarDocs("Audi Q4 2024")],
+    VolkswagenCarSpecs(mass=1965, wheelbase=2.764),
+    chassis_codes={"FZ"},
+    wmis={WMI.AUDI_EUROPE_MPV},
+    model_years={"R","S"},
+    flags=VolkswagenFlags.MEB_GEN2,
+  )
   SEAT_ATECA_MK1 = VolkswagenMQBPlatformConfig(
     [
       VWCarDocs("CUPRA Ateca 2018-23"),
