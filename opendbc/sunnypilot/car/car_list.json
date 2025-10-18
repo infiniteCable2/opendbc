@@ -416,13 +416,14 @@
     ],
     "package": "Adaptive Cruise Control (ACC) & Lane Assist"
   },
-  "CUPRA Born 2022": {
+  "CUPRA Born 2022-23": {
     "platform": "CUPRA_BORN_MK1",
     "make": "CUPRA",
     "brand": "volkswagen",
     "model": "Born",
     "year": [
-      "2022"
+      "2022",
+      "2023"
     ],
     "package": "Adaptive Cruise Control (ACC) & Lane Assist"
   },
