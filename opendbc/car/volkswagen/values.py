@@ -541,7 +541,7 @@ class CAR(Platforms):
     model_years={"M","N","P"},
   )
   AUDI_Q4_MK2 = VolkswagenMEBPlatformConfig(
-    [VWCarDocs("Audi Q4 2024")],
+    [VWCarDocs("Audi Q4 2024-25")],
     VolkswagenCarSpecs(mass=1965, wheelbase=2.764),
     chassis_codes={"FZ"},
     wmis={WMI.AUDI_EUROPE_MPV},
@@ -559,7 +559,7 @@ class CAR(Platforms):
     wmis={WMI.SEAT},
   )
   CUPRA_BORN_MK1 = VolkswagenMEBPlatformConfig(
-    [VWCarDocs("CUPRA Born 2022"),],
+    [VWCarDocs("CUPRA Born 2022-23"),],
     VolkswagenCarSpecs(mass=1950, wheelbase=2.766, steerRatio=15.9),
     chassis_codes={"K1"},
     model_years={"N","P"},
@@ -573,7 +573,7 @@ class CAR(Platforms):
     wmis={WMI.SKODA},
   )
   SKODA_ENYAQ_MK2 = VolkswagenMEBPlatformConfig(
-    [VWCarDocs("Škoda Enyaq 2024"),],
+    [VWCarDocs("Škoda Enyaq 2024-25"),],
     VolkswagenCarSpecs(mass=1965, wheelbase=2.77),
     chassis_codes={"NY"},
     model_years={"R", "S"},
