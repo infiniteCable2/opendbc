@@ -4014,30 +4014,6 @@
     ],
     "package": "Adaptive Cruise Control (ACC) & Lane Assist"
   },
-  "Volkswagen MEB Gen 1": {
-    "platform": "VOLKSWAGEN_ID3_MK1",
-    "make": "Volkswagen",
-    "brand": "volkswagen",
-    "model": "MEB Gen 1",
-    "year": [
-      "2020",
-      "2021",
-      "2022",
-      "2023"
-    ],
-    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
-  },
-  "Volkswagen MEB Gen 2": {
-    "platform": "VOLKSWAGEN_ID3_MK2",
-    "make": "Volkswagen",
-    "brand": "volkswagen",
-    "model": "MEB Gen 2",
-    "year": [
-      "2024",
-      "2025"
-    ],
-    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
-  },
   "Volkswagen ID.3 2020-23": {
     "platform": "VOLKSWAGEN_ID3_MK1",
     "make": "Volkswagen",
@@ -4062,11 +4038,11 @@
     ],
     "package": "Adaptive Cruise Control (ACC) & Lane Assist"
   },
-  "Volkswagen ID.4 2021-23": {
+  "Volkswagen ID.4/5 2021-23": {
     "platform": "VOLKSWAGEN_ID4_MK1",
     "make": "Volkswagen",
     "brand": "volkswagen",
-    "model": "ID.4",
+    "model": "ID.4/5",
     "year": [
       "2021",
       "2022",
@@ -4085,14 +4061,27 @@
     ],
     "package": "Adaptive Cruise Control (ACC) & Lane Assist"
   },
-  "Volkswagen ID.5 2022-23": {
-    "platform": "VOLKSWAGEN_ID4_MK1",
+  "Volkswagen MEB Gen 1 2020-23": {
+    "platform": "VOLKSWAGEN_ID3_MK1",
     "make": "Volkswagen",
     "brand": "volkswagen",
-    "model": "ID.5",
+    "model": "MEB Gen 1",
     "year": [
+      "2020",
+      "2021",
       "2022",
       "2023"
+    ],
+    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
+  },
+  "Volkswagen MEB Gen 2 2024-25": {
+    "platform": "VOLKSWAGEN_ID3_MK2",
+    "make": "Volkswagen",
+    "brand": "volkswagen",
+    "model": "MEB Gen 2",
+    "year": [
+      "2024",
+      "2025"
     ],
     "package": "Adaptive Cruise Control (ACC) & Lane Assist"
   },
