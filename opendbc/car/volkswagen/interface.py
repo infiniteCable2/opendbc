@@ -68,7 +68,7 @@ class CarInterface(CarInterfaceBase):
       if all(msg in fingerprint[1] for msg in (0x462, 0x463, 0x464)):  # PSD_04, PSD_05, PSD_06
         ret.flags |= VolkswagenFlags.STOCK_PSD_PRESENT.value
 
-      if any(0x464 in msg for msg in (fingerprint[0], fingerprint[1])):  # PSD_06, used additionally for mph detection as long as no native speed limit unit flag is found
+      if 0x464 in fingerprint[0]:  # PSD_06 on bus 0, used additionally for mph detection as long as no native stable speed limit unit flag is found
         ret.flags |= VolkswagenFlags.STOCK_PSD_06_PRESENT.value
 
       if 0x3DC in fingerprint[0]:  # Gatway_73
