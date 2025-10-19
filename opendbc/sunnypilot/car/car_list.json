@@ -106,6 +106,29 @@
     ],
     "package": "Adaptive Cruise Control (ACC) & Lane Assist"
   },
+  "Audi Q4 2021-23": {
+    "platform": "AUDI_Q4_MK1",
+    "make": "Audi",
+    "brand": "volkswagen",
+    "model": "Q4",
+    "year": [
+      "2021",
+      "2022",
+      "2023"
+    ],
+    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
+  },
+  "Audi Q4 2024-25": {
+    "platform": "AUDI_Q4_MK2",
+    "make": "Audi",
+    "brand": "volkswagen",
+    "model": "Q4",
+    "year": [
+      "2024",
+      "2025"
+    ],
+    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
+  },
   "Audi RS3 2018": {
     "platform": "AUDI_A3_MK3",
     "make": "Audi",
@@ -393,23 +416,14 @@
     ],
     "package": "Adaptive Cruise Control (ACC) & Lane Assist"
   },
-  "CUPRA Born 2021": {
+  "CUPRA Born 2022-23": {
     "platform": "CUPRA_BORN_MK1",
     "make": "CUPRA",
     "brand": "volkswagen",
     "model": "Born",
     "year": [
-      "2021"
-    ],
-    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
-  },
-  "CUPRA Born Gen 2": {
-    "platform": "CUPRA_BORN_GEN2",
-    "make": "CUPRA",
-    "brand": "volkswagen",
-    "model": "Born",
-    "year": [
-      "2024"
+      "2022",
+      "2023"
     ],
     "package": "Adaptive Cruise Control (ACC) & Lane Assist"
   },
@@ -2969,6 +2983,29 @@
     ],
     "package": "EyeSight Driver Assistance"
   },
+  "Škoda Enyaq 2021-23": {
+    "platform": "SKODA_ENYAQ_MK1",
+    "make": "Škoda",
+    "brand": "volkswagen",
+    "model": "Enyaq",
+    "year": [
+      "2021",
+      "2022",
+      "2023"
+    ],
+    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
+  },
+  "Škoda Enyaq 2024-25": {
+    "platform": "SKODA_ENYAQ_MK2",
+    "make": "Škoda",
+    "brand": "volkswagen",
+    "model": "Enyaq",
+    "year": [
+      "2024",
+      "2025"
+    ],
+    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
+  },
   "Škoda Fabia 2022-23": {
     "platform": "SKODA_FABIA_MK4",
     "make": "Škoda",
@@ -3984,6 +4021,77 @@
       "2022",
       "2023",
       "2024"
+    ],
+    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
+  },
+  "Volkswagen ID.3 2020-23": {
+    "platform": "VOLKSWAGEN_ID3_MK1",
+    "make": "Volkswagen",
+    "brand": "volkswagen",
+    "model": "ID.3",
+    "year": [
+      "2020",
+      "2021",
+      "2022",
+      "2023"
+    ],
+    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
+  },
+  "Volkswagen ID.3 2024-25": {
+    "platform": "VOLKSWAGEN_ID3_MK2",
+    "make": "Volkswagen",
+    "brand": "volkswagen",
+    "model": "ID.3",
+    "year": [
+      "2024",
+      "2025"
+    ],
+    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
+  },
+  "Volkswagen ID.4/5 2021-23": {
+    "platform": "VOLKSWAGEN_ID4_MK1",
+    "make": "Volkswagen",
+    "brand": "volkswagen",
+    "model": "ID.4/5",
+    "year": [
+      "2021",
+      "2022",
+      "2023"
+    ],
+    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
+  },
+  "Volkswagen ID.4 2024-25": {
+    "platform": "VOLKSWAGEN_ID4_MK2",
+    "make": "Volkswagen",
+    "brand": "volkswagen",
+    "model": "ID.4",
+    "year": [
+      "2024",
+      "2025"
+    ],
+    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
+  },
+  "Volkswagen MEB Gen 1 2020-23": {
+    "platform": "VOLKSWAGEN_ID3_MK1",
+    "make": "Volkswagen",
+    "brand": "volkswagen",
+    "model": "MEB Gen 1",
+    "year": [
+      "2020",
+      "2021",
+      "2022",
+      "2023"
+    ],
+    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
+  },
+  "Volkswagen MEB Gen 2 2024-25": {
+    "platform": "VOLKSWAGEN_ID3_MK2",
+    "make": "Volkswagen",
+    "brand": "volkswagen",
+    "model": "MEB Gen 2",
+    "year": [
+      "2024",
+      "2025"
     ],
     "package": "Adaptive Cruise Control (ACC) & Lane Assist"
   },
