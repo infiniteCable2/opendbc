@@ -416,6 +416,21 @@
     ],
     "package": "Adaptive Cruise Control (ACC) & Lane Assist"
   },
+  "Seat Leon 2020-25": {
+    "platform": "SEAT_LEON_MK4",
+    "make": "Volkswagen",
+    "brand": "volkswagen",
+    "model": "Leon IV",
+    "year": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
+  },
   "CUPRA Born 2022-23": {
     "platform": "CUPRA_BORN_MK1",
     "make": "CUPRA",
@@ -3984,13 +3999,18 @@
     ],
     "package": "Adaptive Cruise Control (ACC) & Lane Assist"
   },
-  "Volkswagen Golf 2021": {
+  "Volkswagen Golf 2020-25": {
     "platform": "VOLKSWAGEN_GOLF_MK8",
     "make": "Volkswagen",
     "brand": "volkswagen",
     "model": "Golf 8",
     "year": [
-      "2021"
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
     ],
     "package": "Adaptive Cruise Control (ACC) & Lane Assist"
   },
