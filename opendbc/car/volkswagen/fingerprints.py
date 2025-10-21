@@ -371,34 +371,24 @@ FW_VERSIONS = {
   },
   CAR.VOLKSWAGEN_GOLF_MK8: {
     (Ecu.engine, 0x7e0, None): [],
-    (Ecu.transmission, 0x7e1, None): [
-      b'\xf1\x870CW906556JA\xf1\x890780', # Seat Leon MK4 (1)
-    ],
-    (Ecu.srs, 0x715, None): [
-      b'\xf1\x871EA959655CK\xf1\x890166', # Seat Leon MK4 (1)
-    ],
+    (Ecu.transmission, 0x7e1, None): [],
+    (Ecu.srs, 0x715, None): [],
     (Ecu.eps, 0x712, None): [],
-    (Ecu.cornerRadar, 0x74e, None): [ # rear radar right
-      b'\xf1\x872Q0907686E \xf1\x890284', # Seat Leon MK4 (1)
-      b'\xf1\x872Q0907686J \xf1\x890288', # Golf 8 2024 (2)
+    (Ecu.cornerRadar, 0x74e, None): [
+      b'\xf1\x872Q0907686J \xf1\x890288',
     ],
-    (Ecu.adas, 0x769, None): [ # rear camera
-      b'\xf1\x875WA980556C \xf1\x890314', # Golf 8 2022 (1)
-      b'\xf1\x875WA980556D \xf1\x890364', # Golf 8 2024 (2)
-      b'\xf1\x875WA980556D \xf1\x890344', # Seat Leon MK4 (1)
+    (Ecu.adas, 0x769, None): [
+      b'\xf1\x875WA980556C \xf1\x890314',
+      b'\xf1\x875WA980556D \xf1\x890364',
     ],
-    (Ecu.parkingAdas, 0x70a, None): [ # park distance control
-      b'\xf1\x875WA919298A \xf1\x890230', # Seat Leon MK4 (1)
-    ],
+    (Ecu.parkingAdas, 0x70a, None): [],
     (Ecu.fwdRadar, 0x757, None): [
-      b'\xf1\x875WA907572B \xf1\x890395', # Golf 8 2022 (1)
-      b'\xf1\x875WA907572C \xf1\x890461', # Golf 8 2024 (2)
-      #b'\xf1\x875WA907572B \xf1\x890395', # Seat Leon MK4 (1)
+      b'\xf1\x875WA907572B \xf1\x890395',
+      b'\xf1\x875WA907572C \xf1\x890461',
     ],
     (Ecu.fwdCamera, 0x74f, None): [
-      b'\xf1\x875WA980653C \xf1\x893301', # Golf 8 2022 (1)
-      b'\xf1\x875WA980653D \xf1\x893405', # Golf 8 2024 (2)
-      b'\xf1\x875WA980653A \xf1\x893129', # Seat Leon MK4 (1)
+      b'\xf1\x875WA980653C \xf1\x893301',
+      b'\xf1\x875WA980653D \xf1\x893405',
     ],
   },
   CAR.VOLKSWAGEN_ID3_MK1: {     
@@ -1179,6 +1169,31 @@ FW_VERSIONS = {
       b'\xf1\x875Q0907572K \xf1\x890402\xf1\x82\x0101',
       b'\xf1\x875Q0907572P \xf1\x890682',
       b'\xf1\x875Q0907572R \xf1\x890771',
+    ],
+  },
+  CAR.SEAT_LEON_MK4: {
+    (Ecu.engine, 0x7e0, None): [],
+    (Ecu.transmission, 0x7e1, None): [
+      b'\xf1\x870CW906556JA\xf1\x890780',
+    ],
+    (Ecu.srs, 0x715, None): [
+      b'\xf1\x871EA959655CK\xf1\x890166',
+    ],
+    (Ecu.eps, 0x712, None): [],
+    (Ecu.cornerRadar, 0x74e, None): [
+      b'\xf1\x872Q0907686E \xf1\x890284',
+    ],
+    (Ecu.adas, 0x769, None): [
+      b'\xf1\x875WA980556D \xf1\x890344',
+    ],
+    (Ecu.parkingAdas, 0x70a, None): [
+      b'\xf1\x875WA919298A \xf1\x890230',
+    ],
+    (Ecu.fwdRadar, 0x757, None): [
+      b'\xf1\x875WA907572B \xf1\x890395',
+    ],
+    (Ecu.fwdCamera, 0x74f, None): [
+      b'\xf1\x875WA980653A \xf1\x893129',
     ],
   },
   CAR.CUPRA_BORN_MK1: {      
