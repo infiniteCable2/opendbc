@@ -266,7 +266,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
 
     gra_send_ready = CS.gra_stock_values["COUNTER"] != self.gra_acc_counter_last
     if gra_send_ready:
-      bus_send = self.CAN.pt #self.CAN.main if self.CP.flags & VolkswagenFlags.PQ else self.CAN.ext
+      bus_send = self.CAN.main if self.CP.flags & VolkswagenFlags.PQ else self.CAN.ext
       if self.CP.pcmCruise:
         if True:
           can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, bus_send, CS.gra_stock_values,
