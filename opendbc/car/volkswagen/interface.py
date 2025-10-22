@@ -131,6 +131,7 @@ class CarInterface(CarInterfaceBase):
         ret.minEnableSpeed = 4.5
 
     ret.pcmCruise = not ret.openpilotLongitudinalControl
+    ret.intelligentCruiseButtonManagementAvailable = ret.pcmCruise
     ret.autoResumeSng = ret.minEnableSpeed == -1
 
     if ret.flags & VolkswagenFlags.MEB:
