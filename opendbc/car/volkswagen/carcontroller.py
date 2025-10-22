@@ -281,7 +281,10 @@ class CarController(CarControllerBase):
     gra_send_ready = CS.gra_stock_values["COUNTER"] != self.gra_acc_counter_last
     if gra_send_ready:
       bus_send = self.CAN.main if self.CP.flags & VolkswagenFlags.PQ else self.CAN.ext
-      if self.CP.pcmCruise and (CC.cruiseControl.cancel or CC.cruiseControl.resume):
+      if self.CP.pcmCruise: # testing
+        can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, bus_send, CS.gra_stock_values,
+                                                             up=True))
+      elif self.CP.pcmCruise and (CC.cruiseControl.cancel or CC.cruiseControl.resume):
         can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, bus_send, CS.gra_stock_values,
                                                              cancel=CC.cruiseControl.cancel, resume=CC.cruiseControl.resume))
       elif self.CP.openpilotLongitudinalControl and self.long_cruise_control and self.gra_enabled:
