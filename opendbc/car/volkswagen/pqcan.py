@@ -43,9 +43,8 @@ def create_acc_buttons_control(packer, bus, gra_stock_values, cancel=False, resu
   values.update({
     "COUNTER": (gra_stock_values["COUNTER"] + 1) % 16,
     "GRA_Abbrechen": cancel,
-    "GRA_Recall": resume, # or up,
-    "GRA_Up_kurz": up, #"GRA_Neu_Setzen": down,
-    "GRA_Down_kurz": down,
+    "GRA_Recall": resume or up,
+    "GRA_Neu_Setzen": down,
   })
 
   return packer.make_can_msg("GRA_Neu", bus, values)
