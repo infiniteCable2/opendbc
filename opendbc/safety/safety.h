@@ -416,7 +416,6 @@ int set_safety_hooks(uint16_t mode, uint16_t param) {
     {SAFETY_TESLA, &tesla_hooks},
     {SAFETY_HYUNDAI_CANFD, &hyundai_canfd_hooks},
     {SAFETY_VOLKSWAGEN_MEB, &volkswagen_meb_hooks},
-	{SAFETY_VOLKSWAGEN_MQBEVO, &volkswagen_meb_hooks},
 #ifdef ALLOW_DEBUG
     {SAFETY_PSA, &psa_hooks},
     {SAFETY_SUBARU_PREGLOBAL, &subaru_preglobal_hooks},

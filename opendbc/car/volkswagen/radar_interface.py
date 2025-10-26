@@ -23,7 +23,7 @@ SIGNAL_SETS = tuple(
 
 
 def get_radar_can_parser(CP):
-  if CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
+  if CP.flags & VolkswagenFlags.MEB:
     messages = [("MEB_Distance_01", 25)]
   else:
     return None

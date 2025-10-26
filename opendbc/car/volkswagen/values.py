@@ -107,7 +107,7 @@ class CarControllerParams:
         "laneAssistDeactivTrailer": 5,  # "Lane Assist: no function with trailer"
       }
 
-    elif CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
+    elif CP.flags & VolkswagenFlags.MEB:
       self.LDW_STEP                = 10    # LDW_02 message frequency 10Hz
       self.ACC_HUD_STEP            = 6     # MEB_ACC_01 message frequency 16Hz
       self.STEER_DRIVER_ALLOWANCE  = 60    # Driver torque 0.6 Nm, begin steering reduction from MAX
@@ -221,7 +221,6 @@ class WMI(StrEnum):
 class VolkswagenSafetyFlags(IntFlag):
   LONG_CONTROL = 1
   ALT_CRC_VARIANT_1 = 2
-  NO_GAS_OFFSET = 4
 
 
 class VolkswagenFlags(IntFlag):
@@ -237,7 +236,6 @@ class VolkswagenFlags(IntFlag):
   PQ = 2
   MEB = 64
   MEB_GEN2 = 128
-  MQB_EVO = 256
   
 
 
@@ -261,16 +259,6 @@ class VolkswagenMEBPlatformConfig(PlatformConfig):
     self.flags |= VolkswagenFlags.MEB
     if self.flags & VolkswagenFlags.MEB_GEN2:
       self.dbc_dict = {Bus.pt: 'vw_meb_2024', Bus.radar: 'vw_meb_2024'}
-      
-      
-@dataclass
-class VolkswagenMQBevoPlatformConfig(PlatformConfig):
-  dbc_dict: DbcDict = field(default_factory=lambda: {Bus.pt: 'vw_mqbevo', Bus.radar: 'vw_mqbevo'})
-  chassis_codes: set[str] = field(default_factory=set)
-  wmis: set[WMI] = field(default_factory=set)
-
-  def init(self):
-    self.flags |= VolkswagenFlags.MQB_EVO
 
 
 @dataclass
@@ -393,12 +381,6 @@ class CAR(Platforms):
     VolkswagenCarSpecs(mass=1397, wheelbase=2.62),
     chassis_codes={"5G", "AU", "BA", "BE"},
     wmis={WMI.VOLKSWAGEN_MEXICO_CAR, WMI.VOLKSWAGEN_EUROPE_CAR},
-  )
-  VOLKSWAGEN_GOLF_MK8 = VolkswagenMQBevoPlatformConfig(
-    [VWCarDocs("Volkswagen Golf 2020-25")],
-    VolkswagenCarSpecs(mass=1397, wheelbase=2.62),
-    chassis_codes={"CD"},
-    wmis={WMI.VOLKSWAGEN_EUROPE_CAR},
   )
   VOLKSWAGEN_ID3_MK1 = VolkswagenMEBPlatformConfig(
     [VWCarDocs("Volkswagen ID.3 2020-23")],
@@ -570,14 +552,6 @@ class CAR(Platforms):
     ],
     VolkswagenCarSpecs(mass=1300, wheelbase=2.64),
     chassis_codes={"5F"},
-    wmis={WMI.SEAT},
-  )
-  SEAT_LEON_MK4 = VolkswagenMQBEvoPlatformConfig(
-    [
-      VWCarDocs("SEAT Leon 2020-25"),
-    ],
-    VolkswagenCarSpecs(mass=1300, wheelbase=2.685),
-    chassis_codes={"KL"},
     wmis={WMI.SEAT},
   )
   CUPRA_BORN_MK1 = VolkswagenMEBPlatformConfig(
