@@ -4014,6 +4014,21 @@
     ],
     "package": "Adaptive Cruise Control (ACC) & Lane Assist"
   },
+  "Volkswagen MQBevo 2020-25": {
+    "platform": "VOLKSWAGEN_GOLF_MK8",
+    "make": "Volkswagen",
+    "brand": "volkswagen",
+    "model": "MQBevo",
+    "year": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024",
+      "2025"
+    ],
+    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
+  },
   "Volkswagen Golf SportsVan 2015-20": {
     "platform": "VOLKSWAGEN_GOLF_MK7",
     "make": "Volkswagen",
