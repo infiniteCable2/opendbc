@@ -32,39 +32,20 @@ def create_lka_hud_control(packer, bus, ldw_stock_values, lat_active, steering_p
   return packer.make_can_msg("LDW_Status", bus, values)
 
 
-def create_acc_buttons_control(packer, bus, gra_stock_values, cancel=False, resume=False):
-  values = {s: gra_stock_values[s] for s in [
-    "GRA_Hauptschalt",      # ACC button, on/off
-    "GRA_Typ_Hauptschalt",  # ACC button, momentary vs latching
-    "GRA_Kodierinfo",       # ACC button, configuration
-    "GRA_Sender",           # ACC button, CAN message originator
-  ]}
-
-  values.update({
-    "COUNTER": (gra_stock_values["COUNTER"] + 1) % 16,
-    "GRA_Abbrechen": cancel,
-    "GRA_Recall": resume,
-  })
-
-  return packer.make_can_msg("GRA_Neu", bus, values)
-
-
-def create_gra_buttons_control(packer, bus, gra_stock_values, up=False, down=False):
+def create_acc_buttons_control(packer, bus, gra_stock_values, cancel=False, resume=False, up=False, down=False):
   values = {s: gra_stock_values[s] for s in [
     "GRA_Hauptschalt",      # ACC button, on/off
     "GRA_Typ_Hauptschalt",  # ACC button, momentary vs latching
     "GRA_Kodierinfo",       # ACC button, configuration
     "GRA_Sportschalter",
     "GRA_Sender",           # ACC button, CAN message originator
-    "GRA_Abbrechen",        # ACC button, cancel
   ]}
 
   values.update({
     "COUNTER": (gra_stock_values["COUNTER"] + 1) % 16,
-    "GRA_Recall": up,
+    "GRA_Abbrechen": cancel or gra_stock_values["GRA_Abbrechen"],
+    "GRA_Recall": resume or up,
     "GRA_Neu_Setzen": down,
-    "GRA_Down_kurz": gra_stock_values["GRA_Up_kurz"], # reverse -10 button press
-    "GRA_Up_kurz": gra_stock_values["GRA_Down_kurz"], # reverse +10 button press
   })
 
   return packer.make_can_msg("GRA_Neu", bus, values)
