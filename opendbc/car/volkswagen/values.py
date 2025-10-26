@@ -572,7 +572,7 @@ class CAR(Platforms):
     chassis_codes={"5F"},
     wmis={WMI.SEAT},
   )
-  SEAT_LEON_MK4 = VolkswagenMQBevoPlatformConfig(
+  SEAT_LEON_MK4 = VolkswagenMQBEvoPlatformConfig(
     [
       VWCarDocs("SEAT Leon 2020-25"),
     ],
