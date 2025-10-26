@@ -41,7 +41,7 @@ class SpeedLimitManager:
 
   def update(self, current_speed_ms, psd_04, psd_05, psd_06, vze, raining):
     # try reading speed form traffic sign recognition
-    if vze and self.CP.flags & VolkswagenFlags.MEB:
+    if vze and self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
       self._receive_speed_limit_vze_meb(vze)
 
     # read speed unit from PSD_06 and also use it for traffic sign recognition if present (for now always seen on bus 0)
