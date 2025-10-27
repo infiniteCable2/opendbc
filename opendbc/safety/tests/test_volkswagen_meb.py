@@ -30,6 +30,9 @@ MSG_EA_02         = 0x1F0
 
 
 class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSteeringSafetyTest):
+  RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02, MSG_EA_02),
+                             2: (MSG_KLR_01)}
+  
   # === limits ===
   MAX_CURVATURE = 29105
   MAX_CURVATURE_TEST = 0.195
@@ -134,8 +137,6 @@ class TestVolkswagenMebStockSafety(TestVolkswagenMebSafetyBase):
              [MSG_EA_01, 0], [MSG_EA_02, 0], [MSG_KLR_01, 0], [MSG_KLR_01, 2]]
   FWD_BLACKLISTED_ADDRS = {0: [MSG_KLR_01],
                            2: [MSG_HCA_03, MSG_LDW_02, MSG_EA_02]}
-  RELAY_MALFUNCTION_ADDRS = {0: [MSG_HCA_03, MSG_LDW_02, MSG_EA_02],
-                             2: [MSG_KLR_01]}
 
   def setUp(self):
     self.packer = CANPackerPanda("vw_meb")
@@ -151,14 +152,6 @@ class TestVolkswagenMebStockSafety(TestVolkswagenMebSafetyBase):
     # do not block resume if we are engaged already
     self.safety.set_controls_allowed(1)
     self.assertTrue(self._tx(self._button_msg(resume=1)))
-
-
-class TestVolkswagenMebCurvatureSafety(TestVolkswagenMebSafetyBase, common.CurvatureSteeringSafetyTest):
-  def setUp(self):
-    self.packer = CANPackerPanda("vw_meb")
-    self.safety = libsafety_py.libsafety
-    self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagenMeb, 0)
-    self.safety.init_tests()
     
 
 class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):  
@@ -167,8 +160,8 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
              [MSG_EA_01, 0], [MSG_EA_02, 0], [MSG_KLR_01, 0], [MSG_KLR_01, 2]]
   FWD_BLACKLISTED_ADDRS = {0: [MSG_KLR_01],
                            2: [MSG_HCA_03, MSG_LDW_02, MSG_EA_02, MSG_MEB_ACC_01, MSG_ACC_18, MSG_TA_01]}
-  RELAY_MALFUNCTION_ADDRS = {0: [MSG_HCA_03, MSG_LDW_02, MSG_EA_02, MSG_TA_01, MSG_MEB_ACC_01, MSG_ACC_18, MSG_TA_01],
-                             2: [MSG_KLR_01]}
+  RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02, MSG_EA_02, MSG_TA_01, MSG_MEB_ACC_01, MSG_ACC_18, MSG_TA_01),
+                             2: (MSG_KLR_01)}
 
   ALLOW_OVERRIDE = True
   ACCEL_OVERRIDE = 0
