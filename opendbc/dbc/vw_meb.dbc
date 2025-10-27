@@ -306,7 +306,7 @@ BO_ 319 PreCrash_02: 8 Gateway
 BO_ 332 Motor_54: 32 XXX
  SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
  SG_ COUNTER : 8|4@1+ (1,0) [0|15] "" XXX
- SG_ Accelerator_Pressure : 175|8@0+ (0.391,-14.467) [0|100] "Unit_Percent" XXX
+ SG_ Accelerator_Pressure : 175|8@0+ (0.4,-14.8) [0|100] "Unit_Percent" XXX
 
 BO_ 333 ACC_18: 32 XXX
  SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
