@@ -31,7 +31,7 @@ MSG_EA_02         = 0x1F0
 
 class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSteeringSafetyTest):
   RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02, MSG_EA_02),
-                             2: (MSG_KLR_01)}
+                             2: (MSG_KLR_01,)}
   
   # === limits ===
   MAX_CURVATURE = 29105
@@ -161,7 +161,7 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
   FWD_BLACKLISTED_ADDRS = {0: [MSG_KLR_01],
                            2: [MSG_HCA_03, MSG_LDW_02, MSG_EA_02, MSG_MEB_ACC_01, MSG_ACC_18, MSG_TA_01]}
   RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02, MSG_EA_02, MSG_TA_01, MSG_MEB_ACC_01, MSG_ACC_18, MSG_TA_01),
-                             2: (MSG_KLR_01)}
+                             2: (MSG_KLR_01,)}
 
   ALLOW_OVERRIDE = True
   ACCEL_OVERRIDE = 0
