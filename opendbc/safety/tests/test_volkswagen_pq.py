@@ -134,7 +134,6 @@ class TestVolkswagenPqStockSafety(TestVolkswagenPqSafetyBase):
 class TestVolkswagenPqLongSafety(TestVolkswagenPqSafetyBase, common.LongitudinalAccelSafetyTest):
   # Transmit of GRA_Neu is allowed on bus 0, 1 and 2 under long control as well
   TX_MSGS = [[MSG_HCA_1, 0], [MSG_LDW_1, 0],
-             [MSG_GRA_NEU, 0], [MSG_GRA_NEU, 1], [MSG_GRA_NEU, 2],
              [MSG_ACC_SYSTEM, 0], [MSG_ACC_GRA_ANZEIGE, 0]]
   RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_1, MSG_LDW_1, MSG_ACC_SYSTEM, MSG_ACC_GRA_ANZEIGE)}
   FWD_BLACKLISTED_ADDRS = {2: [MSG_HCA_1, MSG_LDW_1, MSG_ACC_SYSTEM, MSG_ACC_GRA_ANZEIGE]}
