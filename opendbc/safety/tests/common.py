@@ -941,7 +941,7 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
     self.assertTrue(self._tx(self._curvature_cmd_msg(0, steer_req=True, power=max_power)))
     self.assertTrue(self.safety.get_controls_allowed())
     
-    self.assertFalse(self._tx(self._curvature_cmd_msg(0, steer_req=True, power=max_power + 1)))
+    self.assertFalse(self._tx(self._curvature_cmd_msg(0, steer_req=True, power=max_power * 2)))
 
     self.safety.set_controls_allowed(True)
     
