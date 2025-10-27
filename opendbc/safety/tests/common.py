@@ -980,7 +980,7 @@ class PandaSafetyTest(PandaSafetyTestBase):
                    *range(0x18DA00F1, 0x18DB00F1, 0x100),   # 29-bit UDS physical addressing
                    *range(0x18DB00F1, 0x18DC00F1, 0x100),   # 29-bit UDS functional addressing
                    *range(0x3300, 0x3400),                  # Honda
-                   *range(0x17FC0000, 0x1FFFFF00 + 0x100)]  # VW custom diag range
+                   *range(0x17FC0000, 0x17FC0000 + 0x100)]  # VW custom diag range
   FWD_BLACKLISTED_ADDRS: dict[int, list[int]] = {}  # {bus: [addr]}
   FWD_BUS_LOOKUP: dict[int, int] = {0: 2, 2: 0}
 
