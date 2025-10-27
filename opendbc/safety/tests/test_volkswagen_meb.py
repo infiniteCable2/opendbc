@@ -14,7 +14,6 @@ MIN_ACCEL = -3.5
 
 # MEB message IDs
 MSG_ESC_51        = 0xFC
-MSG_LH_EPS_03     = 0x9F
 MSG_QFK_01        = 0x13D
 MSG_Motor_54      = 0x14C
 MSG_Motor_51      = 0x10B
@@ -39,8 +38,6 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
   MAX_POWER = 125
   MAX_POWER_TEST = 50 # %
   SEND_RATE = 0.02
-
-  RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02, MSG_EA_02, MSG_TA_01, MSG_KLR_01)}
 
   # Wheel speeds
   def _speed_msg(self, speed_mps: float):
@@ -132,11 +129,13 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
     self.assertTrue(self.safety.get_brake_pressed_prev())
 
 
-class TestVolkswagenMebStockSafety(TestVolkswagenMebSafetyBase):
-  TX_MSGS = [[MSG_HCA_03, 0], [MSG_LDW_02, 0], [MSG_GRA_ACC_01, 0],
+class TestVolkswagenMebStockSafety(TestVolkswagenMebSafetyBase):  
+  TX_MSGS = [[MSG_HCA_03, 0], [MSG_LDW_02, 0], [MSG_GRA_ACC_01, 0], [MSG_GRA_ACC_01, 2],
              [MSG_EA_01, 0], [MSG_EA_02, 0], [MSG_KLR_01, 0], [MSG_KLR_01, 2]]
-  FWD_BLACKLISTED_ADDRS = {0: [MSG_LH_EPS_03], 2: [MSG_HCA_03, MSG_LDW_02]}
-  RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02, MSG_EA_02, MSG_TA_01, MSG_KLR_01)}
+  FWD_BLACKLISTED_ADDRS = {0: [MSG_KLR_01],
+                           2: [MSG_HCA_03, MSG_LDW_02, MSG_EA_02]}
+  RELAY_MALFUNCTION_ADDRS = {0: [MSG_HCA_03, MSG_LDW_02, MSG_EA_02],
+                             2: [MSG_KLR_01]}
 
   def setUp(self):
     self.packer = CANPackerPanda("vw_meb")
@@ -155,10 +154,6 @@ class TestVolkswagenMebStockSafety(TestVolkswagenMebSafetyBase):
 
 
 class TestVolkswagenMebCurvatureSafety(TestVolkswagenMebSafetyBase, common.CurvatureSteeringSafetyTest):
-  TX_MSGS = [[MSG_HCA_03, 0]]
-  FWD_BLACKLISTED_ADDRS = {0: [MSG_LH_EPS_03], 2: [MSG_HCA_03, MSG_LDW_02]}
-  RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02, MSG_EA_02, MSG_TA_01, MSG_KLR_01)}
-
   def setUp(self):
     self.packer = CANPackerPanda("vw_meb")
     self.safety = libsafety_py.libsafety
@@ -167,12 +162,20 @@ class TestVolkswagenMebCurvatureSafety(TestVolkswagenMebSafetyBase, common.Curva
     
 
 class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
-  TX_MSGS = [[MSG_HCA_03, 0], [MSG_LDW_02, 0], [MSG_ACC_18, 0],
-             [MSG_MEB_ACC_01, 0], [MSG_TA_01, 0], [MSG_EA_01, 0], [MSG_EA_02, 0],
-             [MSG_KLR_01, 0], [MSG_KLR_01, 2]]
-  FWD_BLACKLISTED_ADDRS = {0: [MSG_LH_EPS_03],
-                           2: [MSG_HCA_03, MSG_LDW_02, MSG_ACC_18, MSG_MEB_ACC_01]}
-  RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02, MSG_ACC_18, MSG_MEB_ACC_01, MSG_EA_02, MSG_TA_01, MSG_KLR_01)}
+
+  static const CanMsg VOLKSWAGEN_MEB_LONG_TX_MSGS[] = {{MSG_HCA_03, 0, 24, .check_relay = true},
+													   {MSG_MEB_ACC_01, 0, 48, .check_relay = true}, {MSG_ACC_18, 0, 32, .check_relay = true},
+                                                       {MSG_EA_01, 0, 8, .check_relay = false}, {MSG_EA_02, 0, 8, .check_relay = true},
+                                                       {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},
+                                                       {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true}};
+  
+  TX_MSGS = [[MSG_HCA_03, 0], [MSG_LDW_02, 0], [MSG_GRA_ACC_01, 0], [MSG_GRA_ACC_01, 2],
+             [MSG_MEB_ACC_01, 0], [MSG_ACC_18, 0], [MSG_TA_01, 0],
+             [MSG_EA_01, 0], [MSG_EA_02, 0], [MSG_KLR_01, 0], [MSG_KLR_01, 2]]
+  FWD_BLACKLISTED_ADDRS = {0: [MSG_KLR_01],
+                           2: [MSG_HCA_03, MSG_LDW_02, MSG_EA_02, MSG_MEB_ACC_01, MSG_ACC_18, MSG_TA_01]}
+  RELAY_MALFUNCTION_ADDRS = {0: [MSG_HCA_03, MSG_LDW_02, MSG_EA_02, MSG_TA_01, MSG_MEB_ACC_01, MSG_ACC_18, MSG_TA_01],
+                             2: [MSG_KLR_01]}
 
   ALLOW_OVERRIDE = True
   ACCEL_OVERRIDE = 0
