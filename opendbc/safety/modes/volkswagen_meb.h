@@ -156,6 +156,7 @@ static safety_config volkswagen_meb_init(uint16_t param) {
   volkswagen_resume_button_prev = false;
 
   volkswagen_alt_crc_variant_1 = GET_FLAG(param, FLAG_VOLKSWAGEN_ALT_CRC_VARIANT_1);
+  volkswagen_no_gas_offset = GET_FLAG(param, FLAG_VOLKSWAGEN_NO_GAS_OFFSET);
 
 #ifdef ALLOW_DEBUG
   volkswagen_longitudinal = GET_FLAG(param, FLAG_VOLKSWAGEN_LONG_CONTROL);
@@ -273,7 +274,8 @@ static void volkswagen_meb_rx_hook(const CANPacket_t *msg) {
 
 	// update accel pedal
     if (msg->addr == MSG_Motor_54) {
-	  int accel_pedal_value = (msg->data[21] * 4) - 148;
+	  int gas_offset = volkswagen_no_gas_offset ? 0 : 4; // MQBevo (14.4) and MEB (14.8) different offset
+      int accel_pedal_value = ((msg->data[21] * 4) - (144 + gas_offset));
       gas_pressed = accel_pedal_value > 0;
     }
   }
