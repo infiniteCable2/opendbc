@@ -1004,6 +1004,8 @@ BO_ 949 Klima_11: 8 Gateway_MQB
  SG_ KL_el_Zuheizer_Stufe : 48|3@1+ (1,0) [0|7] "" Motor_Diesel_MQB
 
 BO_ 958 Motor_14: 8 Motor_Diesel_MQB
+ SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
+ SG_ COUNTER : 8|4@1+ (1,0) [0|15] "" XXX
  SG_ MO_StartStopp_Status : 12|2@1+ (1,0) [0|3] "" Gateway_MQB,Getriebe_DQ_Hybrid_MQB,Getriebe_DQ_MQB
  SG_ MO_StartStopp_Wiederstart : 14|1@1+ (1,0) [0|1] "" Gateway_MQB,Getriebe_DQ_Hybrid_MQB,Getriebe_DQ_MQB
  SG_ MO_StartStopp_Motorstopp : 15|1@1+ (1,0) [0|1] "" Gateway_MQB,Getriebe_DQ_Hybrid_MQB,Getriebe_DQ_MQB
