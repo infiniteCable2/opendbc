@@ -1004,6 +1004,8 @@ BO_ 949 Klima_11: 8 Gateway_MQB
  SG_ KL_el_Zuheizer_Stufe : 48|3@1+ (1,0) [0|7] "" Motor_Diesel_MQB
 
 BO_ 958 Motor_14: 8 Motor_Diesel_MQB
+ SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
+ SG_ COUNTER : 8|4@1+ (1,0) [0|15] "" XXX
  SG_ MO_StartStopp_Status : 12|2@1+ (1,0) [0|3] "" Gateway_MQB,Getriebe_DQ_Hybrid_MQB,Getriebe_DQ_MQB
  SG_ MO_StartStopp_Wiederstart : 14|1@1+ (1,0) [0|1] "" Gateway_MQB,Getriebe_DQ_Hybrid_MQB,Getriebe_DQ_MQB
  SG_ MO_StartStopp_Motorstopp : 15|1@1+ (1,0) [0|1] "" Gateway_MQB,Getriebe_DQ_Hybrid_MQB,Getriebe_DQ_MQB
@@ -2106,6 +2108,7 @@ VAL_ 804 ACC_Charisma_Status 0 "Init" 1 "verfuegbar" 2 "nicht_verfuegbar" 3 "asy
 VAL_ 804 ACC_Texte_Abstandswarner 0 "keine_Anzeige" 1 "Systemstoerung" 2 "keine_Sensorsicht" 3 "zurzeit_eingeschraenkt";
 VAL_ 870 BM_links 0 "inaktiv" 1 "aktiv";
 VAL_ 870 BM_rechts 0 "inaktiv" 1 "aktiv";
+VAL_ 958 MO_Fahrer_bremst 0 "kein_Bremsen" 1 "Bremse_betaetigt";
 VAL_ 980 BH_Blinker_li 0 "nicht_betaetigt" 1 "Blinkerhebel_Pos_li_betaetigt";
 VAL_ 980 BH_Blinker_re 0 "nicht_betaetigt" 1 "Blinkerhebel_Pos_re_betaetigt";
 VAL_ 980 BH_Lichthupe 0 "nicht_betaetigt" 1 "Blinkerhebel in Richtung Lichthupe betaetigt";

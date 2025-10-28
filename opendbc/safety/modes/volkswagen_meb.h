@@ -17,7 +17,6 @@
 #define MSG_EA_01            0x1A4U   // TX, for EA mitigation
 #define MSG_EA_02            0x1F0U   // TX, for EA mitigation
 #define MSG_KLR_01           0x25DU   // TX, for capacitive steering wheel
-#define MSG_Panda_Data_01    0x50A6EDAU   // internal use, data for panda from OP sensors
 
 // PANDA SAFETY SHOULD INTRODUCE A .ignore_length flag (ALLOWED ONLY IF CHECKSUM CHECK IS REQUIRED TO BE SAFE)
 #define VW_MEB_COMMON_RX_CHECKS                                                                     \
@@ -36,22 +35,6 @@
   {.msg = {{MSG_ESC_51, 0, 64, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
 
 static uint8_t volkswagen_crc8_lut_8h2f[256]; // Static lookup table for CRC8 poly 0x2F, aka 8H2F/AUTOSAR
-
-static bool vw_meb_get_longitudinal_allowed_override(void) {
-  return controls_allowed && gas_pressed_prev;
-}
-
-static bool vw_meb_max_limit_check(int val, const int MAX_VAL, const int MIN_VAL) {
-  return (val > MAX_VAL) || (val < MIN_VAL);
-}
-
-// Safety checks for longitudinal actuation
-static bool vw_meb_longitudinal_accel_checks(int desired_accel, const LongitudinalLimits limits, const int override_accel) {
-  bool accel_valid = get_longitudinal_allowed() && !vw_meb_max_limit_check(desired_accel, limits.max_accel, limits.min_accel);
-  bool accel_valid_override = vw_meb_get_longitudinal_allowed_override() && desired_accel == override_accel;
-  bool accel_inactive = desired_accel == limits.inactive_accel;
-  return !(accel_valid || accel_inactive || accel_valid_override);
-}
 
 static uint32_t volkswagen_meb_get_checksum(const CANPacket_t *msg) {
   return (uint8_t)msg->data[0];
@@ -204,7 +187,7 @@ static const CurvatureSteeringLimits VOLKSWAGEN_MEB_STEERING_LIMITS = {
   .curvature_to_can = 149253.7313, // 1 / 6.7e-6 rad/m to can
   .send_rate = 0.02,
   .inactive_curvature_is_zero = true,
-  .roll_to_can = 10000.0,
+  .max_power = 125 // 50%
 };
 
 static void volkswagen_meb_rx_hook(const CANPacket_t *msg) {
@@ -223,7 +206,7 @@ static void volkswagen_meb_rx_hook(const CANPacket_t *msg) {
     }
 
     if (msg->addr == MSG_QFK_01) { // we do not need conversion deg to can, same scaling as HCA_03 curvature
-      int current_curvature = ((msg->data[5] & 0x7F) << 8 | msg->data[4]);
+      int current_curvature = ((msg->data[6] & 0x7F) << 8) | msg->data[5];
       
       bool current_curvature_sign = GET_BIT(msg, 55U);
       if (!current_curvature_sign) {
@@ -289,13 +272,12 @@ static void volkswagen_meb_rx_hook(const CANPacket_t *msg) {
       brake_pressed = GET_BIT(msg, 28U);
     }
 
-    // update accel pedal
+	// update accel pedal
     if (msg->addr == MSG_Motor_54) {
 	  int gas_offset = volkswagen_no_gas_offset ? 0 : 4; // MQBevo (14.4) and MEB (14.8) different offset
       int accel_pedal_value = ((msg->data[21] * 4) - (144 + gas_offset));
       gas_pressed = accel_pedal_value > 0;
     }
-
   }
 }
 
@@ -306,24 +288,11 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
     .max_accel = 2000,
     .min_accel = -3500,
     .inactive_accel = 3010,  // VW sends one increment above the max range when inactive
+	.override_accel = 0,
+	.allow_override = true,
   };
-
-  const int volkswagen_accel_override = 0;
   
   bool tx = true;
-
-  // PANDA DATA is a custom CAN messages for internal use only, transferring roll from OP for safety checks
-  if (msg->addr == MSG_Panda_Data_01) {
-    int current_roll = (msg->data[0] | ((msg->data[1] & 0x7F) << 8));
-
-    bool current_roll_sign = GET_BIT(msg, 15U);
-    if (!current_roll_sign) {
-      current_roll *= -1;
-    }
-    
-    update_sample(&roll, current_roll);
-    tx = false;
-  }
 
   // Safety check for HCA_03 Heading Control Assist curvature
   if (msg->addr == MSG_HCA_03) {
@@ -335,10 +304,13 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
     }
 
     bool steer_req = (((msg->data[1] >> 4) & 0x0FU) == 4U);
-    int steer_power = (msg->data[2] >> 0) & 0x7FU;
+    int steer_power = msg->data[2];
 
-    // if (steer_curvature_cmd_checks(desired_curvature_raw, steer_power, steer_req, VOLKSWAGEN_MEB_STEERING_LIMITS)) {
-    if (steer_curvature_cmd_checks_average(desired_curvature_raw, steer_req, VOLKSWAGEN_MEB_STEERING_LIMITS) || steer_power_cmd_checks(steer_power, steer_req)) {
+    if (steer_power_cmd_checks(steer_power, steer_req, VOLKSWAGEN_MEB_STEERING_LIMITS)) {
+      tx = false;
+    }
+
+	if (steer_curvature_cmd_checks_average(desired_curvature_raw, steer_req, VOLKSWAGEN_MEB_STEERING_LIMITS)) {
       tx = false;
     }
   }
@@ -349,7 +321,7 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
     // WARNING: IF WE TAKE THE SIGNAL FROM THE CAR WHILE ACC ACTIVE AND BELOW ABOUT 3km/h, THE CAR ERRORS AND PUTS ITSELF IN PARKING MODE WITH EPB!
     int desired_accel = ((((msg->data[4] & 0x7U) << 8) | msg->data[3]) * 5U) - 7220U;
 
-    if (vw_meb_longitudinal_accel_checks(desired_accel, VOLKSWAGEN_MEB_LONG_LIMITS, volkswagen_accel_override)) {
+    if (longitudinal_accel_checks(desired_accel, VOLKSWAGEN_MEB_LONG_LIMITS)) {
       tx = false;
     }
   }
