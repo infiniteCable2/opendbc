@@ -95,16 +95,13 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
     return self.packer.make_can_msg_panda("LH_EPS_03", 0, values)
 
   # Cruise control buttons
-  def _button_msg(self, cancel=0, resume=0, _set=0, bus=2):
-    values = {"GRA_Abbrechen": cancel, "GRA_Tip_Setzen": _set, "GRA_Tip_Wiederaufnahme": resume}
+  def _button_msg(self, cancel=0, resume=0, set=0, bus=2):
+    values = {"GRA_Abbrechen": cancel, "GRA_Tip_Setzen": set, "GRA_Tip_Wiederaufnahme": resume}
     return self.packer.make_can_msg_panda("GRA_ACC_01", bus, values)
 
   def _accel_msg(self, accel):
     values = {"ACC_Sollbeschleunigung_02": accel}
     return self.packer.make_can_msg_panda("ACC_18", 0, values)
-
-  def setUp(self):
-    self.packer = CANPackerPanda("vw_meb")
 
   def test_curvature_measurements(self):
     self._rx(self._curvature_meas_msg(0.15))
@@ -148,10 +145,18 @@ class TestVolkswagenMebStockSafety(TestVolkswagenMebSafetyBase):
     self.safety.set_controls_allowed(0)
     self.assertTrue(self._tx(self._button_msg(cancel=1)))
     self.assertFalse(self._tx(self._button_msg(resume=1)))
-    self.assertFalse(self._tx(self._button_msg(_set=1)))
+    self.assertFalse(self._tx(self._button_msg(set=1)))
     # do not block resume if we are engaged already
     self.safety.set_controls_allowed(1)
     self.assertTrue(self._tx(self._button_msg(resume=1)))
+
+
+class TestVolkswagenMqbEvoStockSafety(TestVolkswagenMebStockSafety):  
+  def setUp(self):
+    self.packer = CANPackerPanda("vw_mqbevo")
+    self.safety = libsafety_py.libsafety
+    self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagenMqbEvo, VolkswagenSafetyFlags.NO_GAS_OFFSET)
+    self.safety.init_tests()
     
 
 class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):  
@@ -188,10 +193,10 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
       # ACC main switch must be on, engage on falling edge
       self.safety.set_controls_allowed(0)
       self._rx(self._tsk_status_msg(False, main_switch=False))
-      self._rx(self._button_msg(_set=(button == "set"), resume=(button == "resume"), bus=0))
+      self._rx(self._button_msg(set=(button == "set"), resume=(button == "resume"), bus=0))
       self.assertFalse(self.safety.get_controls_allowed(), f"controls allowed on {button} with main switch off")
       self._rx(self._tsk_status_msg(False, main_switch=True))
-      self._rx(self._button_msg(_set=(button == "set"), resume=(button == "resume"), bus=0))
+      self._rx(self._button_msg(set=(button == "set"), resume=(button == "resume"), bus=0))
       self.assertFalse(self.safety.get_controls_allowed(), f"controls allowed on {button} rising edge")
       self._rx(self._button_msg(bus=0))
       self.assertTrue(self.safety.get_controls_allowed(), f"controls not allowed on {button} falling edge")
@@ -230,6 +235,14 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
     self.assertTrue(self._tx(self._accel_msg(self.ACCEL_OVERRIDE)))
     self.assertFalse(self._tx(self._accel_msg(MAX_ACCEL)))
 
+
+class TestVolkswagenMqbEvoLongSafety(TestVolkswagenMebLongSafety): 
+  def setUp(self):
+    self.packer = CANPackerPanda("vw_mqbevo")
+    self.safety = libsafety_py.libsafety
+    safety_param = VolkswagenSafetyFlags.LONG_CONTROL + VolkswagenSafetyFlags.NO_GAS_OFFSET
+    self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagenMqbEvo, safety_param)
+    self.safety.init_tests()
 
 if __name__ == "__main__":
   unittest.main()
