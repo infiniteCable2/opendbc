@@ -1053,7 +1053,8 @@ class PandaSafetyTest(PandaSafetyTestBase):
               continue
             if {attr, current_test}.issubset({'TestVolkswagenPqSafety', 'TestVolkswagenPqStockSafety', 'TestVolkswagenPqLongSafety',
                                               'TestVolkswagenMqbSafety', 'TestVolkswagenMqbStockSafety', 'TestVolkswagenMqbLongSafety',
-                                              'TestVolkswagenMebSafety', 'TestVolkswagenMebStockSafety', 'TestVolkswagenMebLongSafety', 'TestVolkswagenMebCurvatureSafety'}):
+                                              'TestVolkswagenMebSafety', 'TestVolkswagenMebStockSafety', 'TestVolkswagenMebLongSafety', 'TestVolkswagenMebCurvatureSafety',
+                                              'TestVolkswagenMqbEvoStockSafety', 'TestVolkswagenMqbEvoLongSafety'}):
               continue
             if {attr, current_test}.issubset({'TestVolkswagenPqSafety', 'TestVolkswagenPqStockSafety', 'TestVolkswagenPqLongSafety'}):
               continue
