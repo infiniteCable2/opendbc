@@ -307,7 +307,7 @@ class SpeedLimitManager:
       speed_kmh = speed_curve
       speed_type = PSD_TYPE_CURV_SPEED
       
-    if ((((seg.get("QualityFlag", False) and speed_type = PSD_TYPE_SPEED_LIMIT ) or speed_type = PSD_TYPE_CURV_SPEED) and speed_kmh != NOT_SET):
+    if ((((seg.get("QualityFlag", False) and speed_type = PSD_TYPE_SPEED_LIMIT ) or speed_type == PSD_TYPE_CURV_SPEED) and speed_kmh != NOT_SET):
       if speed_kmh < self.v_limit_output_last:
         v_target_ms = speed_kmh * CV.KPH_TO_MS
         braking_distance = (current_speed_ms**2 - v_target_ms**2) / (2 * DECELERATION_PREDICATIVE)
