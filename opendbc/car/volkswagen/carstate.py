@@ -25,7 +25,9 @@ class CarState(CarStateBase, MadsCarState):
     self.eps_stock_values = False
     self.curvature = 0.
     self.enable_predicative_speed_limit = False
-    self.speed_limit_mgr = SpeedLimitManager(CP, speed_limit_max_kph=120, predicative=self.enable_predicative_speed_limit, predicative_curve=True)
+    self.enable_pred_react_to_speed_limits = False
+    self.enable_pred_react_to_curves = False
+    self.speed_limit_mgr = SpeedLimitManager(CP, speed_limit_max_kph=120, predicative=False, predicative_speed_limit=False, predicative_curve=False)
     self.speed_limit_predicative_type = 0
     self.force_rhd_for_bsm = False
 
@@ -369,7 +371,7 @@ class CarState(CarStateBase, MadsCarState):
     psd_06_values = main_cp.vl["PSD_06"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {}
     psd_06_values = pt_cp.vl["PSD_06"] if not psd_06_values and self.CP.flags & VolkswagenFlags.STOCK_PSD_06_PRESENT else psd_06_values # try to get from bus 0
 
-    self.speed_limit_mgr.enable_predicative_speed_limit(self.enable_predicative_speed_limit)
+    self.speed_limit_mgr.enable_predicative_speed_limit(self.enable_predicative_speed_limit, self.enable_pred_react_to_speed_limits, self.enable_pred_react_to_curves)
     self.speed_limit_mgr.update(ret.vEgo, psd_04_values, psd_05_values, psd_06_values, vze_01_values, raining)
     ret.cruiseState.speedLimit = self.speed_limit_mgr.get_speed_limit()
     ret.cruiseState.speedLimitPredicative = self.speed_limit_mgr.get_speed_limit_predicative()

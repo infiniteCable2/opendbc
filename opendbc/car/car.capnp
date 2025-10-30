@@ -410,6 +410,8 @@ struct CarControl {
     override @4: Bool;
     speedLimit @5: Bool;
     speedLimitPredicative @6: Bool;
+	speedLimitPredReactToSL @7: Bool;
+	speedLimitPredReactToCurves @8: Bool;
     speedOverrideDEPRECATED @2: Float32;
     accelOverrideDEPRECATED @3: Float32;
   }

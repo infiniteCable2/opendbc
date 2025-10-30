@@ -58,6 +58,8 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     # copy custom data to carstate
     CS.force_rhd_for_bsm = CC.forceRHDForBSM
     CS.enable_predicative_speed_limit = CC.cruiseControl.speedLimitPredicative
+    CS.enable_pred_react_to_speed_limits = CC.cruiseControl.speedLimitPredReactToSL
+    CS.enable_pred_react_to_curves = CC.cruiseControl.speedLimitPredReactToCurves
 
     # **** Steering Controls ************************************************ #
 
