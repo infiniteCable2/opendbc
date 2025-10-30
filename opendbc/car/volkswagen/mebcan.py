@@ -1,6 +1,6 @@
 from opendbc.car.volkswagen.mebutils import map_speed_to_acc_tempolimit
 from opendbc.car.volkswagen.values import VolkswagenFlags
-from opendbc.car.volkswagen.speed_limit_manager import PSD_NEXT_TYPE_CURV_SPEED
+from opendbc.car.volkswagen.speed_limit_manager import PSD_TYPE_CURV_SPEED
 from opendbc.car.common.conversions import Conversions as CV
 
 ACCEL_INACTIVE = 3.01
