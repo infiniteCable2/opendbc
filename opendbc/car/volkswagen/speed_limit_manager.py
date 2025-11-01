@@ -166,17 +166,14 @@ class SpeedLimitManager:
         self.current_predicative_segment["StreetType"] = NOT_SET
         
   def _calculate_segement_curvature(self, psd_04):
-    SCALE = 4.664e-5  # [1/m] dbc signal not scaled at the moment
-    curv_begin = NOT_SET
-    curv_end = NOT_SET
-        
-    curv_begin = psd_04["PSD_Anfangskruemmung"] * SCALE if psd_04["PSD_Anfangskruemmung"] not in (0, 255) else 0
-    curv_end = psd_04["PSD_Endkruemmung"] * SCALE if psd_04["PSD_Endkruemmung"] not in (0, 255) else 0
-    #if psd_04["PSD_Anfangskruemmung_Vorz"] == 1:
-    #  curv_begin *= -1
-    #if psd_04["PSD_Endkruemmung_Vorz"] == 1:
-    #  curv_end *= -1
-    curvature = abs(curv_begin - curv_end)
+    SCALE = 1.15e-4  # [1/m] dbc signal not scaled at the moment
+
+    length = psd_04["PSD_Segmentlaenge"]
+    curv_begin = psd_04["PSD_Anfangskruemmung"] if psd_04["PSD_Anfangskruemmung"] not in (0, 255) else 0
+    curv_end = psd_04["PSD_Endkruemmung"] if psd_04["PSD_Endkruemmung"] not in (0, 255) else 0
+    curv_begin *= -1 if psd_04["PSD_Anfangskruemmung_Vorz"] == 1 else curv_begin
+    curv_end *= -1 if psd_04["PSD_Endkruemmung_Vorz"] == 1 else curv_end
+    curvature = (curv_end + curv_begin) * SCALE * length
     return curvature
     
   def _calculate_curve_speed(self, curvature):
