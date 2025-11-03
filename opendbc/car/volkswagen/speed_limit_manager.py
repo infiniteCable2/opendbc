@@ -173,7 +173,7 @@ class SpeedLimitManager:
         self.current_predicative_segment["StreetType"] = NOT_SET
         
   def _get_segment_curvature_psd(self, psd_04_curvature, psd_04_sign):
-    SCALE = 3.5e-5
+    SCALE = 3e-5
     curvature = 255 - psd_04_curvature if psd_04_curvature != 0 else NOT_SET #not in (0, 255) else NOT_SET
     if psd_04_sign == 1:
       curvature *= -1
@@ -181,9 +181,6 @@ class SpeedLimitManager:
     
   def _calculate_curve_speed(self, segment):
     # curvature values are propagating through begin and end values of segments
-      
-    if segment.get("OnRampExit", NOT_SET): # for now block this as this is on current path
-      return NOT_SET
     
     curvature_begin = segment.get("Curvature_Begin", NOT_SET) 
     if curvature_begin == NOT_SET:
@@ -197,13 +194,8 @@ class SpeedLimitManager:
     segment_prev = self.predicative_segments.get(segment_id_prev)
     if not segment_prev:
       return NOT_SET
-      
-    if segment_prev.get("OnRampExit", False):
-      return NOT_SET # block for now
     
     curvature_end = segment_prev.get("Curvature_End", NOT_SET)
-    if curvature_end == NOT_SET:
-      return NOT_SET
       
     curvature = curvature_end - curvature_begin
     if curvature == 0:
@@ -217,7 +209,7 @@ class SpeedLimitManager:
       curv_speed = int((curv_speed_ms * CV.MS_TO_KPH) // 5 * 5)
       
     return curv_speed
-
+    
   def _refresh_current_segment(self):
     current_segment = self.current_predicative_segment["ID"]
     if current_segment != NOT_SET:
