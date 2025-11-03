@@ -166,21 +166,27 @@ class SpeedLimitManager:
         self.current_predicative_segment["StreetType"] = NOT_SET
         
   def _calculate_segement_curvature(self, psd_04):
-    SCALE = 1.15e-4  # [1/m] dbc signal not scaled at the moment
+    SCALE = 0.005
 
     length = psd_04["PSD_Segmentlaenge"]
     curv_begin = psd_04["PSD_Anfangskruemmung"] if psd_04["PSD_Anfangskruemmung"] not in (0, 255) else 0
     curv_end = psd_04["PSD_Endkruemmung"] if psd_04["PSD_Endkruemmung"] not in (0, 255) else 0
     curv_begin *= -1 if psd_04["PSD_Anfangskruemmung_Vorz"] == 1 else curv_begin
     curv_end *= -1 if psd_04["PSD_Endkruemmung_Vorz"] == 1 else curv_end
-    curvature = (curv_end + curv_begin) * SCALE * length
+    curvature = (curv_end + curv_begin) * SCALE / length
     return curvature
     
   def _calculate_curve_speed(self, curvature):
     if curvature == NOT_SET:
       return NOT_SET
     curv_speed_ms = math.sqrt(ISO_LATERAL_ACCEL / abs(curvature))
-    return curv_speed_ms * CV.MS_TO_KPH
+
+    if self.v_limit_speed_unit_psd == PSD_UNIT_MPH:
+      curv_speed = int((curv_speed_ms * CV.MS_TO_MPH) // 5 * 5) * CV.MPH_TO_KPH
+    else:
+      curv_speed = int((curv_speed_ms * CV.MS_TO_KPH) // 5 * 5)
+      
+    return curv_speed
 
   def _refresh_current_segment(self):
     current_segment = self.current_predicative_segment["ID"]
