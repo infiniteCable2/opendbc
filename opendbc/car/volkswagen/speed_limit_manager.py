@@ -51,11 +51,21 @@ class SpeedLimitManager:
     self.v_limit_psd_next_decay_time = NOT_SET
 
   def enable_predicative_speed_limit(self, predicative=False, reaction_to_speed_limits=False, reaction_to_curves=False):
-    self.predicative = predicative
+    if self.predicative == predicative and self.predicative_speed_limit == reaction_to_speed_limits and self.predicative_curve == reaction_to_curves:
+      return # perf
+      
+    if not predicative or (not reaction_to_speed_limits and not reaction_to_curves):
+      self._reset_predicative()
+      self.predicative = False  # fully disable execution
+    else:
+      self.predicative = predicative
+      
+    if (not reaction_to_speed_limits and self.predicative_speed_limit) or (not reaction_to_curves and self.predicative_curve):
+      self._reset_predicative()  # force reset when disabling
+      
     self.predicative_speed_limit = reaction_to_speed_limits
     self.predicative_curve = reaction_to_curves
-    if not reaction_to_speed_limits and not reaction_to_curves:
-      self.predicative = False
+      
     
   def update(self, current_speed_ms, psd_04, psd_05, psd_06, vze, raining):
     # try reading speed form traffic sign recognition
@@ -74,10 +84,8 @@ class SpeedLimitManager:
       self._build_predicative_segments(psd_04, psd_06, raining)
       self._receive_speed_limit_psd_legal(psd_06)
       self._get_speed_limit_psd()
-      if self.predicative and (self.predicative_speed_limit or self.predicative_curve):
+      if self.predicative:
         self._get_speed_limit_psd_next(current_speed_ms) # this is very cpu heavy
-      else:
-        self._reset_predicative()
 
   def get_speed_limit_predicative(self):
     v_limit_output = self.v_limit_psd_next if self.predicative and self.v_limit_psd_next != NOT_SET and self.v_limit_psd_next < self.v_limit_output_last else NOT_SET
