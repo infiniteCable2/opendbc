@@ -174,10 +174,10 @@ class SpeedLimitManager:
         self.current_predicative_segment["StreetType"] = NOT_SET
         
   def _calculate_segement_curvature(self, psd_04):
-    # curvature values are propagating through begin and end values of segment: use begin value
+    # curvature values are propagating through begin and end values of segments: use begin value
     SCALE = 6e-5
     if psd_04["PSD_Anfangskruemmung"] not in (0, 255): # use 
-      curvature = psd_04["PSD_Anfangskruemmung"] * SCALE
+      curv = psd_04["PSD_Anfangskruemmung"] * SCALE
       curvature = -curv if psd_04["PSD_Anfangskruemmung_Vorz"] == 1 else curv
     else:
       curvature = NOT_SET
