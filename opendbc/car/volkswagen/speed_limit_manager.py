@@ -37,7 +37,7 @@ class SpeedLimitManager:
     self.predicative_speed_limit = predicative_speed_limit
     self.predicative_curve = predicative_curve
     self.predicative_segments = {}
-    self.current_predicative_segment = {"ID": NOT_SET, "Length": NOT_SET, "Speed": NOT_SET, "Max_Speed_ISO": NOT_SET, "StreetType": NOT_SET, "Curvature": NOT_SET}
+    self.current_predicative_segment = {"ID": NOT_SET, "Length": NOT_SET, "Speed": NOT_SET, "StreetType": NOT_SET}
     self.v_limit_psd_next_last_timestamp = 0
     self.v_limit_psd_next_last = NOT_SET
     self.v_limit_psd_next_decay_time = NOT_SET
@@ -170,7 +170,6 @@ class SpeedLimitManager:
       if self.current_predicative_segment["ID"] != psd_05["PSD_Pos_Segment_ID"]:
         self.current_predicative_segment["ID"] = psd_05["PSD_Pos_Segment_ID"]
         self.current_predicative_segment["Speed"] = NOT_SET
-        self.current_predicative_segment["Max_Speed_ISO"] = NOT_SET
         self.current_predicative_segment["StreetType"] = NOT_SET
         
   def _calculate_segement_curvature(self, psd_04):
