@@ -202,9 +202,6 @@ class SpeedLimitManager:
       return NOT_SET # block for now
     
     curvature_end = segment_prev.get("Curvature_End", NOT_SET)
-    
-    if curvature_end == NOT_SET:
-      return NOT_SET
       
     curvature = curvature_end - curvature_begin
     if curvature == 0:
