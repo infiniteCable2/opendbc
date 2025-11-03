@@ -370,9 +370,10 @@ class CarState(CarStateBase, MadsCarState):
     psd_05_values = main_cp.vl["PSD_05"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {}
     psd_06_values = main_cp.vl["PSD_06"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {}
     psd_06_values = pt_cp.vl["PSD_06"] if not psd_06_values and self.CP.flags & VolkswagenFlags.STOCK_PSD_06_PRESENT else psd_06_values # try to get from bus 0
+    diagnose_01_values = pt_cp.vl["Diagnose_01"] if self.CP.flags & VolkswagenFlags.STOCK_DIAGNOSE_01_PRESENT else {}
 
     self.speed_limit_mgr.enable_predicative_speed_limit(self.enable_predicative_speed_limit, self.enable_pred_react_to_speed_limits, self.enable_pred_react_to_curves)
-    self.speed_limit_mgr.update(ret.vEgo, psd_04_values, psd_05_values, psd_06_values, vze_01_values, raining)
+    self.speed_limit_mgr.update(ret.vEgo, psd_04_values, psd_05_values, psd_06_values, vze_01_values, raining, diagnose_01_values)
     ret.cruiseState.speedLimit = self.speed_limit_mgr.get_speed_limit()
     ret.cruiseState.speedLimitPredicative = self.speed_limit_mgr.get_speed_limit_predicative()
     self.speed_limit_predicative_type = self.speed_limit_mgr.get_speed_limit_predicative_type()
