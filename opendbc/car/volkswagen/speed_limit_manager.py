@@ -169,10 +169,12 @@ class SpeedLimitManager:
     SCALE = 0.005
 
     length = psd_04["PSD_Segmentlaenge"]
-    curv_begin = psd_04["PSD_Anfangskruemmung"] if psd_04["PSD_Anfangskruemmung"] not in (0, 255) else 0
-    curv_end = psd_04["PSD_Endkruemmung"] if psd_04["PSD_Endkruemmung"] not in (0, 255) else 0
-    curv_begin *= -1 if psd_04["PSD_Anfangskruemmung_Vorz"] == 1 else curv_begin
-    curv_end *= -1 if psd_04["PSD_Endkruemmung_Vorz"] == 1 else curv_end
+    curv_begin = psd_04["PSD_Anfangskruemmung"] if psd_04["PSD_Anfangskruemmung"] not in (0, 255) else NOT_SET
+    curv_end = psd_04["PSD_Endkruemmung"] if psd_04["PSD_Endkruemmung"] not in (0, 255) else NOT_SET
+    if NOT_SET in (curv_begin, curv_end):
+      return NOT_SET
+    curv_begin = -curv_begin if psd_04["PSD_Anfangskruemmung_Vorz"] == 1 else curv_begin
+    curv_end = -curv_end if psd_04["PSD_Endkruemmung_Vorz"] == 1 else curv_end
     curvature = (curv_end + curv_begin) * SCALE / length
     return curvature
     
