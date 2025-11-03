@@ -174,7 +174,7 @@ class SpeedLimitManager:
         
   def _calculate_segement_curvature(self, psd_04):
     # curvature values are propagating through begin and end values of segments: use begin value
-    SCALE = 6e-5
+    SCALE = 5.5e-5
     if psd_04["PSD_Anfangskruemmung"] not in (0, 255): # use 
       curv = psd_04["PSD_Anfangskruemmung"] * SCALE
       curvature = -curv if psd_04["PSD_Anfangskruemmung_Vorz"] == 1 else curv
