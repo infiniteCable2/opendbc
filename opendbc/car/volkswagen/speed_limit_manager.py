@@ -172,19 +172,33 @@ class SpeedLimitManager:
         self.current_predicative_segment["Speed"] = NOT_SET
         self.current_predicative_segment["StreetType"] = NOT_SET
         
-  def _calculate_segement_curvature(self, psd_04):
-    # curvature values are propagating through begin and end values of segments: use begin value
+  def _get_segment_curvature_psd(self, psd_04_curvature, psd_04_sign):
     SCALE = 5.5e-5
-    if psd_04["PSD_Anfangskruemmung"] not in (0, 255): # use 
-      curv = psd_04["PSD_Anfangskruemmung"] * SCALE
-      curvature = -curv if psd_04["PSD_Anfangskruemmung_Vorz"] == 1 else curv
-    else:
-      curvature = NOT_SET
-    return curvature
+    curvature = psd_04_curvature if psd_04_curvature not in (0, 255) else NOT_SET
+    if psd_04_sign == 1:
+      curvature *= -1
+    return curvature * SCALE
     
-  def _calculate_curve_speed(self, curvature):
-    if curvature == NOT_SET:
+  def _calculate_curve_speed(self, segment):
+    # curvature values are propagating through begin and end values of segments: use begin value
+    segment_id_prev = segment.get("ID_Prev")
+    if segment_id_prev != NOT_SET:
+      segment_prev = self.predicative_segments.get(segment_id_prev)
+      if segment_prev:
+        curvature_end = segment_prev.get("Curvature_End")
+      else:
+        curvature_end = NOT_SET
+    else:
+      curvature_end = NOT_SET
+      
+    curvature_begin = segment.get("Curvature_Begin") 
+    if curvature_begin == NOT_SET:
       return NOT_SET
+      
+    curvature = curvature_end - curvature_begin
+    if curvature == 0:
+      return NOT_SET
+      
     curv_speed_ms = math.sqrt(ISO_LATERAL_ACCEL / abs(curvature))
 
     if self.v_limit_speed_unit_psd == PSD_UNIT_MPH:
@@ -214,8 +228,9 @@ class SpeedLimitManager:
       seg = self.predicative_segments.get(segment_id)
       if seg:
         seg["Length"] = psd_04["PSD_Segmentlaenge"]
-        seg["Curvature"] = self._calculate_segement_curvature(psd_04)
-        seg["Max_Speed_ISO"] = self._calculate_curve_speed(seg["Curvature"])
+        seg["Curvature_Begin"] = self._get_segment_curvature_psd(psd_04["PSD_Anfangskruemmung"], psd_04["PSD_Anfangskruemmung_Vorz"])
+        seg["Curvature_End"] = self._get_segment_curvature_psd(psd_04["PSD_Endkruemmung"], psd_04["PSD_Endkruemmung_Vorz"])
+        seg["Max_Speed_ISO"] = self._calculate_curve_speed(seg)
         seg["StreetType"] = self._get_street_type(psd_04["PSD_Strassenkategorie"], psd_04["PSD_Bebauung"])
         seg["ID_Prev"] = psd_04["PSD_Vorgaenger_Segment_ID"]
         seg["Timestamp"] = now
@@ -223,7 +238,8 @@ class SpeedLimitManager:
         self.predicative_segments[segment_id] = {
           "ID": segment_id,
           "Length": psd_04["PSD_Segmentlaenge"],
-          "Curvature": self._calculate_segement_curvature(psd_04),
+          "Curvature_Begin": self._get_segment_curvature_psd(psd_04["PSD_Anfangskruemmung"], psd_04["PSD_Anfangskruemmung_Vorz"]),
+          "Curvature_End": self._get_segment_curvature_psd(psd_04["PSD_Endkruemmung"], psd_04["PSD_Endkruemmung_Vorz"]),
           "StreetType": self._get_street_type(psd_04["PSD_Strassenkategorie"], psd_04["PSD_Bebauung"]),
           "ID_Prev": psd_04["PSD_Vorgaenger_Segment_ID"],
           "Speed": NOT_SET,
