@@ -67,7 +67,7 @@ class SpeedLimitManager:
     self.predicative_curve = reaction_to_curves
       
     
-  def update(self, current_speed_ms, psd_04, psd_05, psd_06, vze, raining):
+  def update(self, current_speed_ms, psd_04, psd_05, psd_06, vze, raining, time_car):
     # try reading speed form traffic sign recognition
     if vze and self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
       self._receive_speed_limit_vze_meb(vze)
@@ -81,7 +81,7 @@ class SpeedLimitManager:
     if psd_04 and psd_05 and psd_06:
       self._receive_current_segment_psd(psd_05)
       self._refresh_current_segment()
-      self._build_predicative_segments(psd_04, psd_06, raining)
+      self._build_predicative_segments(psd_04, psd_06, raining, time_car)
       self._receive_speed_limit_psd_legal(psd_06)
       self._get_speed_limit_psd()
       if self.predicative:
@@ -203,7 +203,7 @@ class SpeedLimitManager:
         self.current_predicative_segment["Speed"] = self.predicative_segments[current_segment]["Speed"]
         self.current_predicative_segment["StreetType"] = self.predicative_segments[current_segment]["StreetType"]
 
-  def _build_predicative_segments(self, psd_04, psd_06, raining):
+  def _build_predicative_segments(self, psd_04, psd_06, raining, time_car):
     now = time.time()
 
     # Segment erfassen/aktualisieren
@@ -247,7 +247,7 @@ class SpeedLimitManager:
         psd_06["PSD_Ges_Gesetzlich_Kategorie"] == 0 and
         psd_06["PSD_Ges_Segment_ID"] != NOT_SET):
 
-      raw_speed = psd_06["PSD_Ges_Geschwindigkeit"] if self._speed_limit_is_valid_now_psd(psd_06, raining) else NOT_SET
+      raw_speed = psd_06["PSD_Ges_Geschwindigkeit"] if self._speed_limit_is_valid_now_psd(psd_06, raining, time_car) else NOT_SET
       segment_id = psd_06["PSD_Ges_Segment_ID"]
 
       if segment_id in self.predicative_segments:
@@ -256,11 +256,24 @@ class SpeedLimitManager:
         self.predicative_segments[segment_id]["Speed_Type"] = PSD_TYPE_SPEED_LIMIT
         self.predicative_segments[segment_id]["QualityFlag"] = True
 
-  def _speed_limit_is_valid_now_psd(self, psd_06, raining):
+  def _get_time_from_vw_datetime(self, time_car):
+    if time_car:
+      try:
+        t = (time_car["UH_Jahr"], time_car["UH_Monat"], time_car["UH_Tag"], time_car["UH_Stunde"], time_car["UH_Minute"], time_car["UH_Sekunde"], 0, 0, -1)
+        local_time = time.mktime(t)
+        return time.localtime(local_time)
+      except Exception:
+        return time.localtime()
+    else:
+      return time.localtime()
+  
+  def _speed_limit_is_valid_now_psd(self, psd_06, raining, time_car):
+    local_time = self._get_time_from_vw_datetime(time_car)
+    
     # by day
     day_start = psd_06["PSD_Ges_Geschwindigkeit_Tag_Anf"]
     day_end = psd_06["PSD_Ges_Geschwindigkeit_Tag_Ende"]
-    now_weekday = (time.localtime().tm_wday + 1)  # Python: 0=Montag → PSD: 1=Montag
+    now_weekday = (local_time.tm_wday + 1)  # Python: 0=Montag → PSD: 1=Montag
 
     if 1 <= day_start <= 7 and 1 <= day_end <= 7:
       if day_start <= day_end:
@@ -273,7 +286,7 @@ class SpeedLimitManager:
     # by time
     hour_start = psd_06["PSD_Ges_Geschwindigkeit_Std_Anf"]
     hour_end = psd_06["PSD_Ges_Geschwindigkeit_Std_Ende"]
-    now_hour = time.localtime().tm_hour
+    now_hour = local_time.tm_hour
     
     if (hour_start != 25 and hour_end != 25):
       if hour_start <= hour_end:
