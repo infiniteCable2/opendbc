@@ -174,16 +174,13 @@ class SpeedLimitManager:
         self.current_predicative_segment["StreetType"] = NOT_SET
         
   def _calculate_segement_curvature(self, psd_04):
-    SCALE = 0.005
-
-    length = psd_04["PSD_Segmentlaenge"]
-    curv_begin = psd_04["PSD_Anfangskruemmung"] if psd_04["PSD_Anfangskruemmung"] not in (0, 255) else NOT_SET
-    curv_end = psd_04["PSD_Endkruemmung"] if psd_04["PSD_Endkruemmung"] not in (0, 255) else NOT_SET
-    if NOT_SET in (curv_begin, curv_end):
-      return NOT_SET
-    curv_begin = -curv_begin if psd_04["PSD_Anfangskruemmung_Vorz"] == 1 else curv_begin
-    curv_end = -curv_end if psd_04["PSD_Endkruemmung_Vorz"] == 1 else curv_end
-    curvature = (curv_end + curv_begin) * SCALE / length
+    # curvature values are propagating through begin and end values of segment: use begin value
+    SCALE = 6e-5
+    if psd_04["PSD_Anfangskruemmung"] not in (0, 255): # use 
+      curvature = psd_04["PSD_Anfangskruemmung"] * SCALE
+      curvature = -curv if psd_04["PSD_Anfangskruemmung_Vorz"] == 1 else curv
+    else:
+      curvature = NOT_SET
     return curvature
     
   def _calculate_curve_speed(self, curvature):
@@ -313,12 +310,15 @@ class SpeedLimitManager:
     speed_curve = seg.get("Max_Speed_ISO", NOT_SET) if self.predicative_curve else NOT_SET
     speed_curve_comp = speed_curve if speed_curve != NOT_SET else float('inf')
     
-    if speed_sl_comp < speed_curve_comp:
+    if speed_sl_comp <= speed_curve_comp and speed_sl != NOT_SET:
       speed_kmh = speed_sl
       speed_type = PSD_TYPE_SPEED_LIMIT
-    else:
+    elif speed_curve_comp < speed_sl_comp:
       speed_kmh = speed_curve
       speed_type = PSD_TYPE_CURV_SPEED
+    else:
+      speed_kmh = NOT_SET
+      speed_type = NOT_SET
       
     if (((seg.get("QualityFlag", False) and speed_type == PSD_TYPE_SPEED_LIMIT) or speed_type == PSD_TYPE_CURV_SPEED) and speed_kmh != NOT_SET):
       if speed_kmh < self.v_limit_output_last:
@@ -362,13 +362,14 @@ class SpeedLimitManager:
       self.v_limit_psd_next_last_timestamp = now
       self.v_limit_psd_next_decay_time = math.sqrt(2 * best_result["dist"] / DECELERATION_PREDICATIVE)
       if self.v_limit_psd_next_type == PSD_TYPE_CURV_SPEED:
-        self.v_limit_psd_next_decay_time += max((self.v_limit_psd_next * best_result["length"] / current_speed_ms), PSD_CURV_SPEED_DECAY)
+        self.v_limit_psd_next_decay_time += max((best_result["length"] / self.v_limit_psd_next), PSD_CURV_SPEED_DECAY)
     else:
       if now - self.v_limit_psd_next_last_timestamp <= self.v_limit_psd_next_decay_time and self.v_limit_output_last > self.v_limit_psd_next_last and not self.v_limit_changed:
         self.v_limit_psd_next = self.v_limit_psd_next_last
       else:
         self.v_limit_psd_next_last = NOT_SET
         self.v_limit_psd_next_decay_time = NOT_SET
+        self.v_limit_psd_next_type = NOT_SET
 
   def _get_speed_limit_psd(self):
     seg_id = self.current_predicative_segment.get("ID")
