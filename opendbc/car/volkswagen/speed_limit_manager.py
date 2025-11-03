@@ -181,6 +181,9 @@ class SpeedLimitManager:
     
   def _calculate_curve_speed(self, segment):
     # curvature values are propagating through begin and end values of segments
+      
+    if segment.get("OnRampExit", False): # for now block this as this is on current path
+      return NOT_SET
     
     curvature_begin = segment.get("Curvature_Begin", NOT_SET) 
     if curvature_begin == NOT_SET:
@@ -194,8 +197,14 @@ class SpeedLimitManager:
     segment_prev = self.predicative_segments.get(segment_id_prev)
     if not segment_prev:
       return NOT_SET
+      
+    if segment_prev.get("OnRampExit", False):
+      return NOT_SET # block for now
     
     curvature_end = segment_prev.get("Curvature_End", NOT_SET)
+    
+    if curvature_end == NOT_SET:
+      return NOT_SET
       
     curvature = curvature_end - curvature_begin
     if curvature == 0:
