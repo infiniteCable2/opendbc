@@ -185,7 +185,7 @@ class SpeedLimitManager:
     
   def _calculate_curve_speed(self, segment):
     # angle values are propagating through begin and end values of segments
-    SCALE = 3.25e-3
+    SCALE = 3e-4
       
     if segment.get("OnRampExit", False): # for now block this as this is on current path
       return NOT_SET
