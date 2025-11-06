@@ -445,16 +445,6 @@ class SpeedLimitManager:
     if seg and seg.get("Speed") != NOT_SET:
       self.v_limit_psd = seg.get("Speed")
 
-  def _get_speed_limit_psd(self):
-    seg_id = self.current_predicative_segment.get("ID")
-    if seg_id == NOT_SET:
-      self.v_limit_psd = NOT_SET
-      return
-
-    seg = self.predicative_segments.get(seg_id)
-    if seg and seg.get("Speed") != NOT_SET:
-      self.v_limit_psd = seg.get("Speed")
-
   def _get_street_type(self, strassenkategorie, bebauung):
     street_type = NOT_SET
 
