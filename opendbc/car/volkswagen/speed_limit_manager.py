@@ -185,17 +185,15 @@ class SpeedLimitManager:
     
   def _calculate_curve_speed(self, segment):
     # angle values are propagating through begin and end values of segments
-    SCALE = 3e-4
+    SCALE = 3.27e-3
       
-    if segment.get("OnRampExit", False): # for now block this as this is on current path
-      return NOT_SET
+    if segment.get("OnRampExit", False) or segment.get("StreetType", NOT_SET) == STREET_TYPE_URBAN:
+      return NOT_SET 
     
     angle_begin = segment.get("Angle_Begin", NOT_SET) 
-    if angle_begin == NOT_SET:
-      return NOT_SET
-    
     angle_end = segment.get("Angle_End", NOT_SET) 
-    if angle_end == NOT_SET:
+    
+    if NOT_SET in (angle_begin, angle_end):
       return NOT_SET
       
     length = segment.get("Length", NOT_SET) 
@@ -203,7 +201,7 @@ class SpeedLimitManager:
       return NOT_SET
       
     curvature = (angle_end - angle_begin) * SCALE / length
-    if curvature == 0:
+    if curvature == NOT_SET:
       return NOT_SET
       
     curv_speed_ms = math.sqrt(ISO_LATERAL_ACCEL / abs(curvature))
