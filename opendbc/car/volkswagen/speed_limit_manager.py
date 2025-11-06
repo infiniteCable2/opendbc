@@ -330,8 +330,9 @@ class SpeedLimitManager:
       
     return all(checks)
 
-  def _dfs(self, seg_id, total_dist, visited, current_speed_ms, best_result):
-    if seg_id in visited:
+  def _dfs(self, seg_id, total_dist, visited, current_speed_ms, best_result, path):
+    
+    if seg_id in visited or seg_id not in path:
       return
     visited.add(seg_id)
   
@@ -377,7 +378,30 @@ class SpeedLimitManager:
       else:
         next_length = seg.get("Length", 0)
         
-      self._dfs(next_id, total_dist + next_length, visited.copy(), current_speed_ms, best_result)
+      self._dfs(next_id, total_dist + next_length, visited.copy(), current_speed_ms, best_result, path)
+
+  def _build_path_psd(self, start_seg_id):
+    path = []
+    current_id = start_seg_id
+    visited = set()
+
+    segment_children_map = {}
+    for sid, seg in self.predicative_segments.items():
+      parent = seg.get("ID_Prev")
+      if parent not in (None, NOT_SET):
+        segment_children_map.setdefault(parent, []).append(sid)
+
+    while current_id != NOT_SET:
+      if current_id in visited:
+        break
+      visited.add(current_id)
+      path.append(current_id)
+      children = segment_children_map.get(current_id, [])
+      if len(children) != 1:
+        break 
+      current_id = children[0]
+
+    return path
 
   def _get_speed_limit_psd_next(self, current_speed_ms):      
     current_id = self.current_predicative_segment.get("ID")
@@ -385,9 +409,14 @@ class SpeedLimitManager:
 
     if current_id == NOT_SET:
       return
+      
+    path = self._build_path_psd(current_id)
+    
+    if len(path) <= 1:
+      return
 
     best_result = {"limit": float('inf'), "type": NOT_SET, "dist": float('inf'), "length": float('inf')}
-    self._dfs(current_id, 0, set(), current_speed_ms, best_result)
+    self._dfs(current_id, 0, set(), current_speed_ms, best_result, path)
 
     now = time.time()
     if best_result["limit"] != float('inf'):
@@ -405,6 +434,16 @@ class SpeedLimitManager:
         self.v_limit_psd_next_last = NOT_SET
         self.v_limit_psd_next_decay_time = NOT_SET
         self.v_limit_psd_next_type = NOT_SET
+
+  def _get_speed_limit_psd(self):
+    seg_id = self.current_predicative_segment.get("ID")
+    if seg_id == NOT_SET:
+      self.v_limit_psd = NOT_SET
+      return
+
+    seg = self.predicative_segments.get(seg_id)
+    if seg and seg.get("Speed") != NOT_SET:
+      self.v_limit_psd = seg.get("Speed")
 
   def _get_speed_limit_psd(self):
     seg_id = self.current_predicative_segment.get("ID")
