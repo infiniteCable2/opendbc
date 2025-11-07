@@ -186,10 +186,7 @@ class SpeedLimitManager:
     
   def _calculate_curve_speed(self, segment):
     # angle values are propagating through begin and end values of segments
-    SCALE = 3.27e-3
-      
-    if segment.get("StreetType", NOT_SET) == STREET_TYPE_URBAN:
-      return NOT_SET 
+    SCALE = 3e-5
     
     angle_begin = segment.get("Angle_Begin", NOT_SET) 
     angle_end = segment.get("Angle_End", NOT_SET) 
@@ -201,7 +198,7 @@ class SpeedLimitManager:
     if length == NOT_SET:
       return NOT_SET
       
-    curvature = (angle_end - angle_begin) * SCALE / length
+    curvature = (angle_end - angle_begin) * SCALE
     if curvature == NOT_SET:
       return NOT_SET
       
@@ -336,6 +333,14 @@ class SpeedLimitManager:
     currently_on_ramp = self.current_predicative_segment.get("OnRampExit", False)
     seg_on_ramp = seg.get("OnRampExit", False)
     
+    ramp_allowed_on_ramp = currently_on_ramp and seg_on_ramp
+    ramp_allowed = ramp_allowed_on_ramp or not seg_on_ramp
+
+    # on ramp is probably type 2 TODO
+    # for now only allow non urban, there are problems with highway curvature data
+    street_type = seg.get("StreetType", NOT_SET)
+    street_type_allowed = True if street_type == STREET_TYPE_NONURBAN or (street_type == STREET_TYPE_HIGHWAY and ramp_allowed_on_ramp) else False
+    
     speed_curve = seg.get("Max_Speed_ISO", NOT_SET)
 
     if NOT_SET not in (self.v_limit_output_last, speed_curve):
@@ -344,8 +349,13 @@ class SpeedLimitManager:
     else:
       sanity_error = False
     
-    allowed = ((currently_on_ramp and seg_on_ramp) or not seg_on_ramp) and not sanity_error
-    return allowed
+    checks = [
+      ramp_allowed,
+      street_type_allowed,
+      not sanity_error,
+    ]
+      
+    return all(checks)
 
   def _dfs(self, seg_id, total_dist, visited, current_speed_ms, best_result, path):
     if seg_id in visited or seg_id not in path:
