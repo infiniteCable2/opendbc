@@ -186,17 +186,10 @@ class SpeedLimitManager:
     
   def _calculate_curve_speed(self, segment):
     # angle values are propagating through begin and end values of segments
-    SCALE = 2e-5
+    SCALE = 2.5e-5
     
     angle_begin = segment.get("Angle_Begin", NOT_SET) 
     angle_end = segment.get("Angle_End", NOT_SET) 
-    
-    if NOT_SET in (angle_begin, angle_end):
-      return NOT_SET
-      
-    length = segment.get("Length", NOT_SET) 
-    if length == NOT_SET:
-      return NOT_SET
       
     curvature = (angle_end - angle_begin) * SCALE
     if curvature == NOT_SET:
