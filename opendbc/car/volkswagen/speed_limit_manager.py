@@ -173,25 +173,23 @@ class SpeedLimitManager:
         self.current_predicative_segment["StreetType"] = NOT_SET
         self.current_predicative_segment["OnRampExit"] = False
         
-  def _get_segment_angle_psd(self, psd_angle, psd_sign):
-    if psd_angle in (0, 255):
+  def _get_segment_curvature_psd(self, psd_curvature, psd_sign, scale=2.5e-5):
+    if psd_curvature in (0, 255):
       return NOT_SET
 
     if psd_sign == 1:
-      angle = -psd_angle
+      curvature = -psd_curvature * scale
     else:
-      angle = psd_angle
+      curvature = psd_curvature * scale
       
-    return angle
+    return curvature
     
   def _calculate_curve_speed(self, segment):
-    # angle values are propagating through begin and end values of segments
-    SCALE = 2.5e-5
-    
-    angle_begin = segment.get("Angle_Begin", NOT_SET) 
-    angle_end = segment.get("Angle_End", NOT_SET) 
+    # curvature values are propagating through begin and end values of segments
+    curvature_begin = segment.get("Curvature_Begin", NOT_SET) 
+    curvature_end = segment.get("Curvature_End", NOT_SET) 
       
-    curvature = (angle_end - angle_begin) * SCALE
+    curvature = (curvature_end - curvature_begin)
     if curvature == NOT_SET:
       return NOT_SET
       
@@ -225,8 +223,8 @@ class SpeedLimitManager:
       seg = self.predicative_segments.get(segment_id)
       if seg:
         seg["Length"] = psd_04["PSD_Segmentlaenge"]
-        seg["Angle_Begin"] = self._get_segment_angle_psd(psd_04["PSD_Anfangskruemmung"], psd_04["PSD_Anfangskruemmung_Vorz"])
-        seg["Angle_End"] = self._get_segment_angle_psd(psd_04["PSD_Endkruemmung"], psd_04["PSD_Endkruemmung_Vorz"])
+        seg["Curvature_Begin"] = self._get_segment_curvature_psd(psd_04["PSD_Anfangskruemmung"], psd_04["PSD_Anfangskruemmung_Vorz"])
+        seg["Curvature_End"] = self._get_segment_curvature_psd(psd_04["PSD_Endkruemmung"], psd_04["PSD_Endkruemmung_Vorz"])
         seg["StreetType"] = self._get_street_type(psd_04["PSD_Strassenkategorie"], psd_04["PSD_Bebauung"])
         seg["OnRampExit"] = psd_04["PSD_Rampe"] in (1, 2)
         seg["ID_Prev"] = psd_04["PSD_Vorgaenger_Segment_ID"]
@@ -236,8 +234,8 @@ class SpeedLimitManager:
         self.predicative_segments[segment_id] = {
           "ID": segment_id,
           "Length": psd_04["PSD_Segmentlaenge"],
-          "Angle_Begin": self._get_segment_angle_psd(psd_04["PSD_Anfangskruemmung"], psd_04["PSD_Anfangskruemmung_Vorz"]),
-          "Angle_End": self._get_segment_angle_psd(psd_04["PSD_Endkruemmung"], psd_04["PSD_Endkruemmung_Vorz"]),
+          "Curvature_Begin": self._get_segment_curvature_psd(psd_04["PSD_Anfangskruemmung"], psd_04["PSD_Anfangskruemmung_Vorz"]),
+          "Curvature_End": self._get_segment_curvature_psd(psd_04["PSD_Endkruemmung"], psd_04["PSD_Endkruemmung_Vorz"]),
           "StreetType": self._get_street_type(psd_04["PSD_Strassenkategorie"], psd_04["PSD_Bebauung"]),
           "OnRampExit": psd_04["PSD_Rampe"] in (1, 2),
           "ID_Prev": psd_04["PSD_Vorgaenger_Segment_ID"],
