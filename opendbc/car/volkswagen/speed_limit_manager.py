@@ -184,16 +184,9 @@ class SpeedLimitManager:
       
     return curvature
     
-  def _calculate_curve_speed(self, segment):
-    # curvature values are propagating through begin and end values of segments
-    curvature_begin = segment.get("Curvature_Begin", NOT_SET) 
-    curvature_end = segment.get("Curvature_End", NOT_SET)
-      
-    curvature = (curvature_end - curvature_begin)
+  def _calculate_curve_speed(self, curvature):
     if curvature == NOT_SET:
-      return NOT_SET, False
-      
-    at_end = True if curvature_begin == NOT_SET else False
+      return NOT_SET
       
     curv_speed_ms = math.sqrt(ISO_LATERAL_ACCEL / abs(curvature))
 
@@ -202,7 +195,7 @@ class SpeedLimitManager:
     else:
       curv_speed = int((curv_speed_ms * CV.MS_TO_KPH) // 5 * 5)
       
-    return curv_speed, at_end
+    return curv_speed
     
   def _refresh_current_segment(self):
     current_segment = self.current_predicative_segment["ID"]
@@ -230,7 +223,8 @@ class SpeedLimitManager:
         seg["StreetType"] = self._get_street_type(psd_04["PSD_Strassenkategorie"], psd_04["PSD_Bebauung"])
         seg["OnRampExit"] = psd_04["PSD_Rampe"] in (1, 2)
         seg["ID_Prev"] = psd_04["PSD_Vorgaenger_Segment_ID"]
-        seg["Curve_Speed"], seg["Curve_Speed_At_End"] = self._calculate_curve_speed(seg)
+        seg["Curve_Speed_Begin"] = self._calculate_curve_speed(seg["Curvature_Begin"])
+        seg["Curve_Speed_End"] = self._calculate_curve_speed(seg["Curvature_End"])
         seg["Timestamp"] = now
       else:
         self.predicative_segments[segment_id] = {
@@ -242,12 +236,14 @@ class SpeedLimitManager:
           "OnRampExit": psd_04["PSD_Rampe"] in (1, 2),
           "ID_Prev": psd_04["PSD_Vorgaenger_Segment_ID"],
           "Speed": NOT_SET,
-          "Curve_Speed": NOT_SET,
+          "Curve_Speed_Begin": NOT_SET,
+          "Curve_Speed_End": NOT_SET,
           "QualityFlag": False,
           "Timestamp": now
         }
         seg = self.predicative_segments.get(segment_id)
-        seg["Curve_Speed"], seg["Curve_Speed_At_End"] = self._calculate_curve_speed(seg)
+        seg["Curve_Speed_Begin"] = self._calculate_curve_speed(seg["Curvature_Begin"])
+        seg["Curve_Speed_End"] = self._calculate_curve_speed(seg["Curvature_End"])
 
     # Schritt 2: Alte Segmente bereinigen
     current_id = self.current_predicative_segment["ID"]
@@ -352,6 +348,48 @@ class SpeedLimitManager:
       
     return all(checks)
 
+  def _hit_linear_profile(self, v0_ms, a, total_dist_m, L_m, v_b_kmh, v_e_kmh):
+    if L_m is None or L_m <= 0:
+        return None, None
+
+    v_b = v_b_kmh * CV.KPH_TO_MS
+    v_e = v_e_kmh * CV.KPH_TO_MS
+    r = (v_e - v_b) / L_m  # m/s pro m
+
+    # Flaches Profil => Standard-Bremsweg gegen v_b am Beginn
+    if abs(r) < 1e-9:
+        if v0_ms <= v_b:
+            return None, None
+        brake_dist = (v0_ms**2 - v_b**2) / (2*a)
+        if brake_dist >= total_dist_m:
+            # Aktivierung am Segmentbeginn
+            return 0.0, v_b_kmh
+        return None, None
+
+    A = r*r
+    B = 2*v_b*r + 2*a
+    C = v_b*v_b + 2*a*total_dist_m - v0_ms*v0_ms
+
+    D = B*B - 4*A*C
+    if D < 0:
+      return None, None
+
+    sqrtD = math.sqrt(D)
+    # Kleinste nicht-negative Lösung
+    s1 = (-B - sqrtD) / (2*A)
+    s2 = (-B + sqrtD) / (2*A)
+    s_candidates = [s for s in (s1, s2) if s >= 0.0]
+
+    if not s_candidates:
+      return None, None
+
+    s_hit = min(s_candidates)
+    if s_hit > L_m:
+      return None, None
+
+    v_req_ms = v_b + r * s_hit
+    return float(s_hit), (v_req_ms * CV.MS_TO_KPH)
+
   def _dfs(self, seg_id, total_dist, visited, current_speed_ms, best_result, path):
     if seg_id in visited or seg_id not in path:
       return
@@ -370,12 +408,24 @@ class SpeedLimitManager:
         qual_ok = seg.get("QualityFlag", False)
         candidates.append((sl, PSD_TYPE_SPEED_LIMIT, 0.0, qual_ok))
     
-    # Curve-Speed (begin or end of segment)
+    # Curve-Speed
     if self.predicative_curve and self._speed_limit_curve_allowed(seg):
-      cs = seg.get("Curve_Speed", NOT_SET)
-      if cs != NOT_SET:
-        off = float(seg.get("Length", 0)) if seg.get("Curve_Speed_At_End", False) else 0.0
-        candidates.append((cs, PSD_TYPE_CURV_SPEED, off, True))
+      length = seg.get("Length", NOT_SET)
+      cs_begin = seg.get("Curve_Speed_Begin", NOT_SET)
+      cs_end = seg.get("Curve_Speed_End", NOT_SET)
+      
+      if cs_begin != NOT_SET:
+        candidates.append((cs_begin, PSD_TYPE_CURV_SPEED, 0.0, True))
+      
+      if cs_end != NOT_SET and length > 0:
+        candidates.append((cs_end, PSD_TYPE_CURV_SPEED, length, True))
+        
+      # Curve-Speed Profile
+      if cs_begin != NOT_SET and cs_end != NOT_SET and length > 0:
+        s_hit, v_req_kmh = self._hit_linear_profile(v0_ms=current_speed_ms, a=DECELERATION_PREDICATIVE,
+                                                    total_dist_m=total_dist, L_m=length, v_b_kmh=cs_begin, v_e_kmh=cs_end)
+        if s_hit is not None and v_req_kmh is not None:
+          candidates.append((v_req_kmh, PSD_TYPE_CURV_SPEED, s_hit, True))
     
     # check candidates
     for cand_speed_kmh, cand_type, activation_offset, qual_ok in candidates:
