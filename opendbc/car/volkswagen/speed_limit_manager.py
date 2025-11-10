@@ -173,7 +173,7 @@ class SpeedLimitManager:
         self.current_predicative_segment["StreetType"] = NOT_SET
         self.current_predicative_segment["OnRampExit"] = False
         
-  def _get_segment_curvature_psd(self, psd_curvature, psd_sign, scale=1.6e-5):
+  def _get_segment_curvature_psd(self, psd_curvature, psd_sign, scale=2e-5):
     if psd_curvature in (0, 255):
       return NOT_SET
 
