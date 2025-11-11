@@ -177,10 +177,9 @@ class SpeedLimitManager:
     if psd_curvature in (0, 255):
       return NOT_SET
 
+    curvature = (255 - psd_curvature) * scale
     if psd_sign == 1:
-      curvature = -(255 - psd_curvature) * scale
-    else:
-      curvature = psd_curvature * scale
+      curvature *= -1
       
     return curvature
     
