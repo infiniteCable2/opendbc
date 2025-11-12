@@ -57,6 +57,8 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     # copy custom data to carstate
     CS.force_rhd_for_bsm = CC.forceRHDForBSM
     CS.enable_predicative_speed_limit = CC.cruiseControl.speedLimitPredicative
+    CS.enable_pred_react_to_speed_limits = CC.cruiseControl.speedLimitPredReactToSL
+    CS.enable_pred_react_to_curves = CC.cruiseControl.speedLimitPredReactToCurves
 
     # **** Steering Controls ************************************************ #
 
@@ -245,7 +247,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         sl_active = self.frame - self.speed_limit_changed_timer < 400
         speed_limit = CS.out.cruiseState.speedLimitPredicative if sl_predicative_active else (CS.out.cruiseState.speedLimit if sl_active else 0)
           
-        acc_hud_event = self.CCS.acc_hud_event(acc_hud_status, CS.esp_hold_confirmation, sl_predicative_active, sl_active)
+        acc_hud_event = self.CCS.acc_hud_event(acc_hud_status, CS.esp_hold_confirmation, sl_predicative_active, CS.speed_limit_predicative_type, sl_active)
           
         can_sends.append(self.CCS.create_acc_hud_control(self.packer_pt, self.CAN.pt, acc_hud_status, hud_control.setSpeed * CV.MS_TO_KPH,
                                                          hud_control.leadVisible, hud_control.leadDistanceBars + 1, show_distance_bars,

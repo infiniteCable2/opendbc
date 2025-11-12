@@ -1,5 +1,7 @@
 from opendbc.car.volkswagen.mebutils import map_speed_to_acc_tempolimit
 from opendbc.car.volkswagen.values import VolkswagenFlags
+from opendbc.car.volkswagen.speed_limit_manager import PSD_TYPE_CURV_SPEED
+from opendbc.car.common.conversions import Conversions as CV
 
 ACCEL_INACTIVE = 3.01
 ACCEL_OVERRIDE = 0.00
@@ -259,13 +261,16 @@ def acc_hud_status_value(main_switch_on, acc_faulted, long_active, override):
   return acc_hud_control
 
 
-def acc_hud_event(acc_hud_control, esp_hold, speed_limit_predicative, speed_limit):
+def acc_hud_event(acc_hud_control, esp_hold, speed_limit_predicative, speed_limit_predicative_type, speed_limit):
   acc_event = 0
   
   if esp_hold and acc_hud_control == ACC_HUD_ACTIVE:
     acc_event = 3 # acc ready message at standstill
   elif acc_hud_control in (ACC_HUD_ACTIVE, ACC_HUD_OVERRIDE) and speed_limit_predicative:
-    acc_event = 4 # acc limited by speed limit by nav (predicative)
+    if speed_limit_predicative_type == PSD_TYPE_CURV_SPEED:
+      acc_event = 6 # acc limited by curve (predicative)
+    else:
+      acc_event = 4 # acc limited by speed limit by nav (predicative)
   elif acc_hud_control in (ACC_HUD_ACTIVE, ACC_HUD_OVERRIDE) and speed_limit:
     acc_event = 5 # acc limited by speed limit by camera (recently detected)
 
@@ -303,6 +308,7 @@ def create_acc_hud_control(packer, bus, acc_control, set_speed, lead_visible, di
     "Street_Color":                  1 if acc_control in (ACC_HUD_ACTIVE, ACC_HUD_OVERRIDE) else 0, # light grey (1) or dark (0) street
     "Lead_Brightness":               3 if acc_control == ACC_HUD_ACTIVE else 0, # object shows in colour
     "ACC_Events":                    acc_event, # e.g. pACC Events
+    "ACC_Event_Wunschgeschw":        speed_limit * CV.MS_TO_KPH, # this speed is shown for curve event speeds, not for speed signs (speed signs in "ACC_Tempolimit")
     "Zeitluecke_1":                  get_desired_gap(distance_bars, desired_gap, 1), # desired distance to lead object for distance bar 1
     "Zeitluecke_2":                  get_desired_gap(distance_bars, desired_gap, 2), # desired distance to lead object for distance bar 2
     "Zeitluecke_3":                  get_desired_gap(distance_bars, desired_gap, 3), # desired distance to lead object for distance bar 3

@@ -231,6 +231,7 @@ class VolkswagenFlags(IntFlag):
   STOCK_KLR_PRESENT = 8
   STOCK_PSD_PRESENT = 16
   STOCK_PSD_06_PRESENT = 512
+  STOCK_DIAGNOSE_01_PRESENT = 1024
   ALT_GEAR = 32
 
   # Static flags

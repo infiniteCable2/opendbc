@@ -25,7 +25,10 @@ class CarState(CarStateBase, MadsCarState):
     self.eps_stock_values = False
     self.curvature = 0.
     self.enable_predicative_speed_limit = False
-    self.speed_limit_mgr = SpeedLimitManager(CP, speed_limit_max_kph=120, predicative=self.enable_predicative_speed_limit)
+    self.enable_pred_react_to_speed_limits = False
+    self.enable_pred_react_to_curves = False
+    self.speed_limit_mgr = SpeedLimitManager(CP, speed_limit_max_kph=120, predicative=False, predicative_speed_limit=False, predicative_curve=False)
+    self.speed_limit_predicative_type = 0
     self.force_rhd_for_bsm = False
 
   def update_button_enable(self, buttonEvents: list[structs.CarState.ButtonEvent]):
@@ -367,11 +370,13 @@ class CarState(CarStateBase, MadsCarState):
     psd_05_values = main_cp.vl["PSD_05"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {}
     psd_06_values = main_cp.vl["PSD_06"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {}
     psd_06_values = pt_cp.vl["PSD_06"] if not psd_06_values and self.CP.flags & VolkswagenFlags.STOCK_PSD_06_PRESENT else psd_06_values # try to get from bus 0
+    diagnose_01_values = pt_cp.vl["Diagnose_01"] if self.CP.flags & VolkswagenFlags.STOCK_DIAGNOSE_01_PRESENT else {}
 
-    self.speed_limit_mgr.enable_predicative_speed_limit(self.enable_predicative_speed_limit)
-    self.speed_limit_mgr.update(ret.vEgo, psd_04_values, psd_05_values, psd_06_values, vze_01_values, raining)
+    self.speed_limit_mgr.enable_predicative_speed_limit(self.enable_predicative_speed_limit, self.enable_pred_react_to_speed_limits, self.enable_pred_react_to_curves)
+    self.speed_limit_mgr.update(ret.vEgo, psd_04_values, psd_05_values, psd_06_values, vze_01_values, raining, diagnose_01_values)
     ret.cruiseState.speedLimit = self.speed_limit_mgr.get_speed_limit()
     ret.cruiseState.speedLimitPredicative = self.speed_limit_mgr.get_speed_limit_predicative()
+    self.speed_limit_predicative_type = self.speed_limit_mgr.get_speed_limit_predicative_type()
 
     ret_sp.speedLimit = ret.cruiseState.speedLimit
     
