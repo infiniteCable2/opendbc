@@ -16,7 +16,7 @@ DECELERATION_PREDICATIVE = 1.0
 SEGMENT_DECAY = 10
 PSD_TYPE_SPEED_LIMIT = 1
 PSD_TYPE_CURV_SPEED = 2
-PSD_CURV_SPEED_DECAY = 4
+PSD_CURV_SPEED_DECAY = 10
 PSD_UNIT_KPH = 0
 PSD_UNIT_MPH = 1
 
@@ -400,6 +400,8 @@ class SpeedLimitManager:
       
     candidates = []
 
+    length = seg.get("Length", NOT_SET)
+
     # Speed-Limit
     if self.predicative_speed_limit:
       sl = seg.get("Speed", NOT_SET)
@@ -409,7 +411,6 @@ class SpeedLimitManager:
     
     # Curve-Speed
     if self.predicative_curve and self._speed_limit_curve_allowed(seg):
-      length = seg.get("Length", NOT_SET)
       cs_begin = seg.get("Curve_Speed_Begin", NOT_SET)
       cs_end = seg.get("Curve_Speed_End", NOT_SET)
       
@@ -454,8 +455,8 @@ class SpeedLimitManager:
         if better:
           best_result["limit"] = cand_speed_kmh
           best_result["type"] = cand_type
-          best_result["dist"] = dist_to_activation
-          best_result["length"] = seg.get("Length", 0)
+          best_result["dist"] = dist_to_activation # represents distance to limit
+          best_result["length"] = length - activation_offset # represents remaining distance with limit for curves
 
     children = [sid for sid, s in self.predicative_segments.items() if s.get("ID_Prev") == seg_id]
     if len(children) > 1:
@@ -515,7 +516,7 @@ class SpeedLimitManager:
       self.v_limit_psd_next_last_timestamp = now
       self.v_limit_psd_next_decay_time = math.sqrt(2 * best_result["dist"] / DECELERATION_PREDICATIVE)
       if self.v_limit_psd_next_type == PSD_TYPE_CURV_SPEED:
-        self.v_limit_psd_next_decay_time += max((best_result["length"] / self.v_limit_psd_next), PSD_CURV_SPEED_DECAY)
+        self.v_limit_psd_next_decay_time += max((best_result["length"] / (self.v_limit_psd_next * CV.KPH_TO_MS)), PSD_CURV_SPEED_DECAY)
     else:
       if now - self.v_limit_psd_next_last_timestamp <= self.v_limit_psd_next_decay_time and self.v_limit_output_last > self.v_limit_psd_next_last and not self.v_limit_changed:
         self.v_limit_psd_next = self.v_limit_psd_next_last
