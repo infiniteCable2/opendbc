@@ -203,8 +203,25 @@ def get_acc_warning_meb(self, acc_hud):
   return False
   
 class MultiplicativeUnwindPID(PIDController):
-  def __init__(self, k_p, k_i, k_f=0., k_d=0., pos_limit=1e308, neg_limit=-1e308, rate=100):
+  def __init__(self, k_p, k_i, k_f=0., k_d=0., pos_limit=1e308, neg_limit=-1e308, rate=100, min_cmd=1e-10, ki_red_time=1.0):
     super().__init__(k_p, k_i, k_f=k_f, k_d=k_d, pos_limit=pos_limit, neg_limit=neg_limit, rate=rate)
+    self.min_cmd = abs(min_cmd)
+    self.ki_red_time = float(ki_red_time)
+    self.override_prev = False
+    self.i_unwind_factor = 1.0
+
+  def _calc_unwind_factor(self, override):
+    if not override or self.override_prev:
+      return
+    if self.ki_red_time <= 0.0:
+      self.i_unwind_factor = 1.0
+      return
+    if abs(self.i) <= self.min_cmd:
+      self.i_unwind_factor = 0.0
+      return
+    steps = max(int(self.ki_red_time * self.rate), 1)
+    factor = (self.min_cmd / abs(self.i)) ** (1.0 / steps)
+    self.i_unwind_factor = min(factor, 1.0)
     
   def update(self, error, error_rate=0.0, speed=0.0, override=False, feedforward=0., freeze_integrator=False):
     self.speed = speed
@@ -214,8 +231,9 @@ class MultiplicativeUnwindPID(PIDController):
     self.d = error_rate * self.k_d
 
     if override:
-      self.i *= (1.0 - self.i_unwind_rate)
-      if abs(self.i) < 1e-10:
+      self._calc_unwind_factor(override)
+      self.i *= self.i_unwind_factor
+      if abs(self.i) < self.min_cmd:
         self.i = 0.0
     else:
       if not freeze_integrator:
@@ -229,6 +247,7 @@ class MultiplicativeUnwindPID(PIDController):
     control = self.p + self.i + self.d + self.f
 
     self.control = np.clip(control, self.neg_limit, self.pos_limit)
+    self.override_prev = override
     return self.control
 
 class LatControlCurvature():
