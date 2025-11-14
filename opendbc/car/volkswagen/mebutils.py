@@ -207,6 +207,7 @@ class MultiplicativeUnwindPID(PIDController):
     super().__init__(k_p, k_i, k_f=k_f, k_d=k_d, pos_limit=pos_limit, neg_limit=neg_limit, rate=rate)
     self.min_cmd = abs(min_cmd)
     self.ki_red_time = float(ki_red_time)
+    self.rate = rate
     self.override_prev = False
     self.i_unwind_factor = 1.0
 
