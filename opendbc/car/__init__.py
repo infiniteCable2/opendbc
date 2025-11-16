@@ -10,10 +10,9 @@ from opendbc.car.docs_definitions import CarDocs, ExtraCarDocs
 
 DT_CTRL = 0.01  # car state and control loop timestep (s)
 
-ACCELERATION_DUE_TO_GRAVITY = 9.81  # m/s^2
-
 # kg of standard extra cargo to count for drive, gas, etc...
 STD_CARGO_KG = 136.
+ACCELERATION_DUE_TO_GRAVITY = 9.81  # m/s^2
 
 ButtonType = structs.CarState.ButtonEvent.Type
 
