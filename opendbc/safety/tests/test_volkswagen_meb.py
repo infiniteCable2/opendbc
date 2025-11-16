@@ -5,7 +5,7 @@ import numpy as np
 from opendbc.car.structs import CarParams
 from opendbc.safety.tests.libsafety import libsafety_py
 import opendbc.safety.tests.common as common
-from opendbc.safety.tests.common import CANPackerPanda
+from opendbc.safety.tests.common import CANPackerSafety
 from opendbc.car.volkswagen.values import VolkswagenSafetyFlags
 from opendbc.car.lateral import ISO_LATERAL_ACCEL, ISO_LATERAL_JERK
 
@@ -29,7 +29,7 @@ MSG_EA_01         = 0x1A4
 MSG_EA_02         = 0x1F0
 
 
-class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSteeringSafetyTest):
+class TestVolkswagenMebSafetyBase(common.CarSafetyTest, common.CurvatureSteeringSafetyTest):
   RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02, MSG_EA_02),
                              2: (MSG_KLR_01,)}
   
@@ -46,12 +46,12 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
   def _speed_msg(self, speed_mps: float):
     spd_kph = speed_mps * 3.6
     values = { "HL_Radgeschw": spd_kph, "HR_Radgeschw": spd_kph, "VL_Radgeschw": spd_kph, "VR_Radgeschw": spd_kph}
-    return self.packer.make_can_msg_panda("ESC_51", 0, values)
+    return self.packer.make_can_msg_safety("ESC_51", 0, values)
 
   # Brake pedal switch
   def _motor_14_msg(self, brake):
     values = {"MO_Fahrer_bremst": brake}
-    return self.packer.make_can_msg_panda("Motor_14", 0, values)
+    return self.packer.make_can_msg_safety("Motor_14", 0, values)
 
   def _user_brake_msg(self, brake):
     return self._motor_14_msg(brake)
@@ -59,14 +59,14 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
   # Driver throttle input
   def _user_gas_msg(self, gas):
     values = {"Accelerator_Pressure": gas}
-    return self.packer.make_can_msg_panda("Motor_54", 0, values)
+    return self.packer.make_can_msg_safety("Motor_54", 0, values)
 
   def _vehicle_moving_msg(self, speed_mps: float):
     return self._speed_msg(speed_mps)
 
   def _curvature_meas_msg(self, curvature):
     values = {"Curvature": abs(curvature), "Curvature_VZ": curvature > 0}
-    return self.packer.make_can_msg_panda("QFK_01", 0, values)
+    return self.packer.make_can_msg_safety("QFK_01", 0, values)
 
   def _curvature_cmd_msg(self, curvature, steer_req=1, power=50):
     values = {
@@ -75,7 +75,7 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
       "RequestStatus": 4 if steer_req else 0,
       "Power": power,
     }
-    return self.packer.make_can_msg_panda("HCA_03", 0, values)
+    return self.packer.make_can_msg_safety("HCA_03", 0, values)
     
   # ACC engagement status
   def _tsk_status_msg(self, enable, main_switch=True):
@@ -84,7 +84,7 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
     else:
       tsk_status = 0
     values = {"TSK_Status": tsk_status}
-    return self.packer.make_can_msg_panda("Motor_51", 0, values)
+    return self.packer.make_can_msg_safety("Motor_51", 0, values)
 
   def _pcm_status_msg(self, enable):
     return self._tsk_status_msg(enable)
@@ -92,16 +92,16 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
   # Driver steering input torque
   def _torque_driver_msg(self, torque):
     values = {"EPS_Lenkmoment": abs(torque), "EPS_VZ_Lenkmoment": torque < 0}
-    return self.packer.make_can_msg_panda("LH_EPS_03", 0, values)
+    return self.packer.make_can_msg_safety("LH_EPS_03", 0, values)
 
   # Cruise control buttons
   def _button_msg(self, cancel=0, resume=0, set=0, bus=2):
     values = {"GRA_Abbrechen": cancel, "GRA_Tip_Setzen": set, "GRA_Tip_Wiederaufnahme": resume}
-    return self.packer.make_can_msg_panda("GRA_ACC_01", bus, values)
+    return self.packer.make_can_msg_safety("GRA_ACC_01", bus, values)
 
   def _accel_msg(self, accel):
     values = {"ACC_Sollbeschleunigung_02": accel}
-    return self.packer.make_can_msg_panda("ACC_18", 0, values)
+    return self.packer.make_can_msg_safety("ACC_18", 0, values)
 
   def test_curvature_measurements(self):
     self._rx(self._curvature_meas_msg(0.15))
@@ -136,7 +136,7 @@ class TestVolkswagenMebStockSafety(TestVolkswagenMebSafetyBase):
                            2: [MSG_HCA_03, MSG_LDW_02, MSG_EA_02]}
 
   def setUp(self):
-    self.packer = CANPackerPanda("vw_meb")
+    self.packer = CANPackerSafety("vw_meb")
     self.safety = libsafety_py.libsafety
     self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagenMeb, 0)
     self.safety.init_tests()
@@ -153,7 +153,7 @@ class TestVolkswagenMebStockSafety(TestVolkswagenMebSafetyBase):
 
 class TestVolkswagenMqbEvoStockSafety(TestVolkswagenMebStockSafety):  
   def setUp(self):
-    self.packer = CANPackerPanda("vw_mqbevo")
+    self.packer = CANPackerSafety("vw_mqbevo")
     self.safety = libsafety_py.libsafety
     self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagenMqbEvo, VolkswagenSafetyFlags.NO_GAS_OFFSET)
     self.safety.init_tests()
@@ -173,7 +173,7 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
   INACTIVE_ACCEL = 3.01
   
   def setUp(self):
-    self.packer = CANPackerPanda("vw_meb")
+    self.packer = CANPackerSafety("vw_meb")
     self.safety = libsafety_py.libsafety
     self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagenMeb, VolkswagenSafetyFlags.LONG_CONTROL)
     self.safety.init_tests()
@@ -238,7 +238,7 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
 
 class TestVolkswagenMqbEvoLongSafety(TestVolkswagenMebLongSafety): 
   def setUp(self):
-    self.packer = CANPackerPanda("vw_mqbevo")
+    self.packer = CANPackerSafety("vw_mqbevo")
     self.safety = libsafety_py.libsafety
     safety_param = VolkswagenSafetyFlags.LONG_CONTROL + VolkswagenSafetyFlags.NO_GAS_OFFSET
     self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagenMqbEvo, safety_param)

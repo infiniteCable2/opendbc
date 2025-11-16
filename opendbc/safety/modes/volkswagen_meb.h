@@ -1,6 +1,6 @@
 #pragma once
 
-#include "opendbc/safety/safety_declarations.h"
+#include "opendbc/safety/declarations.h"
 #include "opendbc/safety/modes/volkswagen_common.h"
 
 #define MSG_ESC_51           0xFCU    // RX, for wheel speeds
@@ -220,12 +220,7 @@ static void volkswagen_meb_rx_hook(const CANPacket_t *msg) {
     // Signal: LH_EPS_03.EPS_Lenkmoment (absolute torque)
     // Signal: LH_EPS_03.EPS_VZ_Lenkmoment (direction)
     if (msg->addr == MSG_LH_EPS_03) {
-      int torque_driver_new = msg->data[5] | ((msg->data[6] & 0x1FU) << 8);
-      int sign_driver_torque = (msg->data[6] & 0x80U) >> 7;
-      if (sign_driver_torque == 1) {
-        torque_driver_new *= -1;
-      }
-      update_sample(&torque_driver, torque_driver_new);
+      update_sample(&torque_driver, volkswagen_mlb_mqb_driver_input_torque(msg));
     }
 
     // Update cruise state
