@@ -408,7 +408,7 @@ class CarState(CarStateBase, MadsCarState):
       if self.CP.networkLocation == NetworkLocation.gateway:
         ret.batteryDetails.heaterActive = bool(main_cp.vl["MEB_HVEM_03"]["PTC_ON"]) # battery heater active
         ret.batteryDetails.voltage      = main_cp.vl["MEB_HVEM_01"]["Battery_Voltage"] # battery voltage
-        ret.batteryDetails.capacity     = main_cp.vl["BMS_04"]["BMS_Kapazitaet_02"] * 355 # EV battery capacity Ah * nominal voltage cupra born WattHours
+        ret.batteryDetails.capacity     = main_cp.vl["BMS_04"]["BMS_Kapazitaet_02"] * ret.batteryDetails.voltage # EV battery capacity WattHours
         ret.batteryDetails.soc          = ret.batteryDetails.charge / ret.batteryDetails.capacity * 100 if ret.batteryDetails.capacity > 0 else 0 # battery SoC in percent
         ret.batteryDetails.power        = main_cp.vl["MEB_HVEM_01"]["Engine_Power"] # engine power output
         ret.batteryDetails.temperature  = main_cp.vl["DCDC_03"]["DC_Temperatur"] # dcdc converter temperature
