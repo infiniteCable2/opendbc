@@ -162,9 +162,9 @@ BO_ 190 MEB_HVEM_01: 48 XXX
  SG_ In_Motion : 68|1@1+ (1,0) [0|3] "" XXX
  SG_ Standstill : 71|1@0+ (1,0) [0|1] "" XXX
  SG_ Unknown_04 : 72|10@1+ (1,0) [0|255] "" XXX
- SG_ Battery_Voltage : 86|12@1+ (0.24,0) [0|3] "Volt" XXX
+ SG_ Voltage : 86|12@1+ (0.24,0) [0|3] "V" XXX
  SG_ Unknown_01 : 100|9@1+ (1,0) [0|7] "" XXX
- SG_ Battery_Voltage_02 : 113|11@1+ (0.24,0) [0|127] "Volt" XXX
+ SG_ Battery_Voltage : 113|13@1+ (0.065,0) [0|127] "V" XXX
  SG_ Engine_Status : 296|2@1+ (1,0) [0|3] "" XXX
  SG_ Inactive : 300|1@0+ (1,0) [0|1] "" XXX
  SG_ Inactive_02 : 303|1@0+ (1,0) [0|1] "" XXX
