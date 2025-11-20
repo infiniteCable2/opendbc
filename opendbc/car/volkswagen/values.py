@@ -249,6 +249,7 @@ class VolkswagenMQBPlatformConfig(PlatformConfig):
   # on camera-integrated cars, as we lose too many ECUs to reliably identify the vehicle
   chassis_codes: set[str] = field(default_factory=set)
   wmis: set[WMI] = field(default_factory=set)
+  model_years: set[str] = field(default_factory=set)
 
 
 @dataclass
@@ -269,6 +270,7 @@ class VolkswagenMQBevoPlatformConfig(PlatformConfig):
   dbc_dict: DbcDict = field(default_factory=lambda: {Bus.pt: 'vw_mqbevo', Bus.radar: 'vw_mqbevo'})
   chassis_codes: set[str] = field(default_factory=set)
   wmis: set[WMI] = field(default_factory=set)
+  model_years: set[str] = field(default_factory=set)
 
   def init(self):
     self.flags |= VolkswagenFlags.MQB_EVO
