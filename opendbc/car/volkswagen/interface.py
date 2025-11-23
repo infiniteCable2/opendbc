@@ -187,7 +187,7 @@ class CarInterface(CarInterfaceBase):
                        
     return ret
     
-    @staticmethod
+  @staticmethod
   def init(CP, CP_SP, can_recv, can_send, communication_control=None):
     # 0x80 silences response
     if communication_control is None:
