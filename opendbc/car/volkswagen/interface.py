@@ -1,5 +1,6 @@
 from opendbc.car import get_safety_config, structs, uds
 from opendbc.car.interfaces import CarInterfaceBase
+from opendbc.car.disable_ecu import disable_ecu
 from opendbc.car.volkswagen.carcontroller import CarController
 from opendbc.car.volkswagen.carstate import CarState
 from opendbc.car.volkswagen.values import CanBus, CAR, NetworkLocation, TransmissionType, VolkswagenFlags, VolkswagenSafetyFlags
