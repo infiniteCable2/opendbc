@@ -136,7 +136,7 @@ static safety_config volkswagen_meb_init(uint16_t param) {
   static const CanMsg VOLKSWAGEN_MEB_STOCK_TX_MSGS[] = {{MSG_HCA_03, 0, 24, .check_relay = true}, {MSG_GRA_ACC_01, 0, 8, .check_relay = false},
                                                        {MSG_EA_01, 0, 8, .check_relay = false}, {MSG_EA_02, 0, 8, .check_relay = true},
                                                        {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},
-                                                       {MSG_GRA_ACC_01, 2, 8, .check_relay = false}, {MSG_LDW_02, 0, 8, .check_relay = true}
+                                                       {MSG_GRA_ACC_01, 2, 8, .check_relay = false}, {MSG_LDW_02, 0, 8, .check_relay = true},
 													   {MSG_DIAG_RADAR, 0, 8, .check_relay = false}, {MSG_DIAG_RADAR, 2, 8, .check_relay = false},
 													   {MSG_AWV_03, 0, 48, .check_relay = false}, {MSG_AWV_03, 2, 48, .check_relay = false}};
   
@@ -144,7 +144,7 @@ static safety_config volkswagen_meb_init(uint16_t param) {
 													   {MSG_MEB_ACC_01, 0, 48, .check_relay = true}, {MSG_ACC_18, 0, 32, .check_relay = true},
                                                        {MSG_EA_01, 0, 8, .check_relay = false}, {MSG_EA_02, 0, 8, .check_relay = true},
                                                        {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},
-                                                       {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true}
+                                                       {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true},
 													   {MSG_DIAG_RADAR, 0, 8, .check_relay = false}, {MSG_DIAG_RADAR, 2, 8, .check_relay = false},
 													   {MSG_AWV_03, 0, 48, .check_relay = false}, {MSG_AWV_03, 2, 48, .check_relay = false}};
 
