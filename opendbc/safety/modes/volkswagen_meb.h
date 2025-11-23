@@ -18,7 +18,7 @@
 #define MSG_EA_02            0x1F0U   // TX, for EA mitigation
 #define MSG_KLR_01           0x25DU   // TX, for capacitive steering wheel
 #define MSG_DIAG_RADAR       0x757U   // TX, for diagnostic messages for radar
-#define MSG_AWV_03           0xDBU    // TX, for diagnostic messages for radar
+#define MSG_AWV_03           0xDBU    // TX, AEB message replacement
 
 // PANDA SAFETY SHOULD INTRODUCE A .ignore_length flag (ALLOWED ONLY IF CHECKSUM CHECK IS REQUIRED TO BE SAFE)
 #define VW_MEB_COMMON_RX_CHECKS                                                                     \

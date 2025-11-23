@@ -196,7 +196,7 @@ class CarInterface(CarInterfaceBase):
 
     if CP.openpilotLongitudinalControl and CP.flags & VolkswagenFlags.DISABLE_RADAR:
       if CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
-        addr, bus = 0x757, CanBus(CP).pt if CP.networkLocation == NetworkLocation.gateway else CanBus(CP).cam
+        addr, bus = 0x757, CanBus(CP).pt if CP.networkLocation == NetworkLocation.fwdCamera else CanBus(CP).cam
         disable_ecu(can_recv, can_send, bus=bus, addr=addr, com_cont_req=communication_control)
 
   @staticmethod
