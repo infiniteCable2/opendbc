@@ -215,6 +215,12 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
                                                              acc_control, stopping, starting, CS.esp_hold_confirmation))
       self.accel_last = accel
 
+    # **** AEB Controls ***************************************************** #
+      
+    if self.frame % 100 == 0 and self.CP.flags & VolkswagenFlags.DISABLE_RADAR:
+      if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
+        can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.cam))
+
       #if self.aeb_available:
       #  if self.frame % self.CCP.AEB_CONTROL_STEP == 0:
       #    can_sends.append(self.CCS.create_aeb_control(self.packer_pt, False, False, 0.0))

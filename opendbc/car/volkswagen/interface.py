@@ -82,7 +82,10 @@ class CarInterface(CarInterfaceBase):
         ret.flags |= VolkswagenFlags.STOCK_DIAGNOSE_01_PRESENT.value
 
       if 0x3DC in fingerprint[0]:  # Gatway_73
-       ret.flags |= VolkswagenFlags.ALT_GEAR.value
+        ret.flags |= VolkswagenFlags.ALT_GEAR.value
+       
+      #if ret.networkLocation = NetworkLocation.fwdCamera:
+      ret.flags |= VolkswagenFlags.DISABLE_RADAR.value # testing
 
     elif ret.flags & VolkswagenFlags.MLB:
       # Set global MLB parameters
@@ -134,7 +137,7 @@ class CarInterface(CarInterfaceBase):
 
     # Global longitudinal tuning defaults, can be overridden per-vehicle
 
-    if ret.flags & VolkswagenFlags.MEB:
+    if ret.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
       ret.longitudinalActuatorDelay = 0.5
       ret.radarDelay = 0.8
       #ret.longitudinalTuning.kpBP = [0., 5.]
@@ -183,3 +186,19 @@ class CarInterface(CarInterfaceBase):
     ret.intelligentCruiseButtonManagementAvailable = stock_cp.pcmCruise
                        
     return ret
+    
+    @staticmethod
+  def init(CP, CP_SP, can_recv, can_send, communication_control=None):
+    # 0x80 silences response
+    if communication_control is None:
+      communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.DISABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
+
+    if CP.openpilotLongitudinalControl and CP.flags & VolkswagenFlags.DISABLE_RADAR:
+      if CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
+        addr, bus = 0x757, CanBus(CP).pt if CP.networkLocation == NetworkLocation.gateway else CanBus(CP).cam
+        disable_ecu(can_recv, can_send, bus=bus, addr=addr, com_cont_req=communication_control)
+
+  @staticmethod
+  def deinit(CP, can_recv, can_send):
+    communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_ENABLE_TX, uds.MESSAGE_TYPE.NORMAL])
+    CarInterface.init(CP, can_recv, can_send, communication_control)
