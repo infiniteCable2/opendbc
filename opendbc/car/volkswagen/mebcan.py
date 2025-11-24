@@ -361,13 +361,17 @@ def create_ea_hud(packer, bus):
 
 def create_ecu_disable(addr, bus):
   commands = []
-  
-  payload = [0x02, 0x10, 0x03]
-  payload.extend([0x00] * (8 - len(payload)))
-  commands.append(CanData(addr, bytes(payload), bus))
 
-  payload = [0x03, 0x28, 0x02, 0x01]  
-  payload.extend([0x00] * (8 - len(payload)))
+  payload = [0x02, 0x10, 0x02]
+  payload.extend([0x00] * (8 - len(dat)))
   commands.append(CanData(addr, bytes(payload), bus))
+  
+  #payload = [0x02, 0x10, 0x03]
+  #payload.extend([0x00] * (8 - len(payload)))
+  #commands.append(CanData(addr, bytes(payload), bus))
+
+  #payload = [0x03, 0x28, 0x02, 0x01]  
+  #payload.extend([0x00] * (8 - len(payload)))
+  #commands.append(CanData(addr, bytes(payload), bus))
   
   return commands
