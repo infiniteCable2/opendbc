@@ -206,6 +206,12 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
                                                            self.long_limit_control.get_upper_limit() if CC.longComfortMode else 0., self.long_limit_control.get_lower_limit() if CC.longComfortMode else 0.,
                                                            accel, acc_control, acc_hold_type, stopping, starting, CS.esp_hold_confirmation,
                                                            CS.out.vEgoRaw * CV.MS_TO_KPH, long_override, CS.travel_assist_available))
+        # TESTING SEND ACC BOTH DIRECTIONS
+        can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, self.CAN.cam, self.CP, CS.acc_type, CC.enabled,
+                                                           self.long_jerk_control.get_jerk_up() if CC.longComfortMode else 4.0, self.long_jerk_control.get_jerk_down() if CC.longComfortMode else 4.0,
+                                                           self.long_limit_control.get_upper_limit() if CC.longComfortMode else 0., self.long_limit_control.get_lower_limit() if CC.longComfortMode else 0.,
+                                                           accel, acc_control, acc_hold_type, stopping, starting, CS.esp_hold_confirmation,
+                                                           CS.out.vEgoRaw * CV.MS_TO_KPH, long_override, CS.travel_assist_available))
 
       else:
         starting = actuators.longControlState == LongCtrlState.pid and (CS.esp_hold_confirmation or CS.out.vEgo < self.CP.vEgoStopping)
@@ -218,16 +224,16 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
 
     # **** AEB Controls ***************************************************** #
       
-    if self.frame % 100 == 0 and self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
-      if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
-        can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.cam))
+    #if self.frame % 100 == 0 and self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
+    #  if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
+    #    can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.cam))
         
     # **** Radar disable **************************************************** #    
     
     if self.frame % 100 == 0 and self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
         addr, bus = 0x757, self.CAN.pt if self.CP.networkLocation == NetworkLocation.fwdCamera else self.CAN.cam
-        can_sends.append(self.CCS.create_ecu_enable(addr, bus))
+        can_sends.append(self.CCS.create_ecu_disable(addr, bus))
 
       #if self.aeb_available:
       #  if self.frame % self.CCP.AEB_CONTROL_STEP == 0:
