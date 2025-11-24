@@ -13,6 +13,7 @@ from opendbc.sunnypilot.car.volkswagen.icbm import IntelligentCruiseButtonManage
 
 VisualAlert = structs.CarControl.HUDControl.VisualAlert
 LongCtrlState = structs.CarControl.Actuators.LongControlState
+NetworkLocation = structs.CarParams.NetworkLocation
 
 
 class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterface):
@@ -225,7 +226,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     
     if self.frame % 100 == 0 and self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
-        addr, bus = 0x757, self.CAN.pt if CP.networkLocation == NetworkLocation.fwdCamera else self.CAN.cam
+        addr, bus = 0x757, self.CAN.pt if self.CP.networkLocation == NetworkLocation.fwdCamera else self.CAN.cam
         can_sends.append(make_tester_present_msg(addr, bus, suppress_response=True))
 
       #if self.aeb_available:
