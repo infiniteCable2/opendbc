@@ -1,6 +1,5 @@
-from opendbc.car import get_safety_config, structs, uds
+from opendbc.car import get_safety_config, structs
 from opendbc.car.interfaces import CarInterfaceBase
-from opendbc.car.disable_ecu import disable_ecu
 from opendbc.car.volkswagen.carcontroller import CarController
 from opendbc.car.volkswagen.carstate import CarState
 from opendbc.car.volkswagen.values import CanBus, CAR, NetworkLocation, TransmissionType, VolkswagenFlags, VolkswagenSafetyFlags
@@ -187,19 +186,3 @@ class CarInterface(CarInterfaceBase):
     ret.intelligentCruiseButtonManagementAvailable = stock_cp.pcmCruise
                        
     return ret
-    
-  @staticmethod
-  def init(CP, CP_SP, can_recv, can_send, communication_control=None):
-    # 0x80 silences response
-    if communication_control is None:
-      communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.DISABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
-
-    if CP.openpilotLongitudinalControl and CP.flags & VolkswagenFlags.DISABLE_RADAR:
-      if CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
-        addr, bus = 0x757, CanBus(CP).pt if CP.networkLocation == NetworkLocation.fwdCamera else CanBus(CP).cam
-        disable_ecu(can_recv, can_send, bus=bus, addr=addr, com_cont_req=communication_control)
-
-  @staticmethod
-  def deinit(CP, can_recv, can_send):
-    communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_ENABLE_TX, uds.MESSAGE_TYPE.NORMAL])
-    CarInterface.init(CP, can_recv, can_send, communication_control)
