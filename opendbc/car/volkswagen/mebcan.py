@@ -357,3 +357,16 @@ def create_ea_hud(packer, bus):
   }
 
   return packer.make_can_msg("EA_02", bus, values)
+
+def create_ecu_disable(addr, bus):
+  commands = []
+  
+  payload = [0x02, 0x10, 0x03]
+  payload.extend([0x00] * (8 - len(payload)))
+  commands.append(CanData(addr, bytes(payload), bus))
+
+  payload = [0x03, 0x28, 0x02, 0x01]  
+  payload.extend([0x00] * (8 - len(payload)))
+  commands.append(CanData(addr, bytes(payload), bus))
+  
+  return commands
