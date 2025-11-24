@@ -362,14 +362,17 @@ def create_ea_hud(packer, bus):
 def create_ecu_disable(addr, bus):
   commands = []
 
+  # tester present
+  payload = [0x02, 0x10, 0x03]
+  payload.extend([0x00] * (8 - len(payload)))
+  commands.append(CanData(addr, bytes(payload), bus))
+
+  # programming
   payload = [0x02, 0x10, 0x02]
   payload.extend([0x00] * (8 - len(payload)))
   commands.append(CanData(addr, bytes(payload), bus))
-  
-  #payload = [0x02, 0x10, 0x03]
-  #payload.extend([0x00] * (8 - len(payload)))
-  #commands.append(CanData(addr, bytes(payload), bus))
 
+  # communication control disable TX
   #payload = [0x03, 0x28, 0x02, 0x01]  
   #payload.extend([0x00] * (8 - len(payload)))
   #commands.append(CanData(addr, bytes(payload), bus))
