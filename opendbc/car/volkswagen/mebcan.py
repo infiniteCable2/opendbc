@@ -363,7 +363,7 @@ def create_ecu_disable(addr, bus):
   commands = []
 
   payload = [0x02, 0x10, 0x02]
-  payload.extend([0x00] * (8 - len(dat)))
+  payload.extend([0x00] * (8 - len(payload)))
   commands.append(CanData(addr, bytes(payload), bus))
   
   #payload = [0x02, 0x10, 0x03]
