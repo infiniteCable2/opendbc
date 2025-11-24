@@ -4,6 +4,13 @@ from opendbc.car.common.filter_simple import FirstOrderFilter
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.common.pid import PIDController
 from opendbc.car import DT_CTRL
+from opendbc.car.isotp_parallel_query import IsoTpParallelQuery
+from opendbc.car import uds
+
+EXT_DIAG_REQUEST = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
+EXT_DIAG_RESPONSE = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
+
+COM_CONT_RESPONSE = b''
 
 
 class LongControlJerk():
@@ -201,6 +208,28 @@ def get_acc_warning_meb(self, acc_hud):
       and acc_hud["ACC_Display_Prio"] == 0): # this warning has highest priority
     return True
   return False
+
+def _radar_comm_control(can_recv, can_send, bus: int, addr: int, control_type: uds.CONTROL_TYPE,
+                        message_type: uds.MESSAGE_TYPE, use_extended: bool) -> None:
+  try:
+    reqs = []
+    resps = []
+
+    if use_extended:
+      reqs.append(EXT_DIAG_REQUEST)
+      resps.append(EXT_DIAG_RESPONSE)
+
+    com_cont_req = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, control_type, message_type])
+    reqs.append(com_cont_req)
+    resps.append(COM_CONT_RESPONSE)
+
+    carlog.warning(f"radar_comm_control: bus={bus}, addr={hex(addr)}, "
+                   f"ctrl={control_type.name}, msg={message_type.name}, ext={use_extended}")
+
+    query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr, None)], reqs, resps)
+    query.get_data(0.1)
+  except Exception:
+    return
   
 class MultiplicativeUnwindPID(PIDController):
   def __init__(self, k_p, k_i, k_f=0., k_d=0., pos_limit=1e308, neg_limit=-1e308, rate=100, min_cmd=1e-10, ki_red_time=1.0):
