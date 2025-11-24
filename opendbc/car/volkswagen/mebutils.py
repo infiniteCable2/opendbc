@@ -209,8 +209,8 @@ def get_acc_warning_meb(self, acc_hud):
     return True
   return False
 
-def _radar_comm_control(can_recv, can_send, bus: int, addr: int, control_type: uds.CONTROL_TYPE,
-                        message_type: uds.MESSAGE_TYPE, use_extended: bool) -> None:
+def comm_control(can_recv, can_send, bus: int, addr: int, control_type: uds.CONTROL_TYPE,
+                 message_type: uds.MESSAGE_TYPE, use_extended: bool) -> None:
   try:
     reqs = []
     resps = []
