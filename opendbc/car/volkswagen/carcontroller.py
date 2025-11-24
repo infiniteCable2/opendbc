@@ -227,7 +227,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     if self.frame % 100 == 0 and self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
         addr, bus = 0x757, self.CAN.pt if self.CP.networkLocation == NetworkLocation.fwdCamera else self.CAN.cam
-        can_sends.append(make_tester_present_msg(addr, bus, suppress_response=True))
+        can_sends.append(self.CCS.create_ecu_enable(addr, bus))
 
       #if self.aeb_available:
       #  if self.frame % self.CCP.AEB_CONTROL_STEP == 0:
