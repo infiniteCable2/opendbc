@@ -18,6 +18,7 @@
 #define MSG_EA_02            0x1F0U   // TX, for EA mitigation
 #define MSG_KLR_01           0x25DU   // TX, for capacitive steering wheel
 #define MSG_DIAG_RADAR       0x757U   // TX, for diagnostic messages for radar
+#define MSG_DIAGNOSTIC       0x700U   // TX, for general tester present on bus
 #define MSG_AWV_03           0xDBU    // TX, AEB message replacement
 
 // PANDA SAFETY SHOULD INTRODUCE A .ignore_length flag (ALLOWED ONLY IF CHECKSUM CHECK IS REQUIRED TO BE SAFE)
@@ -138,6 +139,7 @@ static safety_config volkswagen_meb_init(uint16_t param) {
                                                        {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},
                                                        {MSG_GRA_ACC_01, 2, 8, .check_relay = false}, {MSG_LDW_02, 0, 8, .check_relay = true},
 													   {MSG_DIAG_RADAR, 0, 8, .check_relay = false}, {MSG_DIAG_RADAR, 2, 8, .check_relay = false},
+													   {MSG_DIAGNOSTIC, 0, 8, .check_relay = false}, {MSG_DIAGNOSTIC, 2, 8, .check_relay = false},
 													   {MSG_AWV_03, 0, 48, .check_relay = false}, {MSG_AWV_03, 2, 48, .check_relay = false}};
   
   static const CanMsg VOLKSWAGEN_MEB_LONG_TX_MSGS[] = {{MSG_HCA_03, 0, 24, .check_relay = true},
@@ -146,7 +148,12 @@ static safety_config volkswagen_meb_init(uint16_t param) {
                                                        {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},
                                                        {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true},
 													   {MSG_DIAG_RADAR, 0, 8, .check_relay = false}, {MSG_DIAG_RADAR, 2, 8, .check_relay = false},
+													   {MSG_DIAGNOSTIC, 0, 8, .check_relay = false}, {MSG_DIAGNOSTIC, 2, 8, .check_relay = false},
 													   {MSG_AWV_03, 0, 48, .check_relay = false}, {MSG_AWV_03, 2, 48, .check_relay = false}};
+
+  //static const CanMsg VOLKSWAGEN_MEB_RADAR_TX_MSGS[] = {{MSG_DIAG_RADAR, 0, 8, .check_relay = false}, {MSG_DIAG_RADAR, 2, 8, .check_relay = false},
+  //													   {MSG_DIAGNOSTIC, 0, 8, .check_relay = false}, {MSG_DIAGNOSTIC, 2, 8, .check_relay = false},
+  //													   {MSG_AWV_03, 0, 48, .check_relay = false}, {MSG_AWV_03, 2, 48, .check_relay = false}};
 
   static RxCheck volkswagen_meb_rx_checks[] = {
     VW_MEB_COMMON_RX_CHECKS
