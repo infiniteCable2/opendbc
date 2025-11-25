@@ -360,16 +360,16 @@ def create_ea_hud(packer, bus):
   return packer.make_can_msg("EA_02", bus, values)
 
 def create_ecu_disable(addr, bus):
-  commands = []
+  commands: list[CanData] = []
 
   # tester present
-  payload = [0x02, 0x10, 0x03]
-  payload.extend([0x00] * (8 - len(payload)))
-  commands.append(CanData(addr, bytes(payload), bus))
+  #payload = [0x02, 0x10, 0x03]
+  #payload.extend([0x00] * (8 - len(payload)))
+  #commands.append(CanData(addr, bytes(payload), bus))
 
-  # programming
-  payload = [0x02, 0x10, 0x02]
-  payload.extend([0x00] * (8 - len(payload)))
+  # VW programming (VCP flash mode request)
+  # ECU recovers after round about 4-5 seconds when no tester present is sent
+  payload = [0x02, 0x10, 0x02] + [0x55] * 5
   commands.append(CanData(addr, bytes(payload), bus))
 
   # communication control disable TX
