@@ -196,7 +196,7 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def init(CP, CP_SP, can_recv, can_send, communication_control=None):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      #original_radar_mode = CP.radarUnavailable
+      original_radar_mode = CP.radarUnavailable
       CAN = CanBus(CP)
       bus = CAN.cam if CP.networkLocation == NetworkLocation.gateway else CAN.pt
       #addr = 0x757
@@ -238,6 +238,7 @@ class CarInterface(CarInterfaceBase):
 
       if not seen_24f:
         CP.radarUnavailable = True
+        carlog.warning(f"Radar disable by flash mode succeeded")
         return
 
       #for i in range(retry):
@@ -255,7 +256,7 @@ class CarInterface(CarInterfaceBase):
 
       CP.radarUnavailable = original_radar_mode
       CP.flags &= ~VolkswagenFlags.DISABLE_RADAR.value
-      carlog.error(f"Radar disable by flash mode failed after {retry} attempts")
+      carlog.error(f"Radar disable by flash mode failed")
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
