@@ -242,7 +242,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         addr = 0x757
         bus = self.CAN.pt if self.CP.networkLocation == NetworkLocation.fwdCamera else self.CAN.cam
         can_sends.append(make_tester_present_msg(addr, bus, suppress_response=True))
-        can_sends.extend(self.CCS.create_ecu_disable(addr, bus))
+        #can_sends.extend(self.CCS.create_ecu_disable(addr, bus)) # send in car interface init once
 
     # **** HUD Controls ***************************************************** #
 
