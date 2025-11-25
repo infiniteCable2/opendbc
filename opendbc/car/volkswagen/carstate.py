@@ -327,7 +327,7 @@ class CarState(CarStateBase, MadsCarState):
     ret.stockFcw = bool(ext_cp.vl["AWV_03"]["FCW_Active"]) # currently most plausible candidate
     ret.stockAeb = False #bool(pt_cp.vl["VMM_02"]["AEB_Active"]) TODO find correct signal
 
-    self.acc_type                = ext_cp.vl["ACC_18"]["ACC_Typ"] if self.CP.flags & VolkswagenFlags.RADAR_DISABLE else 2 # 2: acc stop and go
+    self.acc_type                = ext_cp.vl["ACC_18"]["ACC_Typ"] if self.CP.flags & VolkswagenFlags.DISABLE_RADAR else 2 # 2: acc stop and go
     self.travel_assist_available = bool(cam_cp.vl["TA_01"]["Travel_Assist_Available"])
 
     ret.cruiseState.available = pt_cp.vl["Motor_51"]["TSK_Status"] in (2, 3, 4, 5)
