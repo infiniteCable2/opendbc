@@ -237,7 +237,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         
     # **** Radar disable **************************************************** #    
     
-    if self.frame % 200 == 0 and self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
+    if self.frame % 100 == 0 and self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
         addr = 0x700 # universal diag tester present destination
         bus = self.CAN.pt if self.CP.networkLocation == NetworkLocation.fwdCamera else self.CAN.cam
