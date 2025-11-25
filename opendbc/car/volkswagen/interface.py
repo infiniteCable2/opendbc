@@ -201,24 +201,24 @@ class CarInterface(CarInterfaceBase):
       bus = CAN.cam if CP.networkLocation == NetworkLocation.gateway else CAN.pt
       addr = 0x757
       volkswagen_rx_offset = 0x6A
-      retry = 5
-      timeout = 1
-      ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
-      ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
+      retry = 3
+      timeout = 2
+      #ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
+      #ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
       flash_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.PROGRAMMING])
-      flash_resp = b""
-
-      # 0) TesterPresent
-      #tp_payload = [0x02, uds.SERVICE_TYPE.TESTER_PRESENT, 0x00]
-      #tp_payload.extend([0x00] * (8 - len(tp_payload)))
+      flash_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.PROGRAMMING])
+      tp_payload = [0x02, uds.SERVICE_TYPE.TESTER_PRESENT, 0x00]
+      tp_payload.extend([0x00] * (8 - len(tp_payload)))
       #can_send([CanData(0x700, bytes(tp_payload), bus)])
 
       for i in range(retry):
         try:
-          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr, None)], [ext_diag_req], [ext_diag_resp], rx_offset=volkswagen_rx_offset)
+          can_send([CanData(0x700, bytes(tp_payload), bus)])
+          #query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr, None)], [ext_diag_req], [ext_diag_resp], rx_offset=volkswagen_rx_offset)
+          #for _, _ in query.get_data(timeout).items():
+          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr, None)], [flash_req], [flash_resp], rx_offset=volkswagen_rx_offset)
           for _, _ in query.get_data(timeout).items():
-            query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr, None)], [flash_req], [flash_resp], rx_offset=volkswagen_rx_offset)
-            query.get_data(0)
+            #query.get_data(0)
             CP.radarUnavailable = True
             carlog.warning(f"Radar disable by flash mode succeeded on attempt {i}")
             return
