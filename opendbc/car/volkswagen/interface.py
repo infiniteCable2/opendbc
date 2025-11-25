@@ -1,3 +1,5 @@
+import time
+
 from opendbc.car import get_safety_config, structs, uds
 from opendbc.car.isotp_parallel_query import IsoTpParallelQuery
 from opendbc.car.can_definitions import CanData
@@ -194,34 +196,62 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def init(CP, CP_SP, can_recv, can_send, communication_control=None):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      original_radar_mode = CP.radarUnavailable
+      #original_radar_mode = CP.radarUnavailable
       CAN = CanBus(CP)
       bus = CAN.cam if CP.networkLocation == NetworkLocation.gateway else CAN.pt
-      addr = 0x757
-      volkswagen_rx_offset = 0x6A
-      retry = 10
-      timeout = 0.1
-      ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
-      ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
-      flash_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.PROGRAMMING])
-      flash_resp = b""
+      #addr = 0x757
+      #volkswagen_rx_offset = 0x6A
+      #retry = 10
+      #timeout = 0.1
+      #ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
+      #ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
+      #flash_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.PROGRAMMING])
+      #flash_resp = b""
 
-      tp_payload = [0x02, uds.SERVICE_TYPE.TESTER_PRESENT, 0x80]
+      # 0) TesterPresent
+      tp_payload = [0x02, uds.SERVICE_TYPE.TESTER_PRESENT, 0x00]
       tp_payload.extend([0x00] * (8 - len(tp_payload)))
       can_send([CanData(0x700, bytes(tp_payload), bus)])
 
-      for i in range(retry):
-        try:
-          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr, None)], [ext_diag_req], [ext_diag_resp], rx_offset=volkswagen_rx_offset)
-          for _, _ in query.get_data(timeout).items():
-            query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr, None)], [flash_req], [flash_resp], rx_offset=volkswagen_rx_offset)
-            query.get_data(0)
-            CP.radarUnavailable = True
-            carlog.warning(f"Radar disable by flash mode succeeded on attempt {i}")
-            return
+      # 1) Extended Session (10 03)
+      ext_payload = [0x02, uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC]
+      ext_payload.extend([0x55] * (8 - len(ext_payload)))
+      can_send([CanData(0x757, bytes(ext_payload), bus)])
+
+      # 2) Programming / Flash Session (10 02)
+      prog_payload = [0x02, uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.PROGRAMMING]
+      prog_payload.extend([0x55] * (8 - len(prog_payload)))
+      can_send([CanData(0x757, bytes(prog_payload), bus)])
+
+      time.sleep(0.2) 
+
+      seen_24f = False
+      timeout_s = 0.5
+      end_t = time.monotonic() + timeout_s
+
+      while time.monotonic() < end_t and not seen_24f:
+        msgs = can_recv() or []
+        for addr, dat, src in msgs:
+          if src == bus and addr == 0x24F:
+            seen_24f = True
+            break
+
+      if not seen_24f:
+        CP.radarUnavailable = True
+        return
+
+      #for i in range(retry):
+      #  try:
+      #    query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr, None)], [ext_diag_req], [ext_diag_resp], rx_offset=volkswagen_rx_offset)
+      #    for _, _ in query.get_data(timeout).items():
+      #      query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr, None)], [flash_req], [flash_resp], rx_offset=volkswagen_rx_offset)
+      #      query.get_data(0)
+      #      CP.radarUnavailable = True
+      #      carlog.warning(f"Radar disable by flash mode succeeded on attempt {i}")
+      #      return
               
-        except Exception:
-          continue
+      #  except Exception:
+      #    continue
 
       CP.radarUnavailable = original_radar_mode
       CP.flags &= ~VolkswagenFlags.DISABLE_RADAR.value
