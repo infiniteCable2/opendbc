@@ -1,4 +1,6 @@
-from opendbc.car import get_safety_config, structs
+from opendbc.car import get_safety_config, structs, uds
+from opendbc.car.isotp_parallel_query import IsoTpParallelQuery
+from opendbc.car.carlog import carlog
 from opendbc.car.interfaces import CarInterfaceBase
 from opendbc.car.volkswagen.carcontroller import CarController
 from opendbc.car.volkswagen.carstate import CarState
@@ -86,7 +88,7 @@ class CarInterface(CarInterfaceBase):
        
       if 1 == 1: #ret.networkLocation = NetworkLocation.fwdCamera:
         ret.flags |= VolkswagenFlags.DISABLE_RADAR.value
-        ret.radarUnavailable = True
+        # ret.radarUnavailable = True
 
     elif ret.flags & VolkswagenFlags.MLB:
       # Set global MLB parameters
@@ -187,3 +189,39 @@ class CarInterface(CarInterfaceBase):
     ret.intelligentCruiseButtonManagementAvailable = stock_cp.pcmCruise
                        
     return ret
+
+  @staticmethod
+  def init(CP, CP_SP, can_recv, can_send, communication_control=None):
+    if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
+      if CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
+        original_radar_mode = CP.radarUnavailable
+        CAN = CanBus(CP)
+        bus = CAN.pt if CP.networkLocation == NetworkLocation.gateway else CAN.cam
+        addr = 0x757
+        ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
+        ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
+        flash_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.PROGRAMMING])
+        flash_resp = b""
+        retry = 10
+        timeout = 0.1
+
+        for i in range(retry):
+          try:
+            query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr, None)], [ext_diag_req], [ext_diag_resp])
+            for _, _ in query.get_data(timeout).items():
+              query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr, None)], [flash_req], [flash_resp])
+              query.get_data(0)
+              CP.radarUnavailable = True
+              carlog.warning(f"Radar disable by flash mode succeeded on attempt {i}")
+              return
+              
+          except Exception:
+            continue
+
+        CP.radarUnavailable = original_radar_mode
+        CP.flags &= ~VolkswagenFlags.DISABLE_RADAR
+        carlog.error(f"Radar disable by flash mode failed after {retry} attempts")
+
+  @staticmethod
+  def deinit(CP, can_recv, can_send):
+    return # nothing to do, ecu flash mode disables when no tester present is sent (in carcontroller)
