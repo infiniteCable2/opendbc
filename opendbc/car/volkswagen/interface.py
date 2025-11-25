@@ -195,15 +195,19 @@ class CarInterface(CarInterfaceBase):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
       original_radar_mode = CP.radarUnavailable
       CAN = CanBus(CP)
-      bus = CAN.pt if CP.networkLocation == NetworkLocation.gateway else CAN.cam
+      bus = CAN.cam if CP.networkLocation == NetworkLocation.gateway else CAN.pt
       addr = 0x757
       volkswagen_rx_offset = 0x6A
+      retry = 10
+      timeout = 0.1
       ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
       ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
       flash_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.PROGRAMMING])
       flash_resp = b""
-      retry = 10
-      timeout = 0.1
+
+      tp_payload = [0x02, uds.SERVICE_TYPE.TESTER_PRESENT, 0x80]
+      tp_payload.extend([0x00] * (8 - len(tp_payload)))
+      can_send(0x700, bytes(tp_payload), bus)
 
       for i in range(retry):
         try:
