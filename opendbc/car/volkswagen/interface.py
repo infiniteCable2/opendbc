@@ -1,5 +1,6 @@
 from opendbc.car import get_safety_config, structs, uds
 from opendbc.car.isotp_parallel_query import IsoTpParallelQuery
+from opendbc.car.can_definitions import CanData
 from opendbc.car.carlog import carlog
 from opendbc.car.interfaces import CarInterfaceBase
 from opendbc.car.volkswagen.carcontroller import CarController
@@ -207,7 +208,7 @@ class CarInterface(CarInterfaceBase):
 
       tp_payload = [0x02, uds.SERVICE_TYPE.TESTER_PRESENT, 0x80]
       tp_payload.extend([0x00] * (8 - len(tp_payload)))
-      can_send(0x700, bytes(tp_payload), bus)
+      can_send([CanData(0x700, bytes(tp_payload), bus)])
 
       for i in range(retry):
         try:
