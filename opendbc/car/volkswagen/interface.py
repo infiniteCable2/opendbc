@@ -230,10 +230,14 @@ class CarInterface(CarInterfaceBase):
       end_t = time.monotonic() + timeout_s
 
       while time.monotonic() < end_t and not seen_24f:
-        msgs = can_recv() or []
-        for addr, dat, src in msgs:
-          if src == bus and addr == 0x24F:
-            seen_24f = True
+        msgs_per_bus = can_recv() or []   # -> list[list[CanData]]
+
+        for bus_msgs in msgs_per_bus:
+          for msg in bus_msgs:
+            if msg.src == bus and msg.address == 0x24F:
+              seen_24f = True
+              break
+          if seen_24f:
             break
 
       if not seen_24f:
