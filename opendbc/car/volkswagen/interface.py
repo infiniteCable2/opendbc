@@ -85,7 +85,7 @@ class CarInterface(CarInterfaceBase):
        ret.flags |= VolkswagenFlags.ALT_GEAR.value
 
       if 0x12DD54A7 in fingerprint[2]: # traffic sign detection
-        ret.flags |= VolkswagenFlags.STOCK_VZE_PRESENT.value
+        ret.flags |= VolkswagenFlags.STOCK_VZE_PRESENT.value # model year mqbevo 2026 do not have 0x24F -> TODO
 
     else:
       # Set global MQB parameters
