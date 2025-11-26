@@ -233,6 +233,7 @@ class VolkswagenFlags(IntFlag):
   STOCK_PSD_06_PRESENT = 512
   STOCK_DIAGNOSE_01_PRESENT = 1024
   ALT_GEAR = 32
+  STOCK_VZE_PRESENT = 2048
 
   # Static flags
   PQ = 2
