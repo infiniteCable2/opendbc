@@ -484,7 +484,7 @@ class CarState(CarStateBase, MadsCarState):
     return {
        Bus.pt: CANParser(DBC[CP.carFingerprint][Bus.pt], [
         # frequency changes too much for the CANParser to figure out
-        ("AWV_03", 1),        # Front Collision Detection (1 Hz when inactive, 50 Hz when active)
+        #("AWV_03", 1),        # Front Collision Detection (1 Hz when inactive, 50 Hz when active)
         ("Blinkmodi_02", 1),  # From J519 BCM (sent at 1Hz when no lights active, 50Hz when active)
         ("SMLS_01", 1),       # From Stalk Controls
       ], CanBus(CP).pt),
