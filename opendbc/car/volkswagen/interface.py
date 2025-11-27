@@ -65,7 +65,7 @@ class CarInterface(CarInterfaceBase):
 
       if ret.networkLocation == NetworkLocation.gateway:
         if not ret.flags & VolkswagenFlags.MQB_EVO_GEN2: # model year mqbevo 2026 do not have 0x24F -> TODO
-          ret.radarUnavailable = false
+          ret.radarUnavailable = False
         
       if 0x30B in fingerprint[0]:  # Kombi_01
         ret.flags |= VolkswagenFlags.KOMBI_PRESENT.value
