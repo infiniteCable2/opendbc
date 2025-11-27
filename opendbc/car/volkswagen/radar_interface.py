@@ -23,7 +23,7 @@ SIGNAL_SETS = tuple(
 
 
 def get_radar_can_parser(CP):
-  if CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
+  if CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO) and not (CP.flags & VolkswagenFlags.MQB_EVO_GEN2):
     messages = [("MEB_Distance_01", 25)]
   else:
     return None
@@ -45,7 +45,7 @@ class RadarInterface(RadarInterfaceBase):
     self._pts = self.pts
 
   def update(self, can_strings):
-    """Entry‑point called by the vehicle loop every CAN tick."""
+    """Entry-point called by the vehicle loop every CAN tick."""
     if self.radar_off_can or self.rcp is None:
       return super().update(None)
 

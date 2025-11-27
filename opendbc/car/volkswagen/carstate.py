@@ -365,7 +365,7 @@ class CarState(CarStateBase, MadsCarState):
 
     # Speed Limit
     raining = pt_cp.vl["RLS_01"]["RS_Regenmenge"] > 0
-    vze_01_values = cam_cp.vl["MEB_VZE_01"] if not self.CP.flags & VolkswagenFlags.MQB_EVO_GEN2 else {} # Traffic Sign Recognition
+    vze_01_values = cam_cp.vl["MEB_VZE_01"] if not (self.CP.flags & VolkswagenFlags.MQB_EVO_GEN2) else {} # Traffic Sign Recognition
     psd_04_values = main_cp.vl["PSD_04"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {} # Predicative Street Data
     psd_05_values = main_cp.vl["PSD_05"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {}
     psd_06_values = main_cp.vl["PSD_06"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {}
@@ -401,7 +401,7 @@ class CarState(CarStateBase, MadsCarState):
     ret.espDisabled = bool(pt_cp.vl["ESP_21"]["ESP_Tastung_passiv"]) # this is also true for ESC Sport mode
     ret.espActive   = bool(pt_cp.vl["ESP_21"]["ESP_Eingriff"])
 
-    self.ea_hud_stock_values = cam_cp.vl["EA_02"]
+    self.ea_hud_stock_values = cam_cp.vl["EA_02"] if not (self.CP.flags & VolkswagenFlags.MQB_EVO_GEN2) else {}
 
     if self.CP.flags & VolkswagenFlags.MEB:
       ret.fuelGauge = pt_cp.vl["Motor_16"]["MO_Energieinhalt_BMS"]

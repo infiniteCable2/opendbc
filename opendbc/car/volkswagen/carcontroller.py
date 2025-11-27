@@ -158,7 +158,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     # "Wechselblinken" means switching between hazards and one sided indicators for every indicator cycle (VW MEB full cycle: 0.8 seconds, 1st normal, 2nd hazards)
     # user input has hgher prio than EA indicating, post cycle handover is done via actual indicator signal if EA would already request
     # signaling indicators for 1 frame to trigger the first non hazard cycle, retrigger after the car signals a fully ended cycle
-    if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
+    if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO) and not (self.CP.flags & VolkswagenFlags.MQB_EVO_GEN2):
       if self.frame % 2 == 0:
         blinker_active = CS.left_blinker_active or CS.right_blinker_active
         left_blinker = CC.leftBlinker if not blinker_active else False
