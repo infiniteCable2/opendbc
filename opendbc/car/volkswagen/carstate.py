@@ -365,7 +365,7 @@ class CarState(CarStateBase, MadsCarState):
 
     # Speed Limit
     raining = pt_cp.vl["RLS_01"]["RS_Regenmenge"] > 0
-    vze_01_values = cam_cp.vl["MEB_VZE_01"] if self.CP.flags & VolkswagenFlags.STOCK_VZE_PRESENT else {} # Traffic Sign Recognition
+    vze_01_values = cam_cp.vl["MEB_VZE_01"] # Traffic Sign Recognition
     psd_04_values = main_cp.vl["PSD_04"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {} # Predicative Street Data
     psd_05_values = main_cp.vl["PSD_05"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {}
     psd_06_values = main_cp.vl["PSD_06"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {}
