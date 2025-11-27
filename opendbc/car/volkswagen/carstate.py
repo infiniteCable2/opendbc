@@ -365,7 +365,7 @@ class CarState(CarStateBase, MadsCarState):
 
     # Speed Limit
     raining = pt_cp.vl["RLS_01"]["RS_Regenmenge"] > 0
-    vze_01_values = cam_cp.vl["MEB_VZE_01"] if self.CP.flags & VolkswagenFlags.STOCK_VZE_PRESENT else {} # Traffic Sign Recognition
+    vze_01_values = cam_cp.vl["MEB_VZE_01"] if not self.CP.flags & VolkswagenFlags.MQB_EVO_GEN2 else {} # Traffic Sign Recognition
     psd_04_values = main_cp.vl["PSD_04"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {} # Predicative Street Data
     psd_05_values = main_cp.vl["PSD_05"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {}
     psd_06_values = main_cp.vl["PSD_06"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {}
@@ -484,7 +484,7 @@ class CarState(CarStateBase, MadsCarState):
     return {
        Bus.pt: CANParser(DBC[CP.carFingerprint][Bus.pt], [
         # frequency changes too much for the CANParser to figure out
-        #("AWV_03", 1),        # Front Collision Detection (1 Hz when inactive, 50 Hz when active)
+        ("AWV_03", 1),        # Front Collision Detection (1 Hz when inactive, 50 Hz when active)
         ("Blinkmodi_02", 1),  # From J519 BCM (sent at 1Hz when no lights active, 50Hz when active)
         ("SMLS_01", 1),       # From Stalk Controls
       ], CanBus(CP).pt),

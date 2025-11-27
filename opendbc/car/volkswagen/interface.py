@@ -46,7 +46,7 @@ class CarInterface(CarInterfaceBase):
       elif ret.flags & VolkswagenFlags.MQB_EVO:
         safety_configs = [get_safety_config(structs.CarParams.SafetyModel.volkswagenMqbEvo)]
         
-      if ret.flags & VolkswagenFlags.MEB_GEN2:
+      if ret.flags & (VolkswagenFlags.MEB_GEN2 | VolkswagenFlags.MQB_EVO_GEN2):
         safety_configs[0].safetyParam |= VolkswagenSafetyFlags.ALT_CRC_VARIANT_1.value
 
       if ret.flags & VolkswagenFlags.MQB_EVO:
@@ -64,7 +64,8 @@ class CarInterface(CarInterfaceBase):
         ret.networkLocation = NetworkLocation.fwdCamera
 
       if ret.networkLocation == NetworkLocation.gateway:
-        ret.radarUnavailable = 0x24F not in fingerprint[2] # model year mqbevo 2026 do not have 0x24F -> TODO
+        if not ret.flags & VolkswagenFlags.MQB_EVO_GEN2: # model year mqbevo 2026 do not have 0x24F -> TODO
+          ret.radarUnavailable = false
         
       if 0x30B in fingerprint[0]:  # Kombi_01
         ret.flags |= VolkswagenFlags.KOMBI_PRESENT.value
@@ -83,9 +84,6 @@ class CarInterface(CarInterfaceBase):
 
       if 0x3DC in fingerprint[0]:  # Gatway_73
        ret.flags |= VolkswagenFlags.ALT_GEAR.value
-
-      if 0x12DD54A7 in fingerprint[2]: # traffic sign detection
-        ret.flags |= VolkswagenFlags.STOCK_VZE_PRESENT.value # model year mqbevo 2026 do not have 0x24F -> TODO
 
     else:
       # Set global MQB parameters

@@ -233,13 +233,13 @@ class VolkswagenFlags(IntFlag):
   STOCK_PSD_06_PRESENT = 512
   STOCK_DIAGNOSE_01_PRESENT = 1024
   ALT_GEAR = 32
-  STOCK_VZE_PRESENT = 2048
 
   # Static flags
   PQ = 2
   MEB = 64
   MEB_GEN2 = 128
   MQB_EVO = 256
+  MQB_EVO_GEN2 = 2048
   
 
 
@@ -275,6 +275,8 @@ class VolkswagenMQBevoPlatformConfig(PlatformConfig):
 
   def init(self):
     self.flags |= VolkswagenFlags.MQB_EVO
+    if self.flags & VolkswagenFlags.MQB_EVO_GEN2:
+      self.dbc_dict = {Bus.pt: 'vw_mqbevo_2024', Bus.radar: 'vw_mqbevo_2024'}
 
 
 @dataclass
@@ -538,6 +540,14 @@ class CAR(Platforms):
     VolkswagenCarSpecs(mass=1335, wheelbase=2.61),
     chassis_codes={"8V", "FF"},
     wmis={WMI.AUDI_GERMANY_CAR, WMI.AUDI_SPORT},
+  )
+  AUDI_A3_MK4 = VolkswagenMQBevoPlatformConfig(
+    [VWCarDocs("Audi RS3 2026")],
+    VolkswagenCarSpecs(mass=1650, wheelbase=2.631),
+    chassis_codes={"GY"},
+    wmis={WMI.AUDI_EUROPE_MPV},
+    #model_years={"T"},
+    flags=VolkswagenFlags.MQB_EVO_GEN2,
   )
   AUDI_Q2_MK1 = VolkswagenMQBPlatformConfig(
     [VWCarDocs("Audi Q2 2018")],
