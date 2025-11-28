@@ -157,7 +157,7 @@ BO_ 219 AWV_03: 48 XXX
  SG_ Pre_FCW : 64|1@0+ (1,0) [0|1] "" XXX
  SG_ FCW_Active : 76|1@0+ (1,0) [0|1] "" XXX
 
-BO_ 252 ESC_51: 48 XXX
+BO_ 252 ESC_51: 64 XXX
  SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
  SG_ COUNTER : 8|4@1+ (1,0) [0|15] "" XXX
  SG_ NEW_SIGNAL_2 : 14|6@1+ (1,0) [0|3] "" XXX
@@ -229,7 +229,7 @@ BO_ 258 ESC_50: 48 XXX
  SG_ Brake_01 : 90|1@0+ (1,0) [0|1] "" XXX
  SG_ Regen_Braking : 123|1@1+ (1,0) [0|7] "" XXX
  SG_ Brake_02 : 125|1@0+ (1,0) [0|1] "" XXX
- SG_ Standstill : 171|1@0+ (1,0) [0|1] "" XXX
+ SG_ Motion_State : 171|2@0+ (1,0) [0|1] "" XXX
  SG_ NEW_SIGNAL_3 : 180|1@0+ (1,0) [0|1] "" XXX
  SG_ Longitudinal_Speed : 181|10@1+ (0.25,0) [0|255] "Unit_KilometerPerHour" XXX
  SG_ Brake_Power_02 : 226|8@1+ (1,-100) [0|63] "" XXX
@@ -316,7 +316,7 @@ BO_ 264 Fahrwerk_01: 8 XXX
  SG_ Fahrwerk_01_CRC : 0|8@1+ (1,0) [0|255] "" XXX
  SG_ Fahrwerk_01_BZ : 8|4@1+ (1,0) [0|15] "" XXX
 
-BO_ 267 Motor_51: 32 XXX
+BO_ 267 Motor_51: 48 XXX
  SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
  SG_ COUNTER : 8|4@1+ (1,0) [0|15] "" XXX
  SG_ Accel_Pedal_Pressure : 12|9@1+ (0.4,0) [0|255] "" XXX
@@ -538,6 +538,7 @@ BO_ 333 ACC_18: 32 XXX
  SG_ SET_ME_0XFE : 80|8@1+ (1,0) [0|255] "" XXX
  SG_ ACC_AKTIV_regelt : 90|1@0+ (1,0) [0|1] "" XXX
  SG_ SET_ME_0X1 : 92|1@0+ (1,0) [0|1] "" XXX
+ SG_ SET_ME_0x2FE : 98|10@1+ (1,0) [0|63] "" XXX
  SG_ SET_ME_0X9 : 232|4@1+ (1,0) [0|15] "" XXX
  SG_ Speed : 236|12@1+ (0.1,0) [0|15] "" XXX
  SG_ Accel_Boost : 248|6@1+ (1,0) [0|3] "" XXX
@@ -660,8 +661,16 @@ BO_ 619 TA_01: 8 XXX
  SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
  SG_ COUNTER : 8|4@1+ (1,0) [0|15] "" XXX
  SG_ Travel_Assist_Status : 13|3@1+ (1,0) [0|3] "" XXX
+ SG_ Speed_Mode_01 : 16|1@0+ (1,0) [0|1] "" XXX
+ SG_ Speed_Mode_02 : 18|1@0+ (1,0) [0|1] "" XXX
  SG_ Travel_Assist_Request : 19|3@1+ (1,0) [0|7] "" XXX
+ SG_ Init : 22|1@0+ (1,0) [0|1] "" XXX
  SG_ Travel_Assist_Available : 23|1@1+ (1,0) [0|1] "" XXX
+ SG_ Unknown_01 : 26|1@0+ (1,0) [0|1] "" XXX
+ SG_ Unknown_02 : 28|1@0+ (1,0) [0|1] "" XXX
+ SG_ Unknown_03 : 31|1@0+ (1,0) [0|1] "" XXX
+ SG_ Speed_Mode_Status : 32|3@1+ (1,0) [0|7] "" XXX
+ SG_ Lane_Unsure : 37|2@1+ (1,0) [0|3] "" XXX
 
 BO_ 679 ACC_13: 8 XXX
  SG_ ACC_Regelgeschw : 12|10@1+ (0.32,0) [0|327.04] "Unit_KiloMeterPerHour" XXX
