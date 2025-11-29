@@ -87,7 +87,7 @@ class CarInterface(CarInterfaceBase):
       if 0x3DC in fingerprint[0]:  # Gatway_73
         ret.flags |= VolkswagenFlags.ALT_GEAR.value
        
-      if ret.networkLocation = NetworkLocation.fwdCamera:
+      if ret.networkLocation == NetworkLocation.fwdCamera and not (ret.flags & VolkswagenFlags.MQB_EVO):
         ret.flags |= VolkswagenFlags.DISABLE_RADAR.value
 
     elif ret.flags & VolkswagenFlags.MLB:
