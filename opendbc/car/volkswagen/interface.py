@@ -3,6 +3,7 @@ import time
 from opendbc.car import get_safety_config, structs, uds
 from opendbc.car.isotp_parallel_query import IsoTpParallelQuery
 from opendbc.car.can_definitions import CanData
+from opendbc.car.disable_ecu import disable_ecu
 from opendbc.car.carlog import carlog
 from opendbc.car.interfaces import CarInterfaceBase
 from opendbc.car.volkswagen.carcontroller import CarController
