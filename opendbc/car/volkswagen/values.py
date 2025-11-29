@@ -241,6 +241,7 @@ class VolkswagenSafetyFlags(IntFlag):
   LONG_CONTROL = 1
   ALT_CRC_VARIANT_1 = 2
   NO_GAS_OFFSET = 4
+  RADAR_DISABLED = 8
 
 
 class VolkswagenFlags(IntFlag):
