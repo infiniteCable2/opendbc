@@ -230,14 +230,19 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         
     # **** Radar disable **************************************************** #    
 
-    if self.frame % 100 == 0 and self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
-      can_sends.append(make_tester_present_msg(0x700, self.CAN.ext, suppress_response=True)) # Tester Present
+    if self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
+      if self.frame % 100 == 0:
+        can_sends.append(make_tester_present_msg(0x700, self.CAN.ext, suppress_response=True)) # Tester Present
       for bus in (self.CAN.cam, self.CAN.pt):
-        can_sends.append(self.CCS.create_aeb_control(self.packer_pt, bus)) # Replace AEB
-        can_sends.append(self.CCS.create_distance_control(self.packer_pt, bus)) # Replace Distance
-        can_sends.append(self.CCS.create_msg_16A954AD(bus)) # Replace Radar Unknown
-        can_sends.append(self.CCS.create_msg_1B000057(bus)) # Replace Radar Unknown
-        can_sends.append(self.CCS.create_msg_17F00057(bus)) # Replace Radar Unknown
+        if self.frame % 100 == 0:
+          can_sends.append(self.CCS.create_aeb_control(self.packer_pt, bus)) # Replace AEB (1 Hz)
+        if self.frame % 4 == 0:
+          can_sends.append(self.CCS.create_distance_control(self.packer_pt, bus)) # Replace Distance (25 Hz)
+        if self.frame % 20 == 0:
+          can_sends.append(self.CCS.create_msg_16A954AD(bus)) # Replace Radar Unknown (5 Hz)
+          can_sends.append(self.CCS.create_msg_1B000057(bus)) # Replace Radar Unknown (5 Hz)
+        if self.frame % 50 == 0:
+          can_sends.append(self.CCS.create_msg_17F00057(bus)) # Replace Radar Unknown (2 Hz)
 
     # **** HUD Controls ***************************************************** #
 
