@@ -156,9 +156,9 @@ static safety_config volkswagen_meb_init(uint16_t param) {
                                                        {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true},
 													   {MSG_DIAG_RADAR, 0, 8, .check_relay = false}, {MSG_DIAG_RADAR, 2, 8, .check_relay = false},
 													   {MSG_DIAGNOSTIC, 0, 8, .check_relay = false}, {MSG_DIAGNOSTIC, 2, 8, .check_relay = false},
-													   {MSG_AWV_03, 0, 48, .check_relay = false}, {MSG_AWV_03, 2, 48, .check_relay = false}};
-													   {MSG_Radar_Unknown_01, 0, 8, .check_relay = false}, {MSG_Radar_Unknown_01, 2, 8, .check_relay = false}};
-													   {MSG_Radar_Unknown_02, 0, 8, .check_relay = false}, {MSG_Radar_Unknown_02, 2, 8, .check_relay = false}};
+													   {MSG_AWV_03, 0, 48, .check_relay = false}, {MSG_AWV_03, 2, 48, .check_relay = false},
+													   {MSG_Radar_Unknown_01, 0, 8, .check_relay = false}, {MSG_Radar_Unknown_01, 2, 8, .check_relay = false},
+													   {MSG_Radar_Unknown_02, 0, 8, .check_relay = false}, {MSG_Radar_Unknown_02, 2, 8, .check_relay = false},
 													   {MSG_Radar_Unknown_03, 0, 8, .check_relay = false}, {MSG_Radar_Unknown_03, 2, 8, .check_relay = false}};
 
   //static const CanMsg VOLKSWAGEN_MEB_RADAR_TX_MSGS[] = {{MSG_DIAG_RADAR, 0, 8, .check_relay = false}, {MSG_DIAG_RADAR, 2, 8, .check_relay = false},
