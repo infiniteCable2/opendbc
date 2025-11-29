@@ -2,8 +2,6 @@ from opendbc.car.volkswagen.mebutils import map_speed_to_acc_tempolimit
 from opendbc.car.volkswagen.values import VolkswagenFlags
 from opendbc.car.volkswagen.speed_limit_manager import PSD_TYPE_CURV_SPEED
 from opendbc.car.common.conversions import Conversions as CV
-from opendbc.car.can_definitions import CanData
-from opendbc.car import uds
 
 ACCEL_INACTIVE = 3.01
 ACCEL_OVERRIDE = 0.00
@@ -359,30 +357,3 @@ def create_ea_hud(packer, bus):
   }
 
   return packer.make_can_msg("EA_02", bus, values)
-
-def create_tester_present(addr, bus):
-  commands: list[CanData] = []
-  tp_payload = [0x02, uds.SERVICE_TYPE.TESTER_PRESENT, 0x80]
-  tp_payload.extend([0x55] * (8 - len(tp_payload)))
-  commands.append(CanData(addr, bytes(tp_payload), bus))
-  return commands
-
-def create_ecu_disable(addr, bus):
-  commands: list[CanData] = []
-
-  # tester present
-  #payload = [0x02, 0x10, 0x03]
-  #payload.extend([0x00] * (8 - len(payload)))
-  #commands.append(CanData(addr, bytes(payload), bus))
-
-  # VW programming (VCP flash mode request)
-  # ECU recovers after round about 4-5 seconds when no tester present is sent
-  payload = [0x02, 0x10, 0x02] + [0x55] * 5
-  commands.append(CanData(addr, bytes(payload), bus))
-
-  # communication control disable TX
-  #payload = [0x03, 0x28, 0x02, 0x01]  
-  #payload.extend([0x00] * (8 - len(payload)))
-  #commands.append(CanData(addr, bytes(payload), bus))
-  
-  return commands
