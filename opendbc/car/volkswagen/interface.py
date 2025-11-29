@@ -194,86 +194,20 @@ class CarInterface(CarInterfaceBase):
     return ret
 
   @staticmethod
-  def init(CP, CP_SP, can_recv, can_send):
+  def init(CP, CP_SP, can_recv, can_send, disable=False):
+    if disable:
+	  communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_ENABLE_TX, uds.MESSAGE_TYPE.NORMAL])
+	else:
+      communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.DISABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
+
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      original_radar_mode = CP.radarUnavailable
-      
-      CAN = CanBus(CP)
-      bus = CAN.pt if CP.networkLocation == NetworkLocation.fwdCamera else CAN.cam
-      
-      addr_radar, addr_diag = 0x757, 0x700
-      volkswagen_rx_offset = 0x6A
-
-      ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
-      ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
-      flash_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.PROGRAMMING])
-      flash_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.PROGRAMMING])
-      tp_req  = bytes([uds.SERVICE_TYPE.TESTER_PRESENT, 0x00])
-      tp_resp = bytes([uds.SERVICE_TYPE.TESTER_PRESENT + 0x40, 0x00])
-
-      retry = 3
-      timeout = 2
-
-      for i in range(retry):
-        try:
-          # Tester Present
-          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [tp_req], [tp_resp], volkswagen_rx_offset, functional_addrs=[addr_diag])
-          if not query.get_data(timeout):
-            carlog.warning(f"Tester Present returned no data on attempt {i+1}")
-            continue
-
-          # Extended Diagnostic Session
-          #query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [ext_diag_req], [ext_diag_resp], volkswagen_rx_offset)
-          #if not query.get_data(timeout):
-          #  carlog.warning(f"Radar extended session returned no data on attempt {i+1}")
-          #  continue
-
-          # Programming Session
-          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [flash_req], [flash_resp], volkswagen_rx_offset)
-          if not query.get_data(timeout):
-            carlog.warning(f"Radar programming session returned no data on attempt {i+1}")
-            continue
-            
-          CP.radarUnavailable = True
-          carlog.warning(f"Radar disable by flash mode succeeded on attempt {i+1}")
-          return
-              
-        except Exception as e:
-          carlog.error(f"Radar disable by flash mode exception on attempt {i+1}: {repr(e)}")
-          continue
-
-      CP.radarUnavailable = original_radar_mode
-      CP.flags &= ~VolkswagenFlags.DISABLE_RADAR.value
-      carlog.error(f"Radar disable by flash mode failed")
+	  original_radar_mode = CP.radarUnavailable
+      addr, bus = 0x757, CAN.pt if CP.networkLocation == NetworkLocation.fwdCamera else CAN.cam
+      if not disable_ecu(can_recv, can_send, bus=bus, addr=addr, com_cont_req=communication_control, response_offset=0x6A):
+		CP.radarUnavailable = original_radar_mode
+        CP.flags &= ~VolkswagenFlags.DISABLE_RADAR.value
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
-    if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      CAN = CanBus(CP)
-      bus = CAN.pt if CP.networkLocation == NetworkLocation.fwdCamera else CAN.cam
+    CarInterface.init(CP, can_recv, can_send, disable=True)
 	  
-      addr_radar = 0x757
-      volkswagen_rx_offset = 0x6A
-	  
-      default_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.DEFAULT])
-      default_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.DEFAULT])
-	  
-      retry = 3
-      timeout = 2
-      
-      for i in range(retry):
-        try:
-          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [default_req], [default_resp], volkswagen_rx_offset)
-          resp = query.get_data(timeout)
-          if not resp:
-            carlog.warning(f"Radar leave programming mode (10 01) returned no data on attempt {i+1}")
-            continue
-
-          carlog.warning(f"Radar leave programming mode succeeded on attempt {i+1}")
-          return
-            
-        except Exception as e:
-          carlog.error(f"Radar leave programming mode exception on attempt {i+1}: {repr(e)}")
-          continue
-	  
-      carlog.error("Radar leave programming mode failed")
