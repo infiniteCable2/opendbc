@@ -21,6 +21,10 @@
 #define MSG_DIAGNOSTIC       0x700U   // TX, for general tester present on bus
 #define MSG_AWV_03           0xDBU    // TX, AEB message replacement
 #define MSG_MEB_Distance_01  0x24FU   // TX, distance message replacement
+#define MSG_Radar_Unknown_01 0x16A954ADU   // TX, radar message replacement
+#define MSG_Radar_Unknown_02 0x1B000057U   // TX, radar message replacement
+#define MSG_Radar_Unknown_03 0x17F00057U   // TX, radar message replacement
+
 
 // PANDA SAFETY SHOULD INTRODUCE A .ignore_length flag (ALLOWED ONLY IF CHECKSUM CHECK IS REQUIRED TO BE SAFE)
 #define VW_MEB_COMMON_RX_CHECKS                                                                     \
@@ -153,6 +157,9 @@ static safety_config volkswagen_meb_init(uint16_t param) {
 													   {MSG_DIAG_RADAR, 0, 8, .check_relay = false}, {MSG_DIAG_RADAR, 2, 8, .check_relay = false},
 													   {MSG_DIAGNOSTIC, 0, 8, .check_relay = false}, {MSG_DIAGNOSTIC, 2, 8, .check_relay = false},
 													   {MSG_AWV_03, 0, 48, .check_relay = false}, {MSG_AWV_03, 2, 48, .check_relay = false}};
+													   {MSG_Radar_Unknown_01, 0, 8, .check_relay = false}, {MSG_Radar_Unknown_01, 2, 8, .check_relay = false}};
+													   {MSG_Radar_Unknown_02, 0, 8, .check_relay = false}, {MSG_Radar_Unknown_02, 2, 8, .check_relay = false}};
+													   {MSG_Radar_Unknown_03, 0, 8, .check_relay = false}, {MSG_Radar_Unknown_03, 2, 8, .check_relay = false}};
 
   //static const CanMsg VOLKSWAGEN_MEB_RADAR_TX_MSGS[] = {{MSG_DIAG_RADAR, 0, 8, .check_relay = false}, {MSG_DIAG_RADAR, 2, 8, .check_relay = false},
   //													   {MSG_DIAGNOSTIC, 0, 8, .check_relay = false}, {MSG_DIAGNOSTIC, 2, 8, .check_relay = false},
