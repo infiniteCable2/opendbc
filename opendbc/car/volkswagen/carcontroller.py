@@ -207,11 +207,11 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
                                                            accel, acc_control, acc_hold_type, stopping, starting, CS.esp_hold_confirmation,
                                                            CS.out.vEgoRaw * CV.MS_TO_KPH, long_override, CS.travel_assist_available))
         # TESTING SEND ACC BOTH DIRECTIONS
-        #can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, self.CAN.cam, self.CP, CS.acc_type, CC.enabled,
-        #                                                   self.long_jerk_control.get_jerk_up() if CC.longComfortMode else 4.0, self.long_jerk_control.get_jerk_down() if CC.longComfortMode else 4.0,
-        #                                                   self.long_limit_control.get_upper_limit() if CC.longComfortMode else 0., self.long_limit_control.get_lower_limit() if CC.longComfortMode else 0.,
-        #                                                   accel, acc_control, acc_hold_type, stopping, starting, CS.esp_hold_confirmation,
-        #                                                   CS.out.vEgoRaw * CV.MS_TO_KPH, long_override, CS.travel_assist_available))
+        can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, self.CAN.cam, self.CP, CS.acc_type, CC.enabled,
+                                                           self.long_jerk_control.get_jerk_up() if CC.longComfortMode else 4.0, self.long_jerk_control.get_jerk_down() if CC.longComfortMode else 4.0,
+                                                           self.long_limit_control.get_upper_limit() if CC.longComfortMode else 0., self.long_limit_control.get_lower_limit() if CC.longComfortMode else 0.,
+                                                           accel, acc_control, acc_hold_type, stopping, starting, CS.esp_hold_confirmation,
+                                                           CS.out.vEgoRaw * CV.MS_TO_KPH, long_override, CS.travel_assist_available))
 
       else:
         starting = actuators.longControlState == LongCtrlState.pid and (CS.esp_hold_confirmation or CS.out.vEgo < self.CP.vEgoStopping)
@@ -236,9 +236,15 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
       #    can_sends.append(self.CCS.create_aeb_hud(self.packer_pt, False, False))
         
     # **** Radar disable **************************************************** #    
-    
+
     if self.frame % 100 == 0 and self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
-      can_sends.append(make_tester_present_msg(0x700, self.CAN, suppress_response=True))
+      can_sends.append(make_tester_present_msg(0x700, self.CAN, suppress_response=True)) # Tester Present
+
+      can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.cam)) # Replace AEB
+      can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.pt))
+
+      can_sends.append(self.CCS.create_distance_control(self.packer_pt, self.CAN.cam)) # Replace Distance
+      can_sends.append(self.CCS.create_distance_control(self.packer_pt, self.CAN.pt))
 
     # **** HUD Controls ***************************************************** #
 
