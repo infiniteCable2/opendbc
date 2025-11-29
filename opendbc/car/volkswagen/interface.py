@@ -236,6 +236,7 @@ class CarInterface(CarInterfaceBase):
           return
               
         except Exception:
+          carlog.error(f"Radar disable by flash mode exception on attempt {i+1}: {repr(e)}")
           continue
 
       CP.radarUnavailable = original_radar_mode
