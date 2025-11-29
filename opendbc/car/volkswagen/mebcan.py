@@ -75,8 +75,8 @@ def create_blinker_control(packer, bus, ea_hud_stock_values, left_blinker, right
   return packer.make_can_msg("EA_02", bus, values)
 
 
-def create_lka_hud_control(packer, bus, ldw_stock_values, lat_active, steering_pressed, hud_alert, hud_control, sound_alert):
-  display_mode = 1 if lat_active else 0 # travel assist style showing yellow lanes when op is active
+def create_lka_hud_control(packer, bus, CP, ldw_stock_values, lat_active, steering_pressed, hud_alert, hud_control, sound_alert):
+  display_mode = 1 if lat_active and not (CP.flags & VolkswagenFlags.MQB_EVO_GEN2) else 0 # travel assist style showing yellow lanes when op is active
   
   values = {}
   if len(ldw_stock_values):
