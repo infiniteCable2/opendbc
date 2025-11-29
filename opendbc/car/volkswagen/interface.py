@@ -235,7 +235,7 @@ class CarInterface(CarInterfaceBase):
           carlog.warning(f"Radar disable by flash mode succeeded on attempt {i+1}")
           return
               
-        except Exception:
+        except Exception as e:
           carlog.error(f"Radar disable by flash mode exception on attempt {i+1}: {repr(e)}")
           continue
 
