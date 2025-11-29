@@ -342,6 +342,12 @@ def create_aeb_control(packer, bus):
   return packer.make_can_msg("AWV_03", bus, values)
 
 
+def create_distance_control(packer, bus):
+  # create empty dummy signal
+  values = {}
+  return packer.make_can_msg("MEB_Distance_01", bus, values)
+
+
 def create_ea_control(packer, bus):
   values = {
     "EA_Funktionsstatus": 1,  # Configured but disabled
