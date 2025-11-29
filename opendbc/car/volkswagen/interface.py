@@ -217,7 +217,7 @@ class CarInterface(CarInterfaceBase):
       for i in range(retry):
         try:
           # Tester Present
-          can_send([CanData(addr_diag, bytes(tp_payload), bus)])
+          #can_send([CanData(addr_diag, bytes(tp_payload), bus)])
 
           # Extended Diagnostic Session
           query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [ext_diag_req], [ext_diag_resp], volkswagen_rx_offset)
