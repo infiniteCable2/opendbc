@@ -220,13 +220,13 @@ class CarInterface(CarInterfaceBase):
           can_send([CanData(addr_diag, bytes(tp_payload), bus)])
 
           # Extended Diagnostic Session
-          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [ext_diag_req], [ext_diag_resp], rx_offset=volkswagen_rx_offset)
+          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [ext_diag_req], [ext_diag_resp], volkswagen_rx_offset)
           if not query.get_data(timeout):
             carlog.warning(f"Radar extended session returned no data on attempt {i+1}")
             continue
 
           # Programming Session
-          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [flash_req], [flash_resp], rx_offset=volkswagen_rx_offset)
+          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [flash_req], [flash_resp], volkswagen_rx_offset)
           if not query.get_data(timeout):
             carlog.warning(f"Radar programming session returned no data on attempt {i+1}")
             continue
