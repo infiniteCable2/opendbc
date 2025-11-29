@@ -232,12 +232,12 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
 
     if self.frame % 100 == 0 and self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
       can_sends.append(make_tester_present_msg(0x700, self.CAN.ext, suppress_response=True)) # Tester Present
-
-      can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.cam)) # Replace AEB
-      can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.pt))
-
-      can_sends.append(self.CCS.create_distance_control(self.packer_pt, self.CAN.cam)) # Replace Distance
-      can_sends.append(self.CCS.create_distance_control(self.packer_pt, self.CAN.pt))
+      for bus in (self.CAN.cam, self.CAN.pt):
+        can_sends.append(self.CCS.create_aeb_control(self.packer_pt, bus)) # Replace AEB
+        can_sends.append(self.CCS.create_distance_control(self.packer_pt, bus)) # Replace Distance
+        can_sends.append(self.CCS.create_msg_16A954AD(bus)) # Replace Radar Unknown
+        can_sends.append(self.CCS.create_msg_1B000057(bus)) # Replace Radar Unknown
+        can_sends.append(self.CCS.create_msg_17F00057(bus)) # Replace Radar Unknown
 
     # **** HUD Controls ***************************************************** #
 
