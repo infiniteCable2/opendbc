@@ -48,9 +48,12 @@ class MadsCarState(MadsCarStateBase):
     # get states
     steering_enabled = hca_status == "ACTIVE" # assume mads is actively steering
     cruise_standby   = not ret.cruiseState.enabled
+
+    # driver assistance button
+    driver_assistance_button = can_parser_pt.vl["SMLS_01"]["FAS_Taster"]
     
     # set button to disable MADS if user cancels while cruise not enabled
-    self.lkas_button = steering_enabled and user_disable and cruise_standby
+    self.lkas_button = (steering_enabled and user_disable and cruise_standby) or driver_assistance_button
     
     # translate into lkas button event for MADS disable
     if self.prev_lkas_button != self.lkas_button:
