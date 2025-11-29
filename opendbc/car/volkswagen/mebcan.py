@@ -2,6 +2,7 @@ from opendbc.car.volkswagen.mebutils import map_speed_to_acc_tempolimit
 from opendbc.car.volkswagen.values import VolkswagenFlags
 from opendbc.car.volkswagen.speed_limit_manager import PSD_TYPE_CURV_SPEED
 from opendbc.car.common.conversions import Conversions as CV
+from opendbc.car.can_definitions import CanData
 
 ACCEL_INACTIVE = 3.01
 ACCEL_OVERRIDE = 0.00
@@ -346,6 +347,16 @@ def create_distance_control(packer, bus):
   # create empty dummy signal
   values = {}
   return packer.make_can_msg("MEB_Distance_01", bus, values)
+
+
+def create_msg_16A954AD(bus):
+  return CanData(0x16A954AD, bytes.fromhex("00 80 02 10 FE 03 00 00"), bus)
+
+def create_msg_1B000057(bus):
+  return CanData(0x1B000057, bytes.fromhex("00 00 08 03 00 00 00 00"), bus)
+
+def create_msg_17F00057(bus):
+  return CanData(0x17F00057, bytes.fromhex("20 00 00 00 FF FF 01 83"), bus)
 
 
 def create_ea_control(packer, bus):
