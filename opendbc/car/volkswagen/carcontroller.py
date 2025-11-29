@@ -222,13 +222,6 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
                                                              acc_control, stopping, starting, CS.esp_hold_confirmation))
       self.accel_last = accel
 
-    # **** AEB Controls ***************************************************** #
-      
-    if self.frame % 100 == 0 and self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
-      if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
-        can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.cam))
-        can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.pt))
-
     #if self.aeb_available:
       #  if self.frame % self.CCP.AEB_CONTROL_STEP == 0:
       #    can_sends.append(self.CCS.create_aeb_control(self.packer_pt, False, False, 0.0))
@@ -238,7 +231,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     # **** Radar disable **************************************************** #    
 
     if self.frame % 100 == 0 and self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
-      can_sends.append(make_tester_present_msg(0x700, self.CAN, suppress_response=True)) # Tester Present
+      can_sends.append(make_tester_present_msg(0x700, self.CAN.ext, suppress_response=True)) # Tester Present
 
       can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.cam)) # Replace AEB
       can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.pt))
