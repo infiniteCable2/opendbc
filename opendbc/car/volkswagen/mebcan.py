@@ -359,6 +359,13 @@ def create_ea_hud(packer, bus):
 
   return packer.make_can_msg("EA_02", bus, values)
 
+def create_tester_present(addr, bus):
+  commands: list[CanData] = []
+  tp_payload = [0x02, uds.SERVICE_TYPE.TESTER_PRESENT, 0x80]
+  tp_payload.extend([0x55] * (8 - len(tp_payload)))
+  commands.append(CanData(addr, bytes(tp_payload), bus))
+  return commands
+
 def create_ecu_disable(addr, bus):
   commands: list[CanData] = []
 
