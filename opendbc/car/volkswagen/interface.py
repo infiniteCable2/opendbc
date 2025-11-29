@@ -195,10 +195,8 @@ class CarInterface(CarInterfaceBase):
     return ret
 
   @staticmethod
-  def init(CP, CP_SP, can_recv, can_send, disable=False):
-    if disable:
-      communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_ENABLE_TX, uds.MESSAGE_TYPE.NORMAL])
-    else:
+  def init(CP, CP_SP, can_recv, can_send, communication_control=None):
+    if communication_control is None:
       communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
 
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
@@ -210,5 +208,6 @@ class CarInterface(CarInterfaceBase):
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
-    CarInterface.init(CP, can_recv, can_send, disable=True)
+	communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_ENABLE_TX, uds.MESSAGE_TYPE.NORMAL])
+    CarInterface.init(CP, can_recv, can_send, communication_control)
 	  
