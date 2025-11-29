@@ -194,31 +194,30 @@ class CarInterface(CarInterfaceBase):
     return ret
 
   @staticmethod
-  def init(CP, CP_SP, can_recv, can_send, communication_control=None):
+  def init(CP, CP_SP, can_recv, can_send):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
       original_radar_mode = CP.radarUnavailable
+      
       CAN = CanBus(CP)
       bus = CAN.cam if CP.networkLocation == NetworkLocation.gateway else CAN.pt
-      addr = 0x757
+      
+      addr_radar, addr_diag = 0x757, 0x700
       volkswagen_rx_offset = 0x6A
-      retry = 3
-      timeout = 2
-      #ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
-      #ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
+      
       flash_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.PROGRAMMING])
       flash_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.PROGRAMMING])
+      
       tp_payload = [0x02, uds.SERVICE_TYPE.TESTER_PRESENT, 0x00]
-      tp_payload.extend([0x00] * (8 - len(tp_payload)))
-      #can_send([CanData(0x700, bytes(tp_payload), bus)])
+      tp_payload.extend([0x55] * (8 - len(tp_payload)))
+
+      retry = 3
+      timeout = 2
 
       for i in range(retry):
         try:
-          can_send([CanData(0x700, bytes(tp_payload), bus)])
-          #query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr, None)], [ext_diag_req], [ext_diag_resp], rx_offset=volkswagen_rx_offset)
-          #for _, _ in query.get_data(timeout).items():
+          can_send([CanData(addr_diag, bytes(tp_payload), bus)])
           query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr, None)], [flash_req], [flash_resp], rx_offset=volkswagen_rx_offset)
           for _, _ in query.get_data(timeout).items():
-            #query.get_data(0)
             CP.radarUnavailable = True
             carlog.warning(f"Radar disable by flash mode succeeded on attempt {i}")
             return
