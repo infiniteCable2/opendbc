@@ -191,7 +191,7 @@ static safety_config volkswagen_meb_init(uint16_t param) {
 
 #ifdef ALLOW_DEBUG
   volkswagen_longitudinal = GET_FLAG(param, FLAG_VOLKSWAGEN_LONG_CONTROL);
-  volkswagen_radar_disabled = GET_FLAG(param, FLAG_VOLKSWAGEN_RADAR_DISABLED);
+  volkswagen_disable_radar = GET_FLAG(param, FLAG_VOLKSWAGEN_DISABLE_RADAR);
 #endif
   
   gen_crc_lookup_table_8(0x2F, volkswagen_crc8_lut_8h2f);
@@ -199,7 +199,7 @@ static safety_config volkswagen_meb_init(uint16_t param) {
   safety_config ret;
   
   if (volkswagen_longitudinal) {
-	if (volkswagen_radar_disabled) {
+	if (volkswagen_disable_radar) {
 	  SET_TX_MSGS(VOLKSWAGEN_MEB_LONG_NO_RADAR_TX_MSGS, ret);
 	} else {
       SET_TX_MSGS(VOLKSWAGEN_MEB_LONG_TX_MSGS, ret);
