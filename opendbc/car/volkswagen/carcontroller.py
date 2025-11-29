@@ -2,6 +2,7 @@ import numpy as np
 
 from opendbc.can import CANPacker
 from opendbc.car import Bus, DT_CTRL, structs, make_tester_present_msg
+from opendbc.car.can_definitions import CanData
 from opendbc.car.lateral import apply_driver_steer_torque_limits, apply_std_curvature_limits
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.interfaces import CarControllerBase
@@ -223,20 +224,19 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
       #    can_sends.append(self.CCS.create_aeb_hud(self.packer_pt, False, False))
         
     # **** Radar disable **************************************************** #    
-
+    # send radar replacement messages to keep the car happy and tester present to hold radar disabled state
+    
     if self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
       if self.frame % 100 == 0:
-        can_sends.append(make_tester_present_msg(0x700, self.CAN.ext, suppress_response=True)) # Tester Present
-      for bus in (self.CAN.cam, self.CAN.pt):
-        if self.frame % 100 == 0:
-          can_sends.append(self.CCS.create_aeb_control(self.packer_pt, bus)) # Replace AEB (1 Hz)
-        if self.frame % 4 == 0:
-          can_sends.append(self.CCS.create_distance_control(self.packer_pt, bus)) # Replace Distance (25 Hz)
-        if self.frame % 20 == 0:
-          can_sends.append(self.CCS.create_msg_16A954AD(bus)) # Replace Radar Unknown (5 Hz)
-          can_sends.append(self.CCS.create_msg_1B000057(bus)) # Replace Radar Unknown (5 Hz)
-        if self.frame % 50 == 0:
-          can_sends.append(self.CCS.create_msg_17F00057(bus)) # Replace Radar Unknown (2 Hz)
+        can_sends.append(make_tester_present_msg(0x700, self.CAN.pt, suppress_response=True)) # Tester Present
+        can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.pt)) # AEB (1 Hz)
+      if self.frame % 50 == 0:
+        can_sends.append(CanData(0x17F00057, bytes.fromhex("20 00 00 00 FF FF 01 83"), self.CAN.pt)) # Radar Unknown (2 Hz)
+      if self.frame % 20 == 0:
+        can_sends.append(CanData(0x16A954AD, bytes.fromhex("00 80 02 10 FE 03 00 00"), self.CAN.pt)) # Radar Unknown (5 Hz)
+        can_sends.append(CanData(0x1B000057, bytes.fromhex("00 00 08 03 00 00 00 00"), self.CAN.pt)) # Radar Unknown (5 Hz)
+      if self.frame % 4 == 0:
+        can_sends.append(self.CCS.create_radar_distance(self.packer_pt, self.CAN.pt)) # Distance (25 Hz)
 
     # **** HUD Controls ***************************************************** #
 
