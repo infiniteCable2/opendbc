@@ -3,6 +3,7 @@ from opendbc.car.volkswagen.values import VolkswagenFlags
 from opendbc.car.volkswagen.speed_limit_manager import PSD_TYPE_CURV_SPEED
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.can_definitions import CanData
+from opendbc.car import uds
 
 ACCEL_INACTIVE = 3.01
 ACCEL_OVERRIDE = 0.00
