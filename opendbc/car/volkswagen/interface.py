@@ -89,6 +89,7 @@ class CarInterface(CarInterfaceBase):
        
       if ret.networkLocation == NetworkLocation.fwdCamera and not (ret.flags & VolkswagenFlags.MQB_EVO):
         ret.flags |= VolkswagenFlags.DISABLE_RADAR.value
+		safety_configs[0].safetyParam |= VolkswagenSafetyFlags.DISABLE_RADAR.value
 
     elif ret.flags & VolkswagenFlags.MLB:
       # Set global MLB parameters
@@ -197,8 +198,7 @@ class CarInterface(CarInterfaceBase):
 
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
       original_radar_mode = CP.radarUnavailable
-      addr, bus = 0x757, CanBus(CP).pt if CP.networkLocation == NetworkLocation.fwdCamera else CanBus(CP).cam
-      if not disable_ecu(can_recv, can_send, bus=bus, addr=addr, com_cont_req=communication_control, response_offset=0x6A):
+      if not disable_ecu(can_recv, can_send, bus=CanBus(CP).pt, addr=0x757, com_cont_req=communication_control, response_offset=0x6A):
         CP.radarUnavailable = original_radar_mode
         CP.flags &= ~VolkswagenFlags.DISABLE_RADAR.value
 
