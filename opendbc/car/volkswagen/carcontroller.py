@@ -238,11 +238,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     # **** Radar disable **************************************************** #    
     
     if self.frame % 100 == 0 and self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
-      addr = 0x700 # universal diag tester present destination
-      bus = self.CAN.pt if self.CP.networkLocation == NetworkLocation.fwdCamera else self.CAN.cam
-      can_sends.extend(self.CCS.create_tester_present(addr, bus))
-      #can_sends.append(make_tester_present_msg(addr, bus, suppress_response=True))
-      #can_sends.extend(self.CCS.create_ecu_disable(addr, bus)) # send in car interface init once
+      can_sends.append(make_tester_present_msg(0x700, self.CAN, suppress_response=True))
 
     # **** HUD Controls ***************************************************** #
 
