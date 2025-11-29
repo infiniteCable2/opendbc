@@ -1,10 +1,7 @@
 import time
 
 from opendbc.car import get_safety_config, structs, uds
-from opendbc.car.isotp_parallel_query import IsoTpParallelQuery
-from opendbc.car.can_definitions import CanData
 from opendbc.car.disable_ecu import disable_ecu
-from opendbc.car.carlog import carlog
 from opendbc.car.interfaces import CarInterfaceBase
 from opendbc.car.volkswagen.carcontroller import CarController
 from opendbc.car.volkswagen.carstate import CarState
@@ -90,9 +87,8 @@ class CarInterface(CarInterfaceBase):
       if 0x3DC in fingerprint[0]:  # Gatway_73
         ret.flags |= VolkswagenFlags.ALT_GEAR.value
        
-      if 1 == 1: #ret.networkLocation = NetworkLocation.fwdCamera:
+      if ret.networkLocation = NetworkLocation.fwdCamera:
         ret.flags |= VolkswagenFlags.DISABLE_RADAR.value
-        # ret.radarUnavailable = True
 
     elif ret.flags & VolkswagenFlags.MLB:
       # Set global MLB parameters
