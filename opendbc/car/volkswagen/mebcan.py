@@ -343,19 +343,19 @@ def create_aeb_control(packer, bus):
   return packer.make_can_msg("AWV_03", bus, values)
 
 
-def create_distance_control(packer, bus):
+def create_radar_msg_distance(packer, bus):
   # create empty dummy signal
   values = {}
   return packer.make_can_msg("MEB_Distance_01", bus, values)
 
 
-def create_msg_16A954AD(bus):
+def create_radar_msg_16A954AD(bus):
   return CanData(0x16A954AD, bytes.fromhex("00 80 02 10 FE 03 00 00"), bus)
 
-def create_msg_1B000057(bus):
+def create_radar_msg_1B000057(bus):
   return CanData(0x1B000057, bytes.fromhex("00 00 08 03 00 00 00 00"), bus)
 
-def create_msg_17F00057(bus):
+def create_radar_msg_17F00057(bus):
   return CanData(0x17F00057, bytes.fromhex("20 00 00 00 FF FF 01 83"), bus)
 
 
