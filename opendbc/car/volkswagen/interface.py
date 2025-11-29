@@ -203,10 +203,11 @@ class CarInterface(CarInterfaceBase):
       
       addr_radar, addr_diag = 0x757, 0x700
       volkswagen_rx_offset = 0x6A
-      
+
+      ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
+      ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
       flash_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.PROGRAMMING])
       flash_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.PROGRAMMING])
-      
       tp_payload = [0x02, uds.SERVICE_TYPE.TESTER_PRESENT, 0x00]
       tp_payload.extend([0x55] * (8 - len(tp_payload)))
 
@@ -215,12 +216,24 @@ class CarInterface(CarInterfaceBase):
 
       for i in range(retry):
         try:
+          # Tester Present
           can_send([CanData(addr_diag, bytes(tp_payload), bus)])
-          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr, None)], [flash_req], [flash_resp], rx_offset=volkswagen_rx_offset)
-          for _, _ in query.get_data(timeout).items():
-            CP.radarUnavailable = True
-            carlog.warning(f"Radar disable by flash mode succeeded on attempt {i}")
-            return
+
+          # Extended Diagnostic Session
+          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [ext_diag_req], [ext_diag_resp], rx_offset=volkswagen_rx_offset)
+          if not query.get_data(timeout):
+            carlog.warning(f"Radar extended session returned no data on attempt {i+1}")
+            continue
+
+          # Programming Session
+          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [flash_req], [flash_resp], rx_offset=volkswagen_rx_offset)
+          if not query.get_data(timeout):
+            carlog.warning(f"Radar programming session returned no data on attempt {i+1}")
+            continue
+            
+          CP.radarUnavailable = True
+          carlog.warning(f"Radar disable by flash mode succeeded on attempt {i+1}")
+          return
               
         except Exception:
           continue
