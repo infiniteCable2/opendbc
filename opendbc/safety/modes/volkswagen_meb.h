@@ -20,6 +20,7 @@
 #define MSG_DIAG_RADAR       0x757U   // TX, for diagnostic messages for radar
 #define MSG_DIAGNOSTIC       0x700U   // TX, for general tester present on bus
 #define MSG_AWV_03           0xDBU    // TX, AEB message replacement
+#define MSG_MEB_Distance_01  0x24FU   // TX, distance message replacement
 
 // PANDA SAFETY SHOULD INTRODUCE A .ignore_length flag (ALLOWED ONLY IF CHECKSUM CHECK IS REQUIRED TO BE SAFE)
 #define VW_MEB_COMMON_RX_CHECKS                                                                     \
@@ -145,6 +146,7 @@ static safety_config volkswagen_meb_init(uint16_t param) {
   static const CanMsg VOLKSWAGEN_MEB_LONG_TX_MSGS[] = {{MSG_HCA_03, 0, 24, .check_relay = true},
 													   {MSG_MEB_ACC_01, 0, 48, .check_relay = false}, {MSG_ACC_18, 0, 32, .check_relay = false},
 													   {MSG_MEB_ACC_01, 2, 48, .check_relay = false}, {MSG_ACC_18, 2, 32, .check_relay = false},
+													   {MSG_MEB_Distance_01, 0, 64, .check_relay = false}, {MSG_MEB_Distance_01, 2, 64, .check_relay = false},
                                                        {MSG_EA_01, 0, 8, .check_relay = false}, {MSG_EA_02, 0, 8, .check_relay = true},
                                                        {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},
                                                        {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true},
