@@ -208,8 +208,8 @@ class CarInterface(CarInterfaceBase):
       ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
       flash_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.PROGRAMMING])
       flash_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.PROGRAMMING])
-      tp_payload = [0x02, uds.SERVICE_TYPE.TESTER_PRESENT, 0x00]
-      tp_payload.extend([0x55] * (8 - len(tp_payload)))
+      tp_req  = bytes([uds.SERVICE_TYPE.TESTER_PRESENT, 0x00])
+      tp_resp = bytes([uds.SERVICE_TYPE.TESTER_PRESENT + 0x40, 0x00])
 
       retry = 3
       timeout = 2
@@ -217,7 +217,10 @@ class CarInterface(CarInterfaceBase):
       for i in range(retry):
         try:
           # Tester Present
-          #can_send([CanData(addr_diag, bytes(tp_payload), bus)])
+          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [tp_req], [tp_resp], volkswagen_rx_offset, functional_addrs=[addr_diag])
+          if not query.get_data(timeout):
+            carlog.warning(f"Tester Present returned no data on attempt {i+1}")
+            continue
 
           # Extended Diagnostic Session
           query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [ext_diag_req], [ext_diag_resp], volkswagen_rx_offset)
