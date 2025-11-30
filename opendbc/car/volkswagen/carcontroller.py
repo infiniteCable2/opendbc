@@ -234,7 +234,10 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         can_sends.append(CanData(0x17F00057, bytes.fromhex("20 00 00 00 FF FF 01 83"), self.CAN.pt)) # Radar Unknown (2 Hz)
       if self.frame % 20 == 0:
         can_sends.append(CanData(0x16A954AD, bytes.fromhex("00 80 02 10 FE 03 00 00"), self.CAN.pt)) # Radar Unknown (5 Hz)
-        can_sends.append(CanData(0x1B000057, bytes.fromhex("00 00 08 03 00 00 00 00"), self.CAN.pt)) # Radar Unknown (5 Hz)
+        if self.CP.flags & VolkswagenFlags.MEB_GEN2:
+          can_sends.append(CanData(0x1B000057, bytes.fromhex("00 40 08 01 00 00 00 00"), self.CAN.pt)) # Radar Unknown (5 Hz) for MEB Gen 2
+        else if self.CP.flags & VolkswagenFlags.MEB:
+          can_sends.append(CanData(0x1B000057, bytes.fromhex("00 00 08 03 00 00 00 00"), self.CAN.pt)) # Radar Unknown (5 Hz) for MEB Gen 1
       if self.frame % 4 == 0:
         can_sends.append(self.CCS.create_radar_distance(self.packer_pt, self.CAN.pt)) # Distance (25 Hz)
 
