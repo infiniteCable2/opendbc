@@ -161,6 +161,8 @@ class CarControllerParams:
         "Beep": 2,                        # Play a loud beep
       }
 
+      self.RADAR_STANDBY_PAYLOADS: dict[tuple[int, int], bytes] = {}
+
     else:
       self.LDW_STEP = 10                  # LDW_02 message frequency 10Hz
       self.ACC_HUD_STEP = 6               # ACC_02 message frequency 16Hz
