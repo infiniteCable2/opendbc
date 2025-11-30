@@ -1,4 +1,4 @@
-from opendbc.car import get_safety_config, structs, uds
+from opendbc.car import get_safety_config, structs, uds, DT_CTRL
 from opendbc.car.disable_ecu import disable_ecu
 from opendbc.car.interfaces import CarInterfaceBase
 from opendbc.car.volkswagen.carcontroller import CarController
@@ -89,14 +89,13 @@ class CarInterface(CarInterfaceBase):
       if ret.networkLocation == NetworkLocation.fwdCamera:
         ret.flags |= VolkswagenFlags.DISABLE_RADAR.value
         safety_configs[0].safetyParam |= VolkswagenSafetyFlags.DISABLE_RADAR.value
+        RADAR_STANDBY_PAYLOADS.clear()
 		if 0x17F00057 in fingerprint[CAN.pt]:
-		  RADAR_STANDBY_PAYLOADS.append((CAN.pt, 0x17F00057, 1/(DT_CTRL*2), b""))
+		  RADAR_STANDBY_PAYLOADS.append((CAN.pt, 0x17F00057, int(1/(DT_CTRL*2)), b""))
 		if 0x16A954AD in fingerprint[CAN.pt]:
-		  RADAR_STANDBY_PAYLOADS.append((CAN.pt, 0x16A954AD, 1/(DT_CTRL*5), b""))
+		  RADAR_STANDBY_PAYLOADS.append((CAN.pt, 0x16A954AD, int(1/(DT_CTRL*5)), b""))
 		if 0x1B000057 in fingerprint[CAN.pt]:
-		  RADAR_STANDBY_PAYLOADS.append((CAN.pt, 0x1B000057, 1/(DT_CTRL*5), b""))
-		if 0xDB in fingerprint[CAN.pt]:
-		  RADAR_STANDBY_PAYLOADS.append((CAN.pt, 0xDB, 1/(DT_CTRL*1), b""))
+		  RADAR_STANDBY_PAYLOADS.append((CAN.pt, 0x1B000057, int(1/(DT_CTRL*5)), b""))
 
     elif ret.flags & VolkswagenFlags.MLB:
       # Set global MLB parameters
@@ -203,10 +202,10 @@ class CarInterface(CarInterfaceBase):
       communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
 
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      # get standby payloads for radar replacement signals
+      # get current payloads for simple radar replacement signals
       pending = {(bus, addr) for (bus, addr, frame, payload) in RADAR_STANDBY_PAYLOADS if payload == b""}
       if pending:
-        packets = can_recv(wait_for_one=True)
+        packets = can_recv(wait_for_one=True) or []
         for packet in packets:
           for msg in packet:
             key = (msg.src, msg.address)
@@ -216,6 +215,10 @@ class CarInterface(CarInterfaceBase):
                   RADAR_STANDBY_PAYLOADS[i] = (bus, addr, frame, msg.dat)
                   pending.remove(key)
                   break
+            if not pending:
+              break
+          if not pending:
+            break
           
       disable_ecu(can_recv, can_send, bus=CanBus(CP).pt, addr=0x757, com_cont_req=communication_control, timeout=1.5, retry=3, response_offset=0x6A)
 
