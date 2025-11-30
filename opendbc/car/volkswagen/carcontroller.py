@@ -232,13 +232,12 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     if self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
       if self.frame % 100 == 0:
         can_sends.append(make_tester_present_msg(0x700, self.CAN.pt, suppress_response=True)) # Tester Present
+        can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.pt, self.CP)) # AEB (1 Hz)
       if self.frame % 4 == 0: # not seen in MQBevo Gen 2 Audi RS3 2026
         can_sends.append(self.CCS.create_radar_distance(self.packer_pt, self.CAN.pt)) # Distance (25 Hz)
-      for (bus, addr, frame, payload) in RADAR_STANDBY_PAYLOADS:
+      for (bus, addr, frame, payload) in RADAR_STANDBY_PAYLOADS: # send property signal payloads (no counter etc)
         if payload and (self.frame % frame == 0):
           can_sends.append(CanData(addr, payload, bus))
-      
-#        can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.pt, self.CP)) # AEB (1 Hz)
       
 #      if self.frame % 50 == 0:
 #        if self.CP.flags & VolkswagenFlags.MEB:
@@ -260,9 +259,6 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
 #          can_sends.append(CanData(0x1B000057, bytes.fromhex("00 40 08 01 00 00 00 00"), self.CAN.pt)) # Radar Unknown (5 Hz) for MEB Gen 2 also MQBevo Gen 2 Audi RS3 2026
 #        elif self.CP.flags & VolkswagenFlags.MEB:
 #          can_sends.append(CanData(0x1B000057, bytes.fromhex("00 00 08 03 00 00 00 00"), self.CAN.pt)) # Radar Unknown (5 Hz) for MEB Gen 1
-      
-#      if self.frame % 4 == 0: # not seen in MQBevo Gen 2 Audi RS3 2026
-#        can_sends.append(self.CCS.create_radar_distance(self.packer_pt, self.CAN.pt)) # Distance (25 Hz)
 
     # **** HUD Controls ***************************************************** #
 
