@@ -21,9 +21,9 @@
 #define MSG_DIAGNOSTIC       0x700U   // TX, for general tester present on bus
 #define MSG_AWV_03           0xDBU    // TX, AEB message replacement
 #define MSG_MEB_Distance_01  0x24FU   // TX, distance message replacement
-#define MSG_Radar_Unknown_01 0x16A954ADU   // TX, radar message replacement
-#define MSG_Radar_Unknown_02 0x1B000057U   // TX, radar message replacement
-#define MSG_Radar_Unknown_03 0x17F00057U   // TX, radar message replacement
+#define MSG_MEB_Radar_01     0x16A954ADU   // TX, radar message replacement
+#define MSG_MEB_Radar_02     0x1B000057U   // TX, radar message replacement
+#define MSG_MEB_Radar_03     0x17F00057U   // TX, radar message replacement
 
 
 // PANDA SAFETY SHOULD INTRODUCE A .ignore_length flag (ALLOWED ONLY IF CHECKSUM CHECK IS REQUIRED TO BE SAFE)
@@ -49,13 +49,13 @@
   {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},         \
   {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true},           \
 
-#define VW_MEB_RADAR_TX_MSGS                           \
-  {MSG_DIAG_RADAR, 0, 8, .check_relay = false},        \
+#define VW_MEB_RADAR_TX_MSGS                          \
+  {MSG_DIAG_RADAR, 0, 8, .check_relay = false},       \
   {MSG_AWV_03, 0, 48, .check_relay = true},           \
   {MSG_MEB_Distance_01, 0, 64, .check_relay = true},  \
-  {MSG_Radar_Unknown_01, 0, 8, .check_relay = true},  \
-  {MSG_Radar_Unknown_02, 0, 8, .check_relay = true},  \
-  {MSG_Radar_Unknown_03, 0, 8, .check_relay = true},  \
+  {MSG_MEB_Radar_01, 0, 8, .check_relay = true},      \
+  {MSG_MEB_Radar_02, 0, 8, .check_relay = true},      \
+  {MSG_MEB_Radar_03, 0, 8, .check_relay = true},      \
 
 static uint8_t volkswagen_crc8_lut_8h2f[256]; // Static lookup table for CRC8 poly 0x2F, aka 8H2F/AUTOSAR
 
