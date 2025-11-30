@@ -227,7 +227,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     # send radar replacement messages to keep the car happy and tester present to hold radar disabled state
     # all following values are and should be the standby values before fully initialized AEB while driving a short time
     # a white AEB icon in dash should show and stay on
-    # VERY EXPERIMENTAL as the exact values are unknown
+    # VERY EXPERIMENTAL as the exact value definitions are unknown and could probably vary for same plattform
     
     if self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
       if self.frame % 100 == 0:
