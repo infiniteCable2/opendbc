@@ -204,16 +204,16 @@ class CarInterface(CarInterfaceBase):
 
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
       # get standby payloads for radar replacement signals
-      pending = {(bus, addr) for (bus, addr, frame_modulo, payload) in RADAR_STANDBY_PAYLOADS if payload == b""}
+      pending = {(bus, addr) for (bus, addr, frame, payload) in RADAR_STANDBY_PAYLOADS if payload == b""}
       if pending:
         packets = can_recv(wait_for_one=True)
         for packet in packets:
           for msg in packet:
             key = (msg.src, msg.address)
             if key in pending:
-              for i, (bus, addr, frame_modulo, payload) in enumerate(RADAR_STANDBY_PAYLOADS):
+              for i, (bus, addr, frame, payload) in enumerate(RADAR_STANDBY_PAYLOADS):
                 if bus == msg.src and addr == msg.address:
-                  RADAR_STANDBY_PAYLOADS[i] = (bus, addr, frame_modulo, msg.dat)
+                  RADAR_STANDBY_PAYLOADS[i] = (bus, addr, frame, msg.dat)
                   pending.remove(key)
                   break
           
