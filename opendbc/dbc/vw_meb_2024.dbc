@@ -2072,6 +2072,29 @@ BO_ 380196006 Battery_Temperatures: 8 XXX
  SG_ Battery_Max_Temp : 24|8@1+ (0.5,-40) [-40|87.5] "degC" XXX
  SG_ Battery_Min_Temp : 32|8@1+ (0.5,-40) [-40|87.5] "degC" XXX
 
+BO_ 380196013 RADAR_UNKNOWN_01: 8 XXX
+ SG_ NEW_SIGNAL_6 : 12|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_4 : 15|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_3 : 17|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_2 : 28|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_1 : 33|9@1+ (1,0) [0|127] "" XXX
+ SG_ NEW_SIGNAL_5 : 56|8@1+ (1,0) [0|255] "" XXX
+
+BO_ 401604695 RADAR_UNKNOWN_02: 8 XXX
+ SG_ NEW_SIGNAL_1 : 5|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_2 : 32|16@1+ (1,0) [0|255] "" XXX
+ SG_ NEW_SIGNAL_3 : 48|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_4 : 56|2@1+ (1,0) [0|3] "" XXX
+ SG_ NEW_SIGNAL_5 : 63|1@0+ (1,0) [0|1] "" XXX
+
+BO_ 452984919 RADAR_UNKNOWN_03: 8 XXX
+ SG_ NEW_SIGNAL_1 : 14|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_5 : 16|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_4 : 18|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_2 : 19|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_3 : 24|1@0+ (1,0) [0|1] "" XXX
+ SG_ NEW_SIGNAL_6 : 25|2@1+ (1,0) [0|3] "" XXX
+
 CM_ BO_ 184 "Motorsteuergerät";
 CM_ BO_ 192 "Motorsteuergerät";
 CM_ BO_ 317 "Lenkungssteuergerät";
