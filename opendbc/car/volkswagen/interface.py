@@ -8,11 +8,6 @@ from opendbc.car.volkswagen.carstate import CarState
 from opendbc.car.volkswagen.values import CanBus, CAR, NetworkLocation, TransmissionType, VolkswagenFlags, VolkswagenSafetyFlags
 from opendbc.car.volkswagen.radar_interface import RadarInterface
 
-try:
-  from openpilot.common.params import Params
-except ImportError:
-  Params = None
-
 
 class CarInterface(CarInterfaceBase):
   CarState = CarState
@@ -92,15 +87,7 @@ class CarInterface(CarInterfaceBase):
       if 0x3DC in fingerprint[0]:  # Gatway_73
         ret.flags |= VolkswagenFlags.ALT_GEAR.value
 
-      disable_radar_allowed = False
-      if Params is not None:
-        try:
-          params = Params()
-          disable_radar_allowed = params.get_bool("ICVWDisableRadar")
-        except Exception:
-          pass
-       
-      if disable_radar_allowed and ret.networkLocation == NetworkLocation.fwdCamera and not (ret.flags & VolkswagenFlags.MQB_EVO):
+      if ret.networkLocation == NetworkLocation.fwdCamera and not (ret.flags & VolkswagenFlags.MQB_EVO):
         ret.flags |= VolkswagenFlags.DISABLE_RADAR.value
         safety_configs[0].safetyParam |= VolkswagenSafetyFlags.DISABLE_RADAR.value
 
