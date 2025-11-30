@@ -1,6 +1,7 @@
 from collections import defaultdict, namedtuple
 from dataclasses import dataclass, field
 from enum import Enum, IntFlag, StrEnum
+from typing import List, Tuple
 
 from opendbc.car import Bus, CanBusBase, CarSpecs, DbcDict, PlatformConfig, Platforms, structs, uds
 from opendbc.car.lateral import CurvatureSteeringLimits
@@ -16,7 +17,8 @@ TransmissionType = structs.CarParams.TransmissionType
 GearShifter = structs.CarState.GearShifter
 Button = namedtuple('Button', ['event_type', 'can_addr', 'can_msg', 'values'])
 
-RADAR_STANDBY_PAYLOADS: dict[tuple[int, int], bytes] = {} # global map for radar disable standby values
+# global map for radar disable standby values
+RADAR_STANDBY_PAYLOADS: List[Tuple[int, int, int, bytes]] = [] # bus, addr, frame modulo, payload
 
 
 class CanBus(CanBusBase):
