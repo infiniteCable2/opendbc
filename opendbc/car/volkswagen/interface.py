@@ -92,8 +92,8 @@ class CarInterface(CarInterfaceBase):
       if 0x3DC in fingerprint[0]:  # Gatway_73
         ret.flags |= VolkswagenFlags.ALT_GEAR.value
 
-	  disable_radar_allowed = False
-	  if Params is not None:
+      disable_radar_allowed = False
+      if Params is not None:
         try:
           params = Params()
           disable_radar_allowed = params.get_bool("ICVWDisableRadar")
