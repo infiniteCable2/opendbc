@@ -339,10 +339,12 @@ def create_aeb_control(packer, bus, CP):
     "SET_ME_1": 1,
   }
 
-  if CP.flags & VolkswagenFlags.MEB_GEN2:
-    values.update({
-      "SET_ME_15_2": 15,
-    })
+  # lets try if it runs without, this is a higher byte signal part, differences seen here
+  # first part seems to be consistent
+  #if CP.flags & VolkswagenFlags.MEB_GEN2:
+  #  values.update({
+  #    "SET_ME_15_2": 15,
+  #  })
   
   return packer.make_can_msg("AWV_03", bus, values)
 
