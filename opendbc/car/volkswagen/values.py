@@ -74,6 +74,8 @@ class CarControllerParams:
   ACCEL_MAX = 2.0                          # 2.0 m/s max acceleration
   ACCEL_MIN = -3.5                         # 3.5 m/s max deceleration
 
+  RADAR_STANDBY_PAYLOADS: dict[tuple[int, int], bytes] = {}
+
   def __init__(self, CP):
     can_define = CANDefine(DBC[CP.carFingerprint][Bus.pt])
 
@@ -160,8 +162,6 @@ class CarControllerParams:
         "Chime": 1,                       # Play a chime
         "Beep": 2,                        # Play a loud beep
       }
-
-      self.RADAR_STANDBY_PAYLOADS: dict[tuple[int, int], bytes] = {}
 
     else:
       self.LDW_STEP = 10                  # LDW_02 message frequency 10Hz
