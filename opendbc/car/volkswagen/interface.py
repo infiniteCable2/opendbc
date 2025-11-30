@@ -3,7 +3,7 @@ from opendbc.car.disable_ecu import disable_ecu
 from opendbc.car.interfaces import CarInterfaceBase
 from opendbc.car.volkswagen.carcontroller import CarController
 from opendbc.car.volkswagen.carstate import CarState
-from opendbc.car.volkswagen.values import CanBus, CAR, NetworkLocation, TransmissionType, VolkswagenFlags, VolkswagenSafetyFlags
+from opendbc.car.volkswagen.values import CanBus, CAR, NetworkLocation, TransmissionType, VolkswagenFlags, VolkswagenSafetyFlags, RADAR_STANDBY_PAYLOADS
 from opendbc.car.volkswagen.radar_interface import RadarInterface
 
 
@@ -14,6 +14,7 @@ class CarInterface(CarInterfaceBase):
 
   @staticmethod
   def _get_params(ret: structs.CarParams, candidate: CAR, fingerprint, car_fw, alpha_long, is_release, docs) -> structs.CarParams:
+    CAN = CanBus(fingerprint=fingerprint)
     ret.brand = "volkswagen"
     ret.radarUnavailable = True
 
@@ -88,6 +89,14 @@ class CarInterface(CarInterfaceBase):
       if ret.networkLocation == NetworkLocation.fwdCamera:
         ret.flags |= VolkswagenFlags.DISABLE_RADAR.value
         safety_configs[0].safetyParam |= VolkswagenSafetyFlags.DISABLE_RADAR.value
+		if 0x17F00057 in fingerprint[CAN.pt]:
+		  RADAR_STANDBY_PAYLOADS.append((CAN.pt, 0x17F00057, 1/(DT_CTRL*2), b""))
+		if 0x16A954AD in fingerprint[CAN.pt]:
+		  RADAR_STANDBY_PAYLOADS.append((CAN.pt, 0x16A954AD, 1/(DT_CTRL*5), b""))
+		if 0x1B000057 in fingerprint[CAN.pt]:
+		  RADAR_STANDBY_PAYLOADS.append((CAN.pt, 0x1B000057, 1/(DT_CTRL*5), b""))
+		if 0xDB in fingerprint[CAN.pt]:
+		  RADAR_STANDBY_PAYLOADS.append((CAN.pt, 0xDB, 1/(DT_CTRL*1), b""))
 
     elif ret.flags & VolkswagenFlags.MLB:
       # Set global MLB parameters
@@ -174,7 +183,6 @@ class CarInterface(CarInterfaceBase):
       ret.vEgoStopping = 0.5
       ret.stopAccel = -0.55
 
-    CAN = CanBus(fingerprint=fingerprint)
     if CAN.pt >= 4:
       safety_configs.insert(0, get_safety_config(structs.CarParams.SafetyModel.noOutput))
     ret.safetyConfigs = safety_configs
@@ -195,10 +203,23 @@ class CarInterface(CarInterfaceBase):
       communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
 
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
+      # get standby payloads for radar replacement signals
+      pending = {(bus, addr) for (bus, addr, frame_modulo, payload) in RADAR_STANDBY_PAYLOADS if payload == b""}
+      if pending:
+        packets = can_recv(wait_for_one=True)
+        for packet in packets:
+          for msg in packet:
+            key = (msg.src, msg.address)
+            if key in pending:
+              for i, (bus, addr, frame_modulo, payload) in enumerate(RADAR_STANDBY_PAYLOADS):
+                if bus == msg.src and addr == msg.address:
+                  RADAR_STANDBY_PAYLOADS[i] = (bus, addr, frame_modulo, msg.dat)
+                  pending.remove(key)
+                  break
+          
       disable_ecu(can_recv, can_send, bus=CanBus(CP).pt, addr=0x757, com_cont_req=communication_control, timeout=1.5, retry=3, response_offset=0x6A)
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
     communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_ENABLE_TX, uds.MESSAGE_TYPE.NORMAL])
     CarInterface.init(CP, can_recv, can_send, communication_control)
-	  
