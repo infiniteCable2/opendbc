@@ -325,7 +325,7 @@ def create_acc_hud_control(packer, bus, acc_control, set_speed, lead_visible, di
   return packer.make_can_msg("MEB_ACC_01", bus, values)
   
   
-def create_aeb_control(packer, bus):
+def create_aeb_control(packer, bus, CP):
   # those are default inactive values
   values = {
     "SET_ME_63": 63, 
@@ -333,11 +333,16 @@ def create_aeb_control(packer, bus):
     "SET_ME_127": 127,
     "SET_ME_127_2": 127,
     "SET_ME_63_2": 63,
-    "SET_ME_15_2": 15,
+    "SET_ME_15_1": 15,
     "SET_ME_255": 255,
     "SET_ME_1023": 1023,
     "SET_ME_1": 1,
   }
+
+  if CP.flags & VolkswagenFlags.MEB_GEN2:
+    values.update({
+      "SET_ME_15_2": 15,
+    })
   
   return packer.make_can_msg("AWV_03", bus, values)
 
