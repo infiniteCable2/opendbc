@@ -52,7 +52,6 @@
 
 #define VW_MEB_RADAR_TX_MSGS                           \
   {MSG_DIAG_RADAR, 0, 8, .check_relay = false},        \
-  {MSG_DIAGNOSTIC, 0, 8, .check_relay = false},        \
   {MSG_AWV_03, 0, 48, .check_relay = false},           \
   {MSG_MEB_Distance_01, 0, 64, .check_relay = false},  \
   {MSG_Radar_Unknown_01, 0, 8, .check_relay = false},  \
@@ -168,6 +167,7 @@ static safety_config volkswagen_meb_init(uint16_t param) {
   static const CanMsg VOLKSWAGEN_MEB_LONG_NO_RADAR_TX_MSGS[] = {
 	VW_MEB_LONG_TX_MSGS
 	VW_MEB_RADAR_TX_MSGS
+	{MSG_DIAGNOSTIC, 0, 8, .check_relay = false},
   };
 
   static RxCheck volkswagen_meb_rx_checks[] = {
