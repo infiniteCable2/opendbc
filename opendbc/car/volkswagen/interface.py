@@ -101,8 +101,8 @@ class CarInterface(CarInterfaceBase):
           pass
        
       if disable_radar_allowed and ret.networkLocation == NetworkLocation.fwdCamera and not (ret.flags & VolkswagenFlags.MQB_EVO):
-		ret.flags |= VolkswagenFlags.DISABLE_RADAR.value
-		safety_configs[0].safetyParam |= VolkswagenSafetyFlags.DISABLE_RADAR.value
+        ret.flags |= VolkswagenFlags.DISABLE_RADAR.value
+        safety_configs[0].safetyParam |= VolkswagenSafetyFlags.DISABLE_RADAR.value
 
     elif ret.flags & VolkswagenFlags.MLB:
       # Set global MLB parameters
