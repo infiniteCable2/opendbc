@@ -229,7 +229,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     if self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
       if self.frame % 100 == 0:
         can_sends.append(make_tester_present_msg(0x700, self.CAN.pt, suppress_response=True)) # Tester Present
-        can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.pt)) # AEB (1 Hz)
+        can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.pt, self.CP)) # AEB (1 Hz)
       if self.frame % 50 == 0:
         can_sends.append(CanData(0x17F00057, bytes.fromhex("20 00 00 00 FF FF 01 83"), self.CAN.pt)) # Radar Unknown (2 Hz)
       if self.frame % 20 == 0:
