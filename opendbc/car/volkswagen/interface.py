@@ -218,7 +218,7 @@ class CarInterface(CarInterfaceBase):
                   if bus == msg.src and addr == msg.address and payload == b"":
                     RADAR_STANDBY_PAYLOADS[i] = (bus, addr, frame, msg.dat)
                     pending.remove(key)
-					carlog.debug(f"Radar payload captured: bus={bus}, addr=0x{addr:X}, data=0x{msg.dat.hex()}")
+                    carlog.debug(f"Radar payload captured: bus={bus}, addr=0x{addr:X}, data=0x{msg.dat.hex()}")
                     break
           if not pending:
             break
