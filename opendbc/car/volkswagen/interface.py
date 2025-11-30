@@ -223,11 +223,7 @@ class CarInterface(CarInterfaceBase):
 
       # enter programming session
       # communication control is seen to be rejected for MQBevo
-      bus = CanBus(CP).pt
-      addr_radar, addr_diag = 0x757, 0x700
-      volkswagen_rx_offset = 0x6A
-      retry = 3
-      timeout = 2
+      bus, addr_radar, addr_diag, volkswagen_rx_offset, retry, timeout = CanBus(CP).pt, 0x757, 0x700, 0x6A, 3, 2
 
       ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
       ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
@@ -269,12 +265,9 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def deinit(CP, can_recv, can_send):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      bus = CanBus(CP).pt
-      addr_radar = 0x757
-      volkswagen_rx_offset = 0x6A
-      retry = 3
-      timeout = 2
-	  
+      # try to leave programming session
+      bus, addr_radar, volkswagen_rx_offset, retry, timeout = CanBus(CP).pt, 0x757, 0x6A, 3, 2
+
       default_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.DEFAULT])
       default_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.DEFAULT])
       
