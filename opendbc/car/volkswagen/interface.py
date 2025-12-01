@@ -211,7 +211,7 @@ class CarInterface(CarInterfaceBase):
         if CarInterface._radar_communication_control(CP, can_recv, can_send):
           return
       CP.flags &= ~VolkswagenFlags.DISABLE_RADAR.value
-      CP.safetyConfigs = [get_safety_config(structs.CarParams.SafetyModel.noOutput)]
+      CP.safetyConfigs = [] # goal is to stop the relay from switching and getting any OP error
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
