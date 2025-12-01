@@ -273,7 +273,7 @@ class CarInterface(CarInterfaceBase):
     if disable:
       comm_req = comm_disable_req
       txt = "disable"
-	else:
+    else:
       comm_req = comm_enable_req
       txt = "enable"
 	  
