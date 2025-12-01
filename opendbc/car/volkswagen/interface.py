@@ -97,11 +97,11 @@ class CarInterface(CarInterfaceBase):
         # capture current radar specific signals as replacement
         RADAR_PROPERTY_PAYLOADS.clear()
         if 0x17F00057 in fingerprint[CAN.pt]:
-		  RADAR_PROPERTY_PAYLOADS.append((CAN.pt, 0x17F00057, int(1/(DT_CTRL*2)), b""))
-		if 0x16A954AD in fingerprint[CAN.pt]:
-		  RADAR_PROPERTY_PAYLOADS.append((CAN.pt, 0x16A954AD, int(1/(DT_CTRL*5)), b""))
-		if 0x1B000057 in fingerprint[CAN.pt]:
-		  RADAR_PROPERTY_PAYLOADS.append((CAN.pt, 0x1B000057, int(1/(DT_CTRL*5)), b""))
+          RADAR_PROPERTY_PAYLOADS.append((CAN.pt, 0x17F00057, int(1/(DT_CTRL*2)), b""))
+        if 0x16A954AD in fingerprint[CAN.pt]:
+          RADAR_PROPERTY_PAYLOADS.append((CAN.pt, 0x16A954AD, int(1/(DT_CTRL*5)), b""))
+        if 0x1B000057 in fingerprint[CAN.pt]:
+          RADAR_PROPERTY_PAYLOADS.append((CAN.pt, 0x1B000057, int(1/(DT_CTRL*5)), b""))
 
     elif ret.flags & VolkswagenFlags.MLB:
       # Set global MLB parameters
@@ -205,15 +205,16 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def init(CP, CP_SP, can_recv, can_send, communication_control=None):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      assert self._get_radar_property_payloads(can_recv, RADAR_PROPERTY_PAYLOADS)
-      assert self._enter_programming_mode(CP, can_recv, can_send)
+      assert CarInterface._get_radar_property_payloads(can_recv, RADAR_PROPERTY_PAYLOADS)
+      assert CarInterface._enter_programming_mode(CP, can_recv, can_send)
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      self._enter_programming_mode(CP, can_recv, can_send)
+      CarInterface._exit_programming_mode(CP, can_recv, can_send)
 
-  def _get_radar_property_payloads(self, can_recv, radar_property_payloads):
+  @staticmethod
+  def _get_radar_property_payloads(can_recv, radar_property_payloads):
     # get current payloads for car specific radar property signals for replacement
 	
     pending = {(bus, addr) for (bus, addr, frame, payload) in radar_property_payloads if payload == b""}
@@ -246,8 +247,9 @@ class CarInterface(CarInterfaceBase):
     carlog.warning(f"Radar payloads successfully captured")
 	
 	return True
-	
-  def _enter_programming_mode(self, CP, can_recv, can_send):
+
+  @staticmethod
+  def _enter_programming_mode(CP, can_recv, can_send):
     # enter programming session
     # communication control is seen to be rejected for MQBevo but works for MEB
     bus, addr_radar, addr_diag, volkswagen_rx_offset, retry, timeout = CanBus(CP).pt, 0x757, 0x700, 0x6A, 3, 2
@@ -290,8 +292,9 @@ class CarInterface(CarInterfaceBase):
     carlog.error(f"Radar disable by flash mode failed")
     carlog.error(f"Openpilot execution STOP")
     return False
-	
-  def _exit_programming_mode(self, CP, can_recv, can_send):
+
+  @staticmethod
+  def _exit_programming_mode(CP, can_recv, can_send):
     # try to leave programming session
     bus, addr_radar, volkswagen_rx_offset, retry, timeout = CanBus(CP).pt, 0x757, 0x6A, 3, 2
 
