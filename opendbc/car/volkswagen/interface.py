@@ -233,8 +233,10 @@ class CarInterface(CarInterfaceBase):
         carlog.error(f"Openpilot execution STOP")
         assert False
 
+      carlog.warning(f"Radar payloads successfully captured")
+
       # enter programming session
-      # communication control is seen to be rejected for MQBevo
+      # communication control is seen to be rejected for MQBevo but works for MEB
       bus, addr_radar, addr_diag, volkswagen_rx_offset, retry, timeout = CanBus(CP).pt, 0x757, 0x700, 0x6A, 3, 2
 
       ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
