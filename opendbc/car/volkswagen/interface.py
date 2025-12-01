@@ -202,8 +202,8 @@ class CarInterface(CarInterfaceBase):
 
   @staticmethod
   def init(CP, CP_SP, can_recv, can_send, communication_control=None):
-    # communication control is rejected with engine online
-    # works while in ignition (same for flash mode -> flash mode additionally results in TSK error / cruise fault)
+    # communication control can be rejected with engine on
+    # works during ignition
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
       if CarInterface._get_radar_property_payloads(can_recv, RADAR_PROPERTY_PAYLOADS):
         communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
@@ -219,9 +219,7 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def _get_radar_property_payloads(can_recv, radar_property_payloads):
     # get current payloads for car specific radar property signals for replacement
-    # THE CAPTURED SIGNALS ARE NOT UNDERSTOOD YET: THIS IS ONLY OK FOR IGNITION STANDBY VALUES
-    # for signals which are configuration only messages, this way is generally not bad
-    # as radar disable is only possible when in ignition, we are fine for now, but understanding is a TODO anyway
+    # THE CAPTURED SIGNALS ARE NOT UNDERSTOOD YET but do not or slightly change 
     pending = {(bus, addr) for (bus, addr, frame, payload) in radar_property_payloads if payload == b""}
     if pending:
       frames = [frame for (bus, addr, frame, payload) in radar_property_payloads if payload == b"" and (bus, addr) in pending]
