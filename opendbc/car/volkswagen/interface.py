@@ -205,14 +205,11 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def init(CP, CP_SP, can_recv, can_send, communication_control=None):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      for i in range(1):
-        if not CarInterface._get_radar_property_payloads(can_recv, RADAR_PROPERTY_PAYLOADS):
-          break
-        if CarInterface._radar_communication_control(CP, can_recv, can_send):
-          return
-      CP.flags &= ~VolkswagenFlags.DISABLE_RADAR.value
-      CP.openpilotLongitudinalControl = False
-      CP.pcmCruise = not CP.openpilotLongitudinalControl
+      if CarInterface._get_radar_property_payloads(can_recv, RADAR_PROPERTY_PAYLOADS):
+        if not CarInterface._radar_communication_control(CP, can_recv, can_send):
+          CP.flags &= ~VolkswagenFlags.DISABLE_RADAR.value
+          CP.openpilotLongitudinalControl = False
+          CP.pcmCruise = not CP.openpilotLongitudinalControl
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
