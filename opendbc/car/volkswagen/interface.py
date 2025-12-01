@@ -205,101 +205,112 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def init(CP, CP_SP, can_recv, can_send, communication_control=None):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      # get current payloads for car specific radar property signals for replacement
-      pending = {(bus, addr) for (bus, addr, frame, payload) in RADAR_PROPERTY_PAYLOADS if payload == b""}
-      if pending:
-        frames = [frame for (bus, addr, frame, payload) in RADAR_PROPERTY_PAYLOADS if payload == b"" and (bus, addr) in pending]
-        collect_timeout = max(frames) * DT_CTRL * 1.1
-        start_time = time.monotonic()
-        while pending and (time.monotonic() - start_time) < collect_timeout:
-          packets = can_recv(wait_for_one=True) or []
-          for packet in packets:
-            if not pending:
-              break
-            for msg in packet:
-              if not pending:
-                break
-              key = (msg.src, msg.address)
-              if key in pending:
-                for i, (bus, addr, frame, payload) in enumerate(RADAR_PROPERTY_PAYLOADS):
-                  if bus == msg.src and addr == msg.address and payload == b"":
-                    RADAR_PROPERTY_PAYLOADS[i] = (bus, addr, frame, msg.dat)
-                    pending.remove(key)
-                    carlog.debug(f"Radar payload captured: bus={bus}, addr=0x{addr:X}, data=0x{msg.dat.hex()}")
-                    break
-
-      if pending:
-        carlog.error(f"Radar payloads failed to capture for: {repr(pending)}")
-        carlog.error(f"Openpilot execution STOP")
-        assert False
-
-      carlog.warning(f"Radar payloads successfully captured")
-
-      # enter programming session
-      # communication control is seen to be rejected for MQBevo but works for MEB
-      bus, addr_radar, addr_diag, volkswagen_rx_offset, retry, timeout = CanBus(CP).pt, 0x757, 0x700, 0x6A, 3, 2
-
-      ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
-      ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
-      flash_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.PROGRAMMING])
-      flash_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.PROGRAMMING])
-      tp_req  = bytes([uds.SERVICE_TYPE.TESTER_PRESENT, 0x00])
-      tp_resp = bytes([uds.SERVICE_TYPE.TESTER_PRESENT + 0x40, 0x00])
-		
-      for i in range(retry):
-        try:
-          # Tester Present
-          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [tp_req], [tp_resp], volkswagen_rx_offset, functional_addrs=[addr_diag])
-          if not query.get_data(timeout):
-            carlog.warning(f"Tester Present returned no data on attempt {i+1}")
-            continue
-
-          # Extended Diagnostic Session
-          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [ext_diag_req], [ext_diag_resp], volkswagen_rx_offset)
-          if not query.get_data(timeout):
-            carlog.warning(f"Radar extended session returned no data on attempt {i+1}")
-            continue
-
-          # Programming Session
-          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [flash_req], [flash_resp], volkswagen_rx_offset)
-          if not query.get_data(timeout):
-            carlog.warning(f"Radar programming session returned no data on attempt {i+1}")
-            continue
-            
-          CP.radarUnavailable = True
-          carlog.warning(f"Radar disable by flash mode succeeded on attempt {i+1}")
-          return
-              
-        except Exception as e:
-          carlog.error(f"Radar disable by flash mode exception on attempt {i+1}: {repr(e)}")
-          continue
-
-      carlog.error(f"Radar disable by flash mode failed")
-      carlog.error(f"Openpilot execution STOP")
-      assert False
+      assert self._get_radar_property_payloads(can_recv, RADAR_PROPERTY_PAYLOADS)
+      assert self._enter_programming_mode(CP, can_recv, can_send)
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      # try to leave programming session
-      bus, addr_radar, volkswagen_rx_offset, retry, timeout = CanBus(CP).pt, 0x757, 0x6A, 3, 2
+      self._enter_programming_mode(CP, can_recv, can_send)
 
-      default_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.DEFAULT])
-      default_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.DEFAULT])
-      
-      for i in range(retry):
-        try:
-          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [default_req], [default_resp], volkswagen_rx_offset)
-          resp = query.get_data(timeout)
-          if not resp:
-            carlog.warning(f"Radar leave programming mode returned no data on attempt {i+1}")
-            continue
+  def _get_radar_property_payloads(can_recv, radar_property_payloads):
+    # get current payloads for car specific radar property signals for replacement
+	
+    pending = {(bus, addr) for (bus, addr, frame, payload) in radar_property_payloads if payload == b""}
+    if pending:
+      frames = [frame for (bus, addr, frame, payload) in radar_property_payloads if payload == b"" and (bus, addr) in pending]
+      collect_timeout = max(frames) * DT_CTRL * 1.1
+      start_time = time.monotonic()
+      while pending and (time.monotonic() - start_time) < collect_timeout:
+        packets = can_recv(wait_for_one=True) or []
+        for packet in packets:
+          if not pending:
+            break
+          for msg in packet:
+            if not pending:
+              break
+            key = (msg.src, msg.address)
+            if key in pending:
+              for i, (bus, addr, frame, payload) in enumerate(radar_property_payloads):
+                if bus == msg.src and addr == msg.address and payload == b"":
+                  radar_property_payloads[i] = (bus, addr, frame, msg.dat)
+                  pending.remove(key)
+                  carlog.debug(f"Radar payload captured: bus={bus}, addr=0x{addr:X}, data=0x{msg.dat.hex()}")
+                  break
 
-          carlog.warning(f"Radar leave programming mode succeeded on attempt {i+1}")
-          return
-            
-        except Exception as e:
-          carlog.error(f"Radar leave programming mode exception on attempt {i+1}: {repr(e)}")
+    if pending:
+      carlog.error(f"Radar payloads failed to capture for: {repr(pending)}")
+      carlog.error(f"Openpilot execution STOP")
+      return False
+
+    carlog.warning(f"Radar payloads successfully captured")
+	
+	return True
+	
+  def _enter_programming_mode(CP, can_recv, can_send):
+    # enter programming session
+    # communication control is seen to be rejected for MQBevo but works for MEB
+    bus, addr_radar, addr_diag, volkswagen_rx_offset, retry, timeout = CanBus(CP).pt, 0x757, 0x700, 0x6A, 3, 2
+
+    ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
+    ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
+    flash_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.PROGRAMMING])
+    flash_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.PROGRAMMING])
+    tp_req  = bytes([uds.SERVICE_TYPE.TESTER_PRESENT, 0x00])
+    tp_resp = bytes([uds.SERVICE_TYPE.TESTER_PRESENT + 0x40, 0x00])
+
+    for i in range(retry):
+      try:
+        # Tester Present
+        query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [tp_req], [tp_resp], volkswagen_rx_offset, functional_addrs=[addr_diag])
+        if not query.get_data(timeout):
+          carlog.warning(f"Tester Present returned no data on attempt {i+1}")
           continue
-	  
-      carlog.error("Radar leave programming mode failed")
+
+        # Extended Diagnostic Session
+        query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [ext_diag_req], [ext_diag_resp], volkswagen_rx_offset)
+        if not query.get_data(timeout):
+          carlog.warning(f"Radar extended session returned no data on attempt {i+1}")
+          continue
+
+        # Programming Session
+        query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [flash_req], [flash_resp], volkswagen_rx_offset)
+        if not query.get_data(timeout):
+          carlog.warning(f"Radar programming session returned no data on attempt {i+1}")
+          continue
+          
+        CP.radarUnavailable = True
+        carlog.warning(f"Radar disable by flash mode succeeded on attempt {i+1}")
+        return True
+            
+      except Exception as e:
+        carlog.error(f"Radar disable by flash mode exception on attempt {i+1}: {repr(e)}")
+        continue
+
+    carlog.error(f"Radar disable by flash mode failed")
+    carlog.error(f"Openpilot execution STOP")
+    return False
+	
+  def _exit_programming_mode(CP, can_recv, can_send):
+    # try to leave programming session
+    bus, addr_radar, volkswagen_rx_offset, retry, timeout = CanBus(CP).pt, 0x757, 0x6A, 3, 2
+
+    default_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.DEFAULT])
+    default_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.DEFAULT])
+    
+    for i in range(retry):
+      try:
+        query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [default_req], [default_resp], volkswagen_rx_offset)
+        resp = query.get_data(timeout)
+        if not resp:
+          carlog.warning(f"Radar leave programming mode returned no data on attempt {i+1}")
+          continue
+
+        carlog.warning(f"Radar leave programming mode succeeded on attempt {i+1}")
+        return
+          
+      except Exception as e:
+        carlog.error(f"Radar leave programming mode exception on attempt {i+1}: {repr(e)}")
+        continue
+	
+    carlog.error("Radar leave programming mode failed")
