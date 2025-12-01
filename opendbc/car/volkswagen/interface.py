@@ -204,6 +204,8 @@ class CarInterface(CarInterfaceBase):
 
   @staticmethod
   def init(CP, CP_SP, can_recv, can_send, communication_control=None):
+    # communication control is rejected with engine online
+    # works while in ignition (same for flash mode -> flash mode additionally results in TSK error / cruise fault)
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
       if CarInterface._get_radar_property_payloads(can_recv, RADAR_PROPERTY_PAYLOADS):
         communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
@@ -251,59 +253,3 @@ class CarInterface(CarInterfaceBase):
     carlog.warning(f"Radar payloads successfully captured")
 	
     return True
-
-  @staticmethod
-  def _radar_communication_control(CP, can_recv, can_send, disable=True):
-    # disable/enable radar tx
-    # communication control is rejected with engine online
-    # works while in ignition (same for flash mode -> flash mode additionally results in TSK error / cruise fault)
-    # method disable_ecu is not sufficient because it does not correctly check responses
-    bus, addr_radar, addr_diag, volkswagen_rx_offset, retry, timeout = CanBus(CP).pt, 0x757, 0x700, 0x6A, 3, 2
-
-    tp_req  = bytes([uds.SERVICE_TYPE.TESTER_PRESENT, 0x00])
-    tp_resp = bytes([uds.SERVICE_TYPE.TESTER_PRESENT + 0x40, 0x00])
-    ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
-    ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
-    comm_disable_req  = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
-    comm_disable_resp = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL + 0x40, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
-    comm_enable_req  = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_ENABLE_TX, uds.MESSAGE_TYPE.NORMAL])
-    comm_enable_resp = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL + 0x40, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_ENABLE_TX, uds.MESSAGE_TYPE.NORMAL])
-    
-    if disable:
-      comm_req = comm_disable_req
-      comm_resp = comm_disable_resp
-      txt = "disable"
-    else:
-      comm_req = comm_enable_req
-      comm_resp = comm_enable_resp
-      txt = "enable"
-	  
-    for i in range(retry):
-      try:
-        # Tester Present
-        query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [tp_req], [tp_resp], volkswagen_rx_offset, functional_addrs=[addr_diag])
-        if not query.get_data(timeout):
-          carlog.warning(f"Tester Present returned no data on attempt {i+1}")
-          continue
-
-        # Extended Diagnostic Session
-        query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [ext_diag_req], [ext_diag_resp], volkswagen_rx_offset)
-        if not query.get_data(timeout):
-          carlog.warning(f"Radar extended session returned no data on attempt {i+1}")
-          continue
-
-        # Communication Control
-        query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [comm_req], [comm_resp], volkswagen_rx_offset)
-        if not query.get_data(timeout):
-          carlog.warning(f"Radar communication control returned no data on attempt {i+1}")
-          continue
-          
-        carlog.warning(f"Radar {txt} by communication control succeeded on attempt {i+1}")
-        return True
-            
-      except Exception as e:
-        carlog.error(f"Radar {txt} by communication control exception on attempt {i+1}: {repr(e)}")
-        continue
-
-    carlog.error(f"Radar {txt} by communication control failed")
-    return False
