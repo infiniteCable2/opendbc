@@ -206,15 +206,14 @@ class CarInterface(CarInterfaceBase):
   def init(CP, CP_SP, can_recv, can_send, communication_control=None):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
       if CarInterface._get_radar_property_payloads(can_recv, RADAR_PROPERTY_PAYLOADS):
-        if not CarInterface._radar_communication_control(CP, can_recv, can_send):
-          CP.flags &= ~VolkswagenFlags.DISABLE_RADAR.value
-          CP.openpilotLongitudinalControl = False
-          CP.pcmCruise = not CP.openpilotLongitudinalControl
+        communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
+        disable_ecu(can_recv, can_send, bus=CanBus(CP).pt, addr=0x757, com_cont_req=communication_control, timeout=1.5, retry=3, response_offset=0x6A)
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      CarInterface._radar_communication_control(CP, can_recv, can_send, disable=False)
+      communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_ENABLE_TX, uds.MESSAGE_TYPE.NORMAL])
+      disable_ecu(can_recv, can_send, bus=CanBus(CP).pt, addr=0x757, com_cont_req=communication_control, timeout=1.5, retry=3, response_offset=0x6A)
       RADAR_PROPERTY_PAYLOADS.clear()
 
   @staticmethod
