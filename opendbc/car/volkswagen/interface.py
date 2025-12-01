@@ -228,6 +228,11 @@ class CarInterface(CarInterfaceBase):
                     carlog.debug(f"Radar payload captured: bus={bus}, addr=0x{addr:X}, data=0x{msg.dat.hex()}")
                     break
 
+      if pending:
+        carlog.error(f"Radar payloads failed to capture for: {pending}")
+        carlog.error(f"Openpilot execution STOP")
+        assert False
+
       # enter programming session
       # communication control is seen to be rejected for MQBevo
       bus, addr_radar, addr_diag, volkswagen_rx_offset, retry, timeout = CanBus(CP).pt, 0x757, 0x700, 0x6A, 3, 2
@@ -267,6 +272,8 @@ class CarInterface(CarInterfaceBase):
           carlog.error(f"Radar disable by flash mode exception on attempt {i+1}: {repr(e)}")
           continue
 
+      carlog.error(f"Radar disable by flash mode failed")
+      carlog.error(f"Openpilot execution STOP")
       assert False
 
   @staticmethod
