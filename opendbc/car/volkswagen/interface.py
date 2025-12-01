@@ -5,7 +5,7 @@ from opendbc.car.disable_ecu import disable_ecu
 from opendbc.car.interfaces import CarInterfaceBase
 from opendbc.car.volkswagen.carcontroller import CarController
 from opendbc.car.volkswagen.carstate import CarState
-from opendbc.car.volkswagen.values import CanBus, CAR, NetworkLocation, TransmissionType, VolkswagenFlags, VolkswagenSafetyFlags, RADAR_STANDBY_PAYLOADS
+from opendbc.car.volkswagen.values import CanBus, CAR, NetworkLocation, TransmissionType, VolkswagenFlags, VolkswagenSafetyFlags, RADAR_PROPERTY_PAYLOADS
 from opendbc.car.volkswagen.radar_interface import RadarInterface
 from opendbc.car.carlog import carlog
 from opendbc.car.isotp_parallel_query import IsoTpParallelQuery
@@ -95,13 +95,13 @@ class CarInterface(CarInterfaceBase):
         safety_configs[0].safetyParam |= VolkswagenSafetyFlags.DISABLE_RADAR.value
 
 		# capture current radar specific signals as replacement
-        RADAR_STANDBY_PAYLOADS.clear()
+        RADAR_PROPERTY_PAYLOADS.clear()
 		if 0x17F00057 in fingerprint[CAN.pt]:
-		  RADAR_STANDBY_PAYLOADS.append((CAN.pt, 0x17F00057, int(1/(DT_CTRL*2)), b""))
+		  RADAR_PROPERTY_PAYLOADS.append((CAN.pt, 0x17F00057, int(1/(DT_CTRL*2)), b""))
 		if 0x16A954AD in fingerprint[CAN.pt]:
-		  RADAR_STANDBY_PAYLOADS.append((CAN.pt, 0x16A954AD, int(1/(DT_CTRL*5)), b""))
+		  RADAR_PROPERTY_PAYLOADS.append((CAN.pt, 0x16A954AD, int(1/(DT_CTRL*5)), b""))
 		if 0x1B000057 in fingerprint[CAN.pt]:
-		  RADAR_STANDBY_PAYLOADS.append((CAN.pt, 0x1B000057, int(1/(DT_CTRL*5)), b""))
+		  RADAR_PROPERTY_PAYLOADS.append((CAN.pt, 0x1B000057, int(1/(DT_CTRL*5)), b""))
 
     elif ret.flags & VolkswagenFlags.MLB:
       # Set global MLB parameters
@@ -205,10 +205,10 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def init(CP, CP_SP, can_recv, can_send, communication_control=None):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      # get current payloads for simple radar replacement signals
-      pending = {(bus, addr) for (bus, addr, frame, payload) in RADAR_STANDBY_PAYLOADS if payload == b""}
+      # get current payloads for car specific radar property signals for replacement
+      pending = {(bus, addr) for (bus, addr, frame, payload) in RADAR_PROPERTY_PAYLOADS if payload == b""}
       if pending:
-        frames = [frame for (bus, addr, frame, payload) in RADAR_STANDBY_PAYLOADS if payload == b"" and (bus, addr) in pending]
+        frames = [frame for (bus, addr, frame, payload) in RADAR_PROPERTY_PAYLOADS if payload == b"" and (bus, addr) in pending]
         collect_timeout = max(frames) * DT_CTRL * 1.1
         start_time = time.monotonic()
         while pending and (time.monotonic() - start_time) < collect_timeout:
@@ -221,9 +221,9 @@ class CarInterface(CarInterfaceBase):
                 break
               key = (msg.src, msg.address)
               if key in pending:
-                for i, (bus, addr, frame, payload) in enumerate(RADAR_STANDBY_PAYLOADS):
+                for i, (bus, addr, frame, payload) in enumerate(RADAR_PROPERTY_PAYLOADS):
                   if bus == msg.src and addr == msg.address and payload == b"":
-                    RADAR_STANDBY_PAYLOADS[i] = (bus, addr, frame, msg.dat)
+                    RADAR_PROPERTY_PAYLOADS[i] = (bus, addr, frame, msg.dat)
                     pending.remove(key)
                     carlog.debug(f"Radar payload captured: bus={bus}, addr=0x{addr:X}, data=0x{msg.dat.hex()}")
                     break
