@@ -211,7 +211,8 @@ class CarInterface(CarInterfaceBase):
         if CarInterface._radar_communication_control(CP, can_recv, can_send):
           return
       CP.flags &= ~VolkswagenFlags.DISABLE_RADAR.value
-      CP.safetyConfigs = [] # goal is to prevent the relay from switching and getting any OP error
+      CP.openpilotLongitudinalControl = False
+      CP.pcmCruise = not ret.openpilotLongitudinalControl
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
@@ -301,7 +302,6 @@ class CarInterface(CarInterfaceBase):
           carlog.warning(f"Radar communication control returned no data on attempt {i+1}")
           continue
           
-        CP.radarUnavailable = True
         carlog.warning(f"Radar {txt} by communication control succeeded on attempt {i+1}")
         return True
             
