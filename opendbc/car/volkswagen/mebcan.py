@@ -366,6 +366,17 @@ def create_aeb_control(packer, bus, CP):
   return packer.make_can_msg("AWV_03", bus, values)
 
 
+def create_aeb_hud(packer, bus):
+  values = {
+    "AWV_Init":     1, 
+    "AWV_Disabled": 1,
+    "SET_ME_1":     1,
+    "SET_ME_511":   511,
+  }
+  
+  return packer.make_can_msg("MEB_AWV_01", bus, values)
+
+
 def create_radar_distance(packer, bus):
   # create empty dummy signal
   values = {}
