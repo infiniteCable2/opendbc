@@ -7,7 +7,7 @@ from opendbc.car.lateral import apply_driver_steer_torque_limits, apply_std_curv
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.interfaces import CarControllerBase
 from opendbc.car.volkswagen import mlbcan, mqbcan, pqcan, mebcan
-from opendbc.car.volkswagen.values import CanBus, CarControllerParams, VolkswagenFlags, RADAR_STANDBY_PAYLOADS
+from opendbc.car.volkswagen.values import CanBus, CarControllerParams, VolkswagenFlags, RADAR_PROPERTY_PAYLOADS
 from opendbc.car.volkswagen.mebutils import LongControlJerk, LongControlLimit, map_speed_to_acc_tempolimit, LatControlCurvature
 
 from opendbc.sunnypilot.car.volkswagen.icbm import IntelligentCruiseButtonManagementInterface
@@ -235,7 +235,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.pt, self.CP)) # AEB (1 Hz)
       if self.frame % 4 == 0: # not seen in MQBevo Gen 2 Audi RS3 2026
         can_sends.append(self.CCS.create_radar_distance(self.packer_pt, self.CAN.pt)) # Distance (25 Hz)
-      for (bus, addr, frame, payload) in RADAR_STANDBY_PAYLOADS: # send property signal payloads (no counter etc)
+      for (bus, addr, frame, payload) in RADAR_PROPERTY_PAYLOADS: # send property signal payloads (no counter etc)
         if payload and (self.frame % frame == 0):
           can_sends.append(CanData(addr, payload, bus))
       
