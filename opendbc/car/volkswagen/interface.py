@@ -214,7 +214,11 @@ class CarInterface(CarInterfaceBase):
         while pending and (time.monotonic() - start_time) < collect_timeout:
           packets = can_recv(wait_for_one=True) or []
           for packet in packets:
+            if not pending:
+              break
             for msg in packet:
+              if not pending:
+                break
               key = (msg.src, msg.address)
               if key in pending:
                 for i, (bus, addr, frame, payload) in enumerate(RADAR_STANDBY_PAYLOADS):
@@ -223,8 +227,6 @@ class CarInterface(CarInterfaceBase):
                     pending.remove(key)
                     carlog.debug(f"Radar payload captured: bus={bus}, addr=0x{addr:X}, data=0x{msg.dat.hex()}")
                     break
-          if not pending:
-            break
 
       # enter programming session
       # communication control is seen to be rejected for MQBevo
