@@ -212,7 +212,7 @@ class CarInterface(CarInterfaceBase):
           return
       CP.flags &= ~VolkswagenFlags.DISABLE_RADAR.value
       CP.openpilotLongitudinalControl = False
-      CP.pcmCruise = not ret.openpilotLongitudinalControl
+      CP.pcmCruise = not CP.openpilotLongitudinalControl
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
