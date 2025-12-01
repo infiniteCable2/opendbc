@@ -246,7 +246,7 @@ class CarInterface(CarInterfaceBase):
 
     carlog.warning(f"Radar payloads successfully captured")
 	
-	return True
+    return True
 
   @staticmethod
   def _enter_radar_programming_mode(CP, can_recv, can_send):
