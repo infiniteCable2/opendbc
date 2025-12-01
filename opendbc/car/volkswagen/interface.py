@@ -229,7 +229,7 @@ class CarInterface(CarInterfaceBase):
                     break
 
       if pending:
-        carlog.error(f"Radar payloads failed to capture for: {pending}")
+        carlog.error(f"Radar payloads failed to capture for: {repr(pending)}")
         carlog.error(f"Openpilot execution STOP")
         assert False
 
