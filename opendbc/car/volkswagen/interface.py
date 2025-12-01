@@ -94,9 +94,9 @@ class CarInterface(CarInterfaceBase):
         ret.flags |= VolkswagenFlags.DISABLE_RADAR.value
         safety_configs[0].safetyParam |= VolkswagenSafetyFlags.DISABLE_RADAR.value
 
-		# capture current radar specific signals as replacement
+        # capture current radar specific signals as replacement
         RADAR_PROPERTY_PAYLOADS.clear()
-		if 0x17F00057 in fingerprint[CAN.pt]:
+        if 0x17F00057 in fingerprint[CAN.pt]:
 		  RADAR_PROPERTY_PAYLOADS.append((CAN.pt, 0x17F00057, int(1/(DT_CTRL*2)), b""))
 		if 0x16A954AD in fingerprint[CAN.pt]:
 		  RADAR_PROPERTY_PAYLOADS.append((CAN.pt, 0x16A954AD, int(1/(DT_CTRL*5)), b""))
