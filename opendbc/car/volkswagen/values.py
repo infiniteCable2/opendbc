@@ -17,8 +17,8 @@ TransmissionType = structs.CarParams.TransmissionType
 GearShifter = structs.CarState.GearShifter
 Button = namedtuple('Button', ['event_type', 'can_addr', 'can_msg', 'values'])
 
-# global map for radar disable standby values
-RADAR_STANDBY_PAYLOADS: List[Tuple[int, int, int, bytes]] = [] # bus, addr, frame modulo, payload
+# global map for car specific radar property values
+RADAR_PROPERTY_PAYLOADS: List[Tuple[int, int, int, bytes]] = [] # bus, addr, frame (for car controller), payload
 
 
 class CanBus(CanBusBase):
