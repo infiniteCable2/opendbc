@@ -208,7 +208,7 @@ class CarInterface(CarInterfaceBase):
       # get current payloads for simple radar replacement signals
       pending = {(bus, addr) for (bus, addr, frame, payload) in RADAR_STANDBY_PAYLOADS if payload == b""}
       if pending:
-        frames = [frame for (bus, addr, frame, payload) in RADAR_STANDBY_PAYLOADS if payload == b""]
+        frames = [frame for (bus, addr, frame, payload) in RADAR_STANDBY_PAYLOADS if payload == b"" and (bus, addr) in pending]
         collect_timeout = max(frames) * DT_CTRL * 1.1
         start_time = time.monotonic()
         while pending and (time.monotonic() - start_time) < collect_timeout:
