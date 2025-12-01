@@ -51,11 +51,11 @@
 
 #define VW_MEB_RADAR_TX_MSGS                           \
   {MSG_DIAG_RADAR, 0, 8, .check_relay = false},        \
-  {MSG_AWV_03, 0, 48, .check_relay = false},           \
-  {MSG_MEB_Distance_01, 0, 64, .check_relay = false},  \
-  {MSG_MEB_Radar_01, 0, 8, .check_relay = false},      \
-  {MSG_MEB_Radar_02, 0, 8, .check_relay = false},      \
-  {MSG_MEB_Radar_03, 0, 8, .check_relay = false},      \
+  {MSG_AWV_03, 0, 48, .check_relay = true},           \
+  {MSG_MEB_Distance_01, 0, 64, .check_relay = true},  \
+  {MSG_MEB_Radar_01, 0, 8, .check_relay = true},      \
+  {MSG_MEB_Radar_02, 0, 8, .check_relay = true},      \
+  {MSG_MEB_Radar_03, 0, 8, .check_relay = true},      \
 
 static uint8_t volkswagen_crc8_lut_8h2f[256]; // Static lookup table for CRC8 poly 0x2F, aka 8H2F/AUTOSAR
 
