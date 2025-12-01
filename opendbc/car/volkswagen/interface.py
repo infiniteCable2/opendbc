@@ -206,12 +206,12 @@ class CarInterface(CarInterfaceBase):
   def init(CP, CP_SP, can_recv, can_send, communication_control=None):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
       assert CarInterface._get_radar_property_payloads(can_recv, RADAR_PROPERTY_PAYLOADS)
-      assert CarInterface._enter_programming_mode(CP, can_recv, can_send)
+      assert CarInterface._enter_radar_programming_mode(CP, can_recv, can_send)
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      CarInterface._exit_programming_mode(CP, can_recv, can_send)
+      CarInterface._exit_radar_programming_mode(CP, can_recv, can_send)
 
   @staticmethod
   def _get_radar_property_payloads(can_recv, radar_property_payloads):
@@ -249,7 +249,7 @@ class CarInterface(CarInterfaceBase):
 	return True
 
   @staticmethod
-  def _enter_programming_mode(CP, can_recv, can_send):
+  def _enter_radar_programming_mode(CP, can_recv, can_send):
     # enter programming session
     # communication control is seen to be rejected for MQBevo but works for MEB
     bus, addr_radar, addr_diag, volkswagen_rx_offset, retry, timeout = CanBus(CP).pt, 0x757, 0x700, 0x6A, 3, 2
@@ -294,7 +294,7 @@ class CarInterface(CarInterfaceBase):
     return False
 
   @staticmethod
-  def _exit_programming_mode(CP, can_recv, can_send):
+  def _exit_radar_programming_mode(CP, can_recv, can_send):
     # try to leave programming session
     bus, addr_radar, volkswagen_rx_offset, retry, timeout = CanBus(CP).pt, 0x757, 0x6A, 3, 2
 
