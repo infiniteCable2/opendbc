@@ -222,6 +222,9 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def _get_radar_property_payloads(can_recv, radar_property_payloads):
     # get current payloads for car specific radar property signals for replacement
+    # THE CAPTURED SIGNALS ARE NOT UNDERSTOOD YET: THIS IS ONLY OK FOR IGNITION STANDBY VALUES
+    # for signals which are configuration only messages, this way is generally not bad
+    # as radar disable is only possible when in ignition, we are fine for now, but understanding is a TODO anyway
     pending = {(bus, addr) for (bus, addr, frame, payload) in radar_property_payloads if payload == b""}
     if pending:
       frames = [frame for (bus, addr, frame, payload) in radar_property_payloads if payload == b"" and (bus, addr) in pending]
@@ -246,7 +249,6 @@ class CarInterface(CarInterfaceBase):
 
     if pending:
       carlog.error(f"Radar payloads failed to capture for: {repr(pending)}")
-      carlog.error(f"Openpilot execution STOP")
       return False
 
     carlog.warning(f"Radar payloads successfully captured")
@@ -306,5 +308,4 @@ class CarInterface(CarInterfaceBase):
         continue
 
     carlog.error(f"Radar {txt} by communication control failed")
-    carlog.error(f"Openpilot execution STOP")
     return False
