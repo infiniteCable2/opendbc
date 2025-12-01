@@ -205,18 +205,23 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def init(CP, CP_SP, can_recv, can_send, communication_control=None):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      assert CarInterface._get_radar_property_payloads(can_recv, RADAR_PROPERTY_PAYLOADS)
-      assert CarInterface._enter_radar_programming_mode(CP, can_recv, can_send)
+      for i in range(1):
+        if not CarInterface._get_radar_property_payloads(can_recv, RADAR_PROPERTY_PAYLOADS):
+		  break
+        if CarInterface._radar_communication_control(CP, can_recv, can_send):
+          return
+      CP.flags &= ~VolkswagenFlags.DISABLE_RADAR.value
+      CP.safetyConfigs = [get_safety_config(structs.CarParams.SafetyModel.noOutput)]
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      CarInterface._exit_radar_programming_mode(CP, can_recv, can_send)
+      CarInterface._radar_communication_control(CP, can_recv, can_send, disable=False)
+      RADAR_PROPERTY_PAYLOADS.clear()
 
   @staticmethod
   def _get_radar_property_payloads(can_recv, radar_property_payloads):
     # get current payloads for car specific radar property signals for replacement
-	
     pending = {(bus, addr) for (bus, addr, frame, payload) in radar_property_payloads if payload == b""}
     if pending:
       frames = [frame for (bus, addr, frame, payload) in radar_property_payloads if payload == b"" and (bus, addr) in pending]
@@ -249,18 +254,29 @@ class CarInterface(CarInterfaceBase):
     return True
 
   @staticmethod
-  def _enter_radar_programming_mode(CP, can_recv, can_send):
-    # enter programming session
-    # communication control is seen to be rejected for MQBevo but works for MEB
+  def _radar_communication_control(CP, can_recv, can_send, disable=True):
+    # disable/enable radar tx
+    # communication control is rejected with engine online
+    # works while in ignition (same for flash mode -> flash mode additionally results in TSK error / cruise fault)
+    # method disable_ecu is not sufficient because it does not correctly check responses
     bus, addr_radar, addr_diag, volkswagen_rx_offset, retry, timeout = CanBus(CP).pt, 0x757, 0x700, 0x6A, 3, 2
 
-    ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
-    ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
-    flash_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.PROGRAMMING])
-    flash_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.PROGRAMMING])
     tp_req  = bytes([uds.SERVICE_TYPE.TESTER_PRESENT, 0x00])
     tp_resp = bytes([uds.SERVICE_TYPE.TESTER_PRESENT + 0x40, 0x00])
-
+    ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
+    ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
+    comm_disable_req  = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, uds.CONTROL_TYPE.ENABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
+    comm_disable_resp = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL + 0x40, uds.CONTROL_TYPE.ENABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
+    comm_enable_req  = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, uds.CONTROL_TYPE.ENABLE_RX_ENABLE_TX, uds.MESSAGE_TYPE.NORMAL])
+    comm_enable_resp = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL + 0x40, uds.CONTROL_TYPE.ENABLE_RX_ENABLE_TX, uds.MESSAGE_TYPE.NORMAL])
+    
+    if disable:
+      comm_req = comm_disable_req
+      txt = "disable"
+	else:
+      comm_req = comm_enable_req
+      txt = "enable"
+	  
     for i in range(retry):
       try:
         # Tester Present
@@ -275,45 +291,20 @@ class CarInterface(CarInterfaceBase):
           carlog.warning(f"Radar extended session returned no data on attempt {i+1}")
           continue
 
-        # Programming Session
-        query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [flash_req], [flash_resp], volkswagen_rx_offset)
+        # Communication Control
+        query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [comm_req], [comm_resp], volkswagen_rx_offset)
         if not query.get_data(timeout):
-          carlog.warning(f"Radar programming session returned no data on attempt {i+1}")
+          carlog.warning(f"Radar communication control returned no data on attempt {i+1}")
           continue
           
         CP.radarUnavailable = True
-        carlog.warning(f"Radar disable by flash mode succeeded on attempt {i+1}")
+        carlog.warning(f"Radar {txt} by communication control succeeded on attempt {i+1}")
         return True
             
       except Exception as e:
-        carlog.error(f"Radar disable by flash mode exception on attempt {i+1}: {repr(e)}")
+        carlog.error(f"Radar {txt} by communication control exception on attempt {i+1}: {repr(e)}")
         continue
 
-    carlog.error(f"Radar disable by flash mode failed")
+    carlog.error(f"Radar {txt} by communication control failed")
     carlog.error(f"Openpilot execution STOP")
     return False
-
-  @staticmethod
-  def _exit_radar_programming_mode(CP, can_recv, can_send):
-    # try to leave programming session
-    bus, addr_radar, volkswagen_rx_offset, retry, timeout = CanBus(CP).pt, 0x757, 0x6A, 3, 2
-
-    default_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.DEFAULT])
-    default_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.DEFAULT])
-    
-    for i in range(retry):
-      try:
-        query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [default_req], [default_resp], volkswagen_rx_offset)
-        resp = query.get_data(timeout)
-        if not resp:
-          carlog.warning(f"Radar leave programming mode returned no data on attempt {i+1}")
-          continue
-
-        carlog.warning(f"Radar leave programming mode succeeded on attempt {i+1}")
-        return
-          
-      except Exception as e:
-        carlog.error(f"Radar leave programming mode exception on attempt {i+1}: {repr(e)}")
-        continue
-	
-    carlog.error("Radar leave programming mode failed")
