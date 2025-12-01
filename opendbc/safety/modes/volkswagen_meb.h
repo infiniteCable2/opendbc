@@ -42,15 +42,15 @@
   {.msg = {{MSG_Motor_51, 0, 48, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
   {.msg = {{MSG_ESC_51, 0, 64, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
 
-#define VW_MEB_LONG_TX_MSGS                                                                  \
-  {MSG_HCA_03, 0, 24, .check_relay = true},                                                  \
-  {MSG_MEB_ACC_01, 0, 48, .check_relay = false}, {MSG_ACC_18, 0, 32, .check_relay = false},  \
-  {MSG_EA_01, 0, 8, .check_relay = false}, {MSG_EA_02, 0, 8, .check_relay = true},           \
-  {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},         \
-  {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true},           \
+#define VW_MEB_LONG_TX_MSGS                                                                \
+  {MSG_HCA_03, 0, 24, .check_relay = true},                                                \
+  {MSG_MEB_ACC_01, 0, 48, .check_relay = true}, {MSG_ACC_18, 0, 32, .check_relay = true},  \
+  {MSG_EA_01, 0, 8, .check_relay = false}, {MSG_EA_02, 0, 8, .check_relay = true},         \
+  {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},       \
+  {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true},         \
 
-#define VW_MEB_RADAR_TX_MSGS                           \
-  {MSG_DIAG_RADAR, 0, 8, .check_relay = false},        \
+#define VW_MEB_RADAR_TX_MSGS                          \
+  {MSG_DIAG_RADAR, 0, 8, .check_relay = false},       \
   {MSG_AWV_03, 0, 48, .check_relay = true},           \
   {MSG_MEB_Distance_01, 0, 64, .check_relay = true},  \
   {MSG_MEB_Radar_01, 0, 8, .check_relay = true},      \
