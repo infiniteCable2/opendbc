@@ -213,7 +213,7 @@ class CarInterface(CarInterfaceBase):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
       self._enter_programming_mode(CP, can_recv, can_send)
 
-  def _get_radar_property_payloads(can_recv, radar_property_payloads):
+  def _get_radar_property_payloads(self, can_recv, radar_property_payloads):
     # get current payloads for car specific radar property signals for replacement
 	
     pending = {(bus, addr) for (bus, addr, frame, payload) in radar_property_payloads if payload == b""}
@@ -247,7 +247,7 @@ class CarInterface(CarInterfaceBase):
 	
 	return True
 	
-  def _enter_programming_mode(CP, can_recv, can_send):
+  def _enter_programming_mode(self, CP, can_recv, can_send):
     # enter programming session
     # communication control is seen to be rejected for MQBevo but works for MEB
     bus, addr_radar, addr_diag, volkswagen_rx_offset, retry, timeout = CanBus(CP).pt, 0x757, 0x700, 0x6A, 3, 2
@@ -291,7 +291,7 @@ class CarInterface(CarInterfaceBase):
     carlog.error(f"Openpilot execution STOP")
     return False
 	
-  def _exit_programming_mode(CP, can_recv, can_send):
+  def _exit_programming_mode(self, CP, can_recv, can_send):
     # try to leave programming session
     bus, addr_radar, volkswagen_rx_offset, retry, timeout = CanBus(CP).pt, 0x757, 0x6A, 3, 2
 
