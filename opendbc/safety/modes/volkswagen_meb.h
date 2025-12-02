@@ -53,7 +53,7 @@
   {MSG_DIAG_RADAR, 0, 8, .check_relay = false},          \
   {MSG_AWV_03, 0, 48, .check_relay = false},             \
   {MSG_MEB_Distance_01, 0, 64, .check_relay = false},    \
-  {#define MSG_MEB_AWV_01, 0, 8, .check_relay = false},  \
+  {MSG_MEB_AWV_01, 0, 8, .check_relay = false},          \
   {MSG_Radar_Property_01, 0, 8, .check_relay = false},   \
   {MSG_Radar_Property_02, 0, 8, .check_relay = false},   \
 
