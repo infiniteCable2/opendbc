@@ -154,12 +154,11 @@ BO_ 178 ESP_19: 8 Gateway_MQB
 BO_ 219 AWV_03: 48 XXX
  SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
  SG_ COUNTER : 8|4@1+ (1,0) [0|15] "" XXX
- SG_ SET_ME_5 : 12|3@1+ (1,0) [0|3] "" XXX
- SG_ Unknown_01 : 15|1@0+ (1,0) [0|1] "" XXX
- SG_ Unknown_02 : 18|6@1+ (1,0) [0|63] "" XXX
- SG_ SET_ME_1_1 : 24|1@0+ (1,0) [0|1] "" XXX
- SG_ SET_ME_3 : 25|2@1+ (1,0) [0|3] "" XXX
- SG_ SET_ME_16 : 27|5@1+ (1,0) [0|15] "" XXX
+ SG_ Unknown_01 : 12|3@1+ (1,0) [0|3] "" XXX
+ SG_ SET_ME_63 : 18|6@1+ (1,0) [0|63] "" XXX
+ SG_ NEW_SIGNAL_1 : 24|1@0+ (1,0) [0|1] "" XXX
+ SG_ Unknown_02 : 25|2@1+ (1,0) [0|3] "" XXX
+ SG_ SET_ME_30 : 27|5@1+ (1,0) [0|15] "" XXX
  SG_ SET_ME_127 : 33|7@1+ (1,0) [0|127] "" XXX
  SG_ Unknown_03 : 40|1@0+ (1,0) [0|1] "" XXX
  SG_ SET_ME_127_2 : 41|7@1+ (1,0) [0|127] "" XXX
@@ -168,8 +167,8 @@ BO_ 219 AWV_03: 48 XXX
  SG_ SET_ME_15_1 : 72|4@1+ (1,0) [0|15] "" XXX
  SG_ FCW_Active : 76|1@0+ (1,0) [0|1] "" XXX
  SG_ SET_ME_255 : 80|8@1+ (1,0) [0|255] "" XXX
- SG_ SET_ME_255_2 : 94|10@1+ (1,0) [0|3] "" XXX
- SG_ SET_ME_1_2 : 129|1@0+ (1,0) [0|1] "" XXX
+ SG_ SET_ME_1023 : 94|10@1+ (1,0) [0|3] "" XXX
+ SG_ SET_ME_1 : 129|1@0+ (1,0) [0|1] "" XXX
 
 BO_ 252 ESC_51: 48 XXX
  SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
