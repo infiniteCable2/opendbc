@@ -31,6 +31,7 @@ class CarState(CarStateBase, MadsCarState):
     self.speed_limit_predicative_type = 0
     self.force_rhd_for_bsm = False
     self.acc_type = 0
+    self.radar_disable_invalid = False
 
   def update_button_enable(self, buttonEvents: list[structs.CarState.ButtonEvent]):
     if not self.CP.pcmCruise:
@@ -341,8 +342,9 @@ class CarState(CarStateBase, MadsCarState):
       # Speed limiter mode; ECM faults if we command ACC while not pcmCruise
       ret.cruiseState.nonAdaptive = bool(pt_cp.vl["Motor_51"]["TSK_Limiter_ausgewaehlt"])
 
+    self.radar_disable_invalid = self.is_message_live(pt_cp, "ACC_18") if self.CP.flags & VolkswagenFlags.DISABLE_RADAR else False
     accFaulted = pt_cp.vl["Motor_51"]["TSK_Status"] in (6, 7)
-    ret.accFaulted = self.update_acc_fault(accFaulted, parking_brake=ret.parkingBrake, drive_mode=drive_mode)
+    ret.accFaulted = self.update_acc_fault(accFaulted, parking_brake=ret.parkingBrake, drive_mode=drive_mode) or self.radar_disable_invalid
 
     if self.CP.flags & VolkswagenFlags.MQB_EVO:
       self.esp_hold_confirmation = bool(pt_cp.vl["ESP_21"]["ESP_Haltebestaetigung"])
@@ -511,6 +513,12 @@ class CarState(CarStateBase, MadsCarState):
     elif self.frame - self.cruise_recovery_timer < recovery_frames_max:
       fault = False
     return fault
+
+  def is_message_live(self, parser, name_or_addr) -> bool:
+    state = parser.message_states.get(name_or_addr, None)
+    if state is None:
+      return False
+    return state.valid(parser._last_update_nanos, parser.bus_timeout)
 
   @staticmethod
   def get_can_parsers(CP, CP_SP):
