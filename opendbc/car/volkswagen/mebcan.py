@@ -326,42 +326,18 @@ def create_acc_hud_control(packer, bus, acc_control, set_speed, lead_visible, di
   
   
 def create_aeb_control(packer, bus, CP):
-  # those are default inactive values pre drive
-  if CP.flags & VolkswagenFlags.MEB:
-    values = {
-      "SET_ME_63":    63, 
-      "SET_ME_30":    30,
-      "SET_ME_127":   127,
-      "SET_ME_127_2": 127,
-      "SET_ME_63_2":  63,
-      "SET_ME_15_1":  15,
-      "SET_ME_255":   255,
-      "SET_ME_1023":  1023,
-      "SET_ME_1":     1,
-    }
-  elif CP.flags & VolkswagenFlags.MQB_EVO:
-    values = {
-      "SET_ME_5":     5,
-      "SET_ME_1_1":   1,
-      "SET_ME_3":     3,
-      "SET_ME_16":    16,
-      "SET_ME_127":   127,
-      "SET_ME_127_2": 127,
-      "SET_ME_63_2":  63,
-      "SET_ME_15_1":  15,
-      "SET_ME_255":   255,
-      "SET_ME_255_2": 255,
-      "SET_ME_1_2":   1,
-    }
-  else:
-    values = {}
-
-  # lets try if it runs without, this is a higher byte signal part, differences seen here
-  # first part seems to be consistent
-  #if CP.flags & VolkswagenFlags.MEB_GEN2:
-  #  values.update({
-  #    "SET_ME_15_2": 15,
-  #  })
+  # default inactive values basically present for every plattform (MEB Gen 1/2, MQBevo Gen 1)
+  values = {
+    "SET_ME_63":    63, 
+    "SET_ME_30":    30,
+    "SET_ME_127":   127,
+    "SET_ME_127_2": 127,
+    "SET_ME_63_2":  63,
+    "SET_ME_15_1":  15,
+    "SET_ME_255":   255,
+    "SET_ME_1023":  1023,
+    "SET_ME_1":     1,
+  }
   
   return packer.make_can_msg("AWV_03", bus, values)
 
