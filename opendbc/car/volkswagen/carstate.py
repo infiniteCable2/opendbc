@@ -343,7 +343,7 @@ class CarState(CarStateBase, MadsCarState):
       # Speed limiter mode; ECM faults if we command ACC while not pcmCruise
       ret.cruiseState.nonAdaptive = bool(pt_cp.vl["Motor_51"]["TSK_Limiter_ausgewaehlt"])
 
-    #self.radar_disable_invalid = self.is_radar_disable_invalid(pt_cp) if self.CP.flags & VolkswagenFlags.DISABLE_RADAR else False
+    self.radar_disable_invalid = self.is_radar_disable_invalid(pt_cp, "ACC_18", 50) if self.CP.flags & VolkswagenFlags.DISABLE_RADAR else False
     accFaulted = pt_cp.vl["Motor_51"]["TSK_Status"] in (6, 7)
     ret.accFaulted = self.update_acc_fault(accFaulted, parking_brake=ret.parkingBrake, drive_mode=drive_mode) or self.radar_disable_invalid
 
@@ -515,18 +515,36 @@ class CarState(CarStateBase, MadsCarState):
       fault = False
     return fault
 
-  def is_radar_disable_invalid(self, parser) -> bool:
-    state = parser.message_states.get("ACC_18", None)
+  def is_radar_disable_invalid(self, parser, msg_name: str, expected_hz: float, presence_timeout_factor: float = 3.0,
+                               required_seconds_present: float = 3.0) -> bool:
+    # check for message presence
+    # problem with check relay -> to early, block sending radar messages in carcontroller
+    msg = parser.dbc.name_to_msg[msg_name]
+    addr = msg.address
+    state = parser.message_states.get(addr)
     if state is None:
-      self.radar_disable_invalid_counter = 0
-      return False
-    if state.valid(parser._last_update_nanos, parser.bus_timeout):
-      self.radar_disable_invalid_counter += 1
+        self.radar_disable_invalid_counter = 0
+        return False
+
+    if not state.timestamps:
+        self.radar_disable_invalid_counter = 0
+        return False
+
+    period_s = 1.0 / expected_hz
+    timeout_s = period_s * presence_timeout_factor
+    timeout_ns = int(timeout_s * 1e9)
+
+    now = parser._last_update_nanos
+    age_ns = now - state.timestamps[-1]
+    present = age_ns < timeout_ns
+    if present:
+        self.radar_disable_invalid_counter += 1
     else:
-      self.radar_disable_invalid_counter = 0
-    if self.radar_disable_invalid_counter > 300:
-      return True
-    return False
+        self.radar_disable_invalid_counter = 0
+
+    cycles_required = int(required_seconds_present / period_s)
+
+    return self.radar_disable_invalid_counter > cycles_required
 
   @staticmethod
   def get_can_parsers(CP, CP_SP):
