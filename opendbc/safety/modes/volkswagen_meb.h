@@ -19,11 +19,11 @@
 #define MSG_KLR_01           0x25DU   // TX, for capacitive steering wheel
 #define MSG_DIAG_RADAR       0x757U   // TX, for diagnostic messages for radar
 #define MSG_DIAGNOSTIC       0x700U   // TX, for general tester present on bus
-#define MSG_AWV_03           0xDBU    // TX, AEB message replacement
+#define MSG_AWV_03           0xDBU    // TX, AEB control message replacement
 #define MSG_MEB_Distance_01  0x24FU   // TX, distance message replacement
-#define MSG_MEB_Radar_01     0x16A954ADU   // TX, radar message replacement
-#define MSG_MEB_Radar_02     0x1B000057U   // TX, radar message replacement
-#define MSG_MEB_Radar_03     0x17F00057U   // TX, radar message replacement
+#define MSG_MEB_AWV_01       0x16A954ADU   // TX, AEB HUD message replacement
+#define MSG_Radar_Property_01     0x1B000057U   // TX, radar message replacement
+#define MSG_Radar_Property_02     0x17F00057U   // TX, radar message replacement
 
 
 // PANDA SAFETY SHOULD INTRODUCE A .ignore_length flag (ALLOWED ONLY IF CHECKSUM CHECK IS REQUIRED TO BE SAFE)
@@ -42,20 +42,20 @@
   {.msg = {{MSG_Motor_51, 0, 48, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
   {.msg = {{MSG_ESC_51, 0, 64, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
 
-#define VW_MEB_LONG_TX_MSGS                                                                \
-  {MSG_HCA_03, 0, 24, .check_relay = true},                                                \
-  {MSG_MEB_ACC_01, 0, 48, .check_relay = true}, {MSG_ACC_18, 0, 32, .check_relay = true},  \
-  {MSG_EA_01, 0, 8, .check_relay = false}, {MSG_EA_02, 0, 8, .check_relay = true},         \
-  {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},       \
-  {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true},         \
+#define VW_MEB_LONG_TX_MSGS(acc_relay_check)                                                                     \
+  {MSG_HCA_03, 0, 24, .check_relay = true},                                                                      \
+  {MSG_MEB_ACC_01, 0, 48, .check_relay = acc_relay_check}, {MSG_ACC_18, 0, 32, .check_relay = acc_relay_check},  \
+  {MSG_EA_01, 0, 8, .check_relay = false}, {MSG_EA_02, 0, 8, .check_relay = true},                               \
+  {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},                             \
+  {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true},                               \
 
-#define VW_MEB_RADAR_TX_MSGS                          \
-  {MSG_DIAG_RADAR, 0, 8, .check_relay = false},       \
-  {MSG_AWV_03, 0, 48, .check_relay = true},           \
-  {MSG_MEB_Distance_01, 0, 64, .check_relay = true},  \
-  {MSG_MEB_Radar_01, 0, 8, .check_relay = true},      \
-  {MSG_MEB_Radar_02, 0, 8, .check_relay = true},      \
-  {MSG_MEB_Radar_03, 0, 8, .check_relay = true},      \
+#define VW_MEB_RADAR_TX_MSGS                             \
+  {MSG_DIAG_RADAR, 0, 8, .check_relay = false},          \
+  {MSG_AWV_03, 0, 48, .check_relay = false},             \
+  {MSG_MEB_Distance_01, 0, 64, .check_relay = false},    \
+  {#define MSG_MEB_AWV_01, 0, 8, .check_relay = false},  \
+  {MSG_Radar_Property_01, 0, 8, .check_relay = false},   \
+  {MSG_Radar_Property_02, 0, 8, .check_relay = false},   \
 
 static uint8_t volkswagen_crc8_lut_8h2f[256]; // Static lookup table for CRC8 poly 0x2F, aka 8H2F/AUTOSAR
 
@@ -160,11 +160,11 @@ static safety_config volkswagen_meb_init(uint16_t param) {
                                                         {MSG_GRA_ACC_01, 2, 8, .check_relay = false}, {MSG_LDW_02, 0, 8, .check_relay = true}};
   
   static const CanMsg VOLKSWAGEN_MEB_LONG_TX_MSGS[] = {
-	VW_MEB_LONG_TX_MSGS
+	VW_MEB_LONG_TX_MSGS(true)
   };
 
   static const CanMsg VOLKSWAGEN_MEB_LONG_NO_RADAR_TX_MSGS[] = {
-	VW_MEB_LONG_TX_MSGS
+	VW_MEB_LONG_TX_MSGS(false)
 	VW_MEB_RADAR_TX_MSGS
 	{MSG_DIAGNOSTIC, 0, 8, .check_relay = false},
   };
