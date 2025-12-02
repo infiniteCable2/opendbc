@@ -343,7 +343,7 @@ class CarState(CarStateBase, MadsCarState):
       # Speed limiter mode; ECM faults if we command ACC while not pcmCruise
       ret.cruiseState.nonAdaptive = bool(pt_cp.vl["Motor_51"]["TSK_Limiter_ausgewaehlt"])
 
-    self.radar_disable_invalid = self.is_radar_disable_invalid(pt_cp) if self.CP.flags & VolkswagenFlags.DISABLE_RADAR else False
+    #self.radar_disable_invalid = self.is_radar_disable_invalid(pt_cp) if self.CP.flags & VolkswagenFlags.DISABLE_RADAR else False
     accFaulted = pt_cp.vl["Motor_51"]["TSK_Status"] in (6, 7)
     ret.accFaulted = self.update_acc_fault(accFaulted, parking_brake=ret.parkingBrake, drive_mode=drive_mode) or self.radar_disable_invalid
 
