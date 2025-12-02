@@ -523,12 +523,12 @@ class CarState(CarStateBase, MadsCarState):
     addr = msg.address
     state = parser.message_states.get(addr)
     if state is None:
-        self.radar_disable_invalid_counter = 0
-        return False
+      self.radar_disable_invalid_counter = 0
+      return False
 
     if not state.timestamps:
-        self.radar_disable_invalid_counter = 0
-        return False
+      self.radar_disable_invalid_counter = 0
+      return False
 
     period_s = 1.0 / expected_hz
     timeout_s = period_s * presence_timeout_factor
@@ -538,9 +538,9 @@ class CarState(CarStateBase, MadsCarState):
     age_ns = now - state.timestamps[-1]
     present = age_ns < timeout_ns
     if present:
-        self.radar_disable_invalid_counter += 1
+      self.radar_disable_invalid_counter += 1
     else:
-        self.radar_disable_invalid_counter = 0
+      self.radar_disable_invalid_counter = 0
 
     cycles_required = int(required_seconds_present / period_s)
 
