@@ -32,6 +32,7 @@ class CarState(CarStateBase, MadsCarState):
     self.force_rhd_for_bsm = False
     self.acc_type = 0
     self.radar_disable_invalid = False
+    self.radar_disable_invalid_counter = 0
 
   def update_button_enable(self, buttonEvents: list[structs.CarState.ButtonEvent]):
     if not self.CP.pcmCruise:
@@ -342,7 +343,7 @@ class CarState(CarStateBase, MadsCarState):
       # Speed limiter mode; ECM faults if we command ACC while not pcmCruise
       ret.cruiseState.nonAdaptive = bool(pt_cp.vl["Motor_51"]["TSK_Limiter_ausgewaehlt"])
 
-    self.radar_disable_invalid = self.is_message_live(pt_cp, "ACC_18") if self.CP.flags & VolkswagenFlags.DISABLE_RADAR else False
+    self.radar_disable_invalid = self.is_radar_disable_invalid(pt_cp) if self.CP.flags & VolkswagenFlags.DISABLE_RADAR else False
     accFaulted = pt_cp.vl["Motor_51"]["TSK_Status"] in (6, 7)
     ret.accFaulted = self.update_acc_fault(accFaulted, parking_brake=ret.parkingBrake, drive_mode=drive_mode) or self.radar_disable_invalid
 
@@ -514,11 +515,18 @@ class CarState(CarStateBase, MadsCarState):
       fault = False
     return fault
 
-  def is_message_live(self, parser, name_or_addr) -> bool:
-    state = parser.message_states.get(name_or_addr, None)
+  def is_radar_disable_invalid(self, parser) -> bool:
+    state = parser.message_states.get("ACC_18", None)
     if state is None:
+      self.radar_disable_invalid_counter = 0
       return False
-    return state.valid(parser._last_update_nanos, parser.bus_timeout)
+    if state.valid(parser._last_update_nanos, parser.bus_timeout):
+      self.radar_disable_invalid_counter += 1
+    else:
+      self.radar_disable_invalid_counter = 0
+    if self.radar_disable_invalid_counter > 300:
+      return True
+    return False
 
   @staticmethod
   def get_can_parsers(CP, CP_SP):
