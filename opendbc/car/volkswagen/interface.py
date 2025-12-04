@@ -251,14 +251,17 @@ class CarInterface(CarInterfaceBase):
         query.get_data(0)
 
         # Communication Control (spam after DTC clearing request ~ 200Hz burst)
+        sent = 0
         start_time = time.monotonic()
         while time.monotonic() - start_time < burst_duration_comm:
           try:
             query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [comm_req], [comm_resp], volkswagen_rx_offset)
             query.get_data(timeout_comm)
+            sent += 1
           except Exception as e:
             continue
-          
+
+        carlog.warning(f"Radar communication control burst finished, sent={sent} frames")
         carlog.warning(f"Radar {txt} by communication control sent on attempt {i+1}")
         return True
             
