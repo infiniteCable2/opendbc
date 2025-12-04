@@ -2118,7 +2118,7 @@ BO_ 401604695 MEB_Radar_Unknown_01: 8 XXX
  SG_ NEW_SIGNAL_5 : 56|2@1+ (1,0) [0|3] "" XXX
  SG_ Dynamic_in_Drive : 63|1@0+ (1,0) [0|1] "" XXX
 
-BO_ 452984919 Radar_Property_02: 8 XXX
+BO_ 452984919 MEB_Unknown_01: 8 XXX
  SG_ NEW_SIGNAL_1 : 14|1@0+ (1,0) [0|1] "" XXX
  SG_ NEW_SIGNAL_5 : 16|1@0+ (1,0) [0|1] "" XXX
  SG_ NEW_SIGNAL_4 : 18|1@0+ (1,0) [0|1] "" XXX
