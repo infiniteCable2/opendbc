@@ -211,7 +211,8 @@ class CarInterface(CarInterfaceBase):
   @staticmethod
   def _radar_communication_control(CP, can_recv, can_send, disable=True):
     # disable/enable radar tx
-    bus, addr_radar, addr_diag, volkswagen_rx_offset, retry, timeout, retry_comm, timeout_comm = CanBus(CP).pt, 0x757, 0x700, 0x6A, 3, 0.5, 10, 0.1
+    bus, addr_radar, addr_diag, volkswagen_rx_offset = CanBus(CP).pt, 0x757, 0x700, 0x6A
+    retry, timeout, timeout_comm, burst_duration_comm = 3, 0.5, 0.005, 1
 
     tp_req  = bytes([uds.SERVICE_TYPE.TESTER_PRESENT, 0x00])
     tp_resp = bytes([uds.SERVICE_TYPE.TESTER_PRESENT + 0x40, 0x00])
@@ -249,16 +250,16 @@ class CarInterface(CarInterfaceBase):
         query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [clear_dtc_req], [clear_dtc_resp], volkswagen_rx_offset)
         query.get_data(0)
 
-        # Communication Control (spam after DTC clearing request)
-        for j in range(retry_comm):
+        # Communication Control (spam after DTC clearing request ~ 200Hz burst)
+        start_time = time.monotonic()
+        while time.monotonic() - start_time < burst_duration_comm:
           try:
             query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [comm_req], [comm_resp], volkswagen_rx_offset)
             query.get_data(timeout_comm)
           except Exception as e:
-            carlog.error(f"Radar {txt} by communication control exception on attempt {i+1}:{j+1}: {repr(e)}")
             continue
           
-        carlog.warning(f"Radar {txt} by communication control succeeded on attempt {i+1}")
+        carlog.warning(f"Radar {txt} by communication control sent on attempt {i+1}")
         return True
             
       except Exception as e:
