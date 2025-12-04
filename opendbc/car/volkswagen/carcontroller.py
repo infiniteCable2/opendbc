@@ -234,9 +234,9 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         can_sends.append(self.CCS.create_aeb_hud(self.packer_pt, self.CAN.pt)) # AEB HUD (5 Hz)
       if self.frame % 4 == 0: # not seen in MQBevo Gen 2 Audi RS3 2026
         can_sends.append(self.CCS.create_radar_distance(self.packer_pt, self.CAN.pt)) # Distance (25 Hz)
-      for (bus, addr, frame, payload) in RADAR_PROPERTY_PAYLOADS: # radar property signals
-        if payload and (self.frame % frame == 0):
-          can_sends.append(CanData(addr, payload, bus))
+      #for (bus, addr, frame, payload) in RADAR_PROPERTY_PAYLOADS: # radar property signals
+      #  if payload and (self.frame % frame == 0):
+      #    can_sends.append(CanData(addr, payload, bus))
 
     # **** HUD Controls ***************************************************** #
 
