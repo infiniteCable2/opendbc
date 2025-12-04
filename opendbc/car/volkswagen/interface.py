@@ -5,7 +5,7 @@ from opendbc.car.disable_ecu import disable_ecu
 from opendbc.car.interfaces import CarInterfaceBase
 from opendbc.car.volkswagen.carcontroller import CarController
 from opendbc.car.volkswagen.carstate import CarState
-from opendbc.car.volkswagen.values import CanBus, CAR, NetworkLocation, TransmissionType, VolkswagenFlags, VolkswagenSafetyFlags, RADAR_PROPERTY_PAYLOADS
+from opendbc.car.volkswagen.values import CanBus, CAR, NetworkLocation, TransmissionType, VolkswagenFlags, VolkswagenSafetyFlags
 from opendbc.car.volkswagen.radar_interface import RadarInterface
 from opendbc.car.carlog import carlog
 from opendbc.car.isotp_parallel_query import IsoTpParallelQuery
@@ -93,13 +93,6 @@ class CarInterface(CarInterfaceBase):
       if ret.networkLocation == NetworkLocation.fwdCamera:
         ret.flags |= VolkswagenFlags.DISABLE_RADAR.value
         safety_configs[0].safetyParam |= VolkswagenSafetyFlags.DISABLE_RADAR.value
-
-        # capture radar property signals
-        RADAR_PROPERTY_PAYLOADS.clear()
-        if 0x17F00057 in fingerprint[CAN.pt]:
-          RADAR_PROPERTY_PAYLOADS.append((CAN.pt, 0x17F00057, int(1/(DT_CTRL*2)), b""))
-        if 0x1B000057 in fingerprint[CAN.pt]:
-          RADAR_PROPERTY_PAYLOADS.append((CAN.pt, 0x1B000057, int(1/(DT_CTRL*5)), b""))
 
     elif ret.flags & VolkswagenFlags.MLB:
       # Set global MLB parameters
@@ -205,47 +198,61 @@ class CarInterface(CarInterfaceBase):
     # communication control can be rejected with engine on
     # works during ignition
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      if CarInterface._get_radar_property_payloads(can_recv, RADAR_PROPERTY_PAYLOADS):
-        communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
-        disable_ecu(can_recv, can_send, bus=CanBus(CP).pt, addr=0x757, com_cont_req=communication_control, timeout=1.5, retry=3, response_offset=0x6A)
+      CarInterface._radar_communication_control(CP, can_recv, can_send)
+      #communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
+      #disable_ecu(can_recv, can_send, bus=CanBus(CP).pt, addr=0x757, com_cont_req=communication_control, timeout=1.5, retry=3, response_offset=0x6A)
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_ENABLE_TX, uds.MESSAGE_TYPE.NORMAL])
-      disable_ecu(can_recv, can_send, bus=CanBus(CP).pt, addr=0x757, com_cont_req=communication_control, timeout=1.5, retry=3, response_offset=0x6A)
-      RADAR_PROPERTY_PAYLOADS.clear()
+      CarInterface._radar_communication_control(CP, can_recv, can_send, disable=False)
+      #communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_ENABLE_TX, uds.MESSAGE_TYPE.NORMAL])
+      #disable_ecu(can_recv, can_send, bus=CanBus(CP).pt, addr=0x757, com_cont_req=communication_control, timeout=1.5, retry=3, response_offset=0x6A)
 
   @staticmethod
-  def _get_radar_property_payloads(can_recv, radar_property_payloads):
-    # get current payloads for car specific radar property signals for replacement
-    # THE CAPTURED SIGNALS ARE NOT UNDERSTOOD YET but do not or slightly change 
-    pending = {(bus, addr) for (bus, addr, frame, payload) in radar_property_payloads if payload == b""}
-    if pending:
-      frames = [frame for (bus, addr, frame, payload) in radar_property_payloads if payload == b"" and (bus, addr) in pending]
-      collect_timeout = max(frames) * DT_CTRL * 1.1
-      start_time = time.monotonic()
-      while pending and (time.monotonic() - start_time) < collect_timeout:
-        packets = can_recv(wait_for_one=True) or []
-        for packet in packets:
-          if not pending:
-            break
-          for msg in packet:
-            if not pending:
-              break
-            key = (msg.src, msg.address)
-            if key in pending:
-              for i, (bus, addr, frame, payload) in enumerate(radar_property_payloads):
-                if bus == msg.src and addr == msg.address and payload == b"":
-                  radar_property_payloads[i] = (bus, addr, frame, msg.dat)
-                  pending.remove(key)
-                  carlog.debug(f"Radar payload captured: bus={bus}, addr=0x{addr:X}, data=0x{msg.dat.hex()}")
-                  break
+  def _radar_communication_control(CP, can_recv, can_send, disable=True):
+    # disable/enable radar tx
+    bus, addr_radar, addr_diag, volkswagen_rx_offset, retry, timeout = CanBus(CP).pt, 0x757, 0x700, 0x6A, 3, 2
 
-    if pending:
-      carlog.error(f"Radar payloads failed to capture for: {repr(pending)}")
-      return False
+    tp_req  = bytes([uds.SERVICE_TYPE.TESTER_PRESENT, 0x00])
+    tp_resp = bytes([uds.SERVICE_TYPE.TESTER_PRESENT + 0x40, 0x00])
+    ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
+    ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
+    comm_disable_req  = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
+    comm_enable_req  = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_ENABLE_TX, uds.MESSAGE_TYPE.NORMAL])
+    comm_resp = b''
+    
+    if disable:
+      comm_req = comm_disable_req
+      txt = "disable"
+    else:
+      comm_req = comm_enable_req
+      txt = "enable"
+	  
+    for i in range(retry):
+      try:
+        # Tester Present
+        query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [tp_req], [tp_resp], volkswagen_rx_offset, functional_addrs=[addr_diag])
+        if not query.get_data(timeout):
+          carlog.warning(f"Tester Present returned no data on attempt {i+1}")
+          continue
 
-    carlog.warning(f"Radar payloads successfully captured")
-	
-    return True
+        # Extended Diagnostic Session
+        query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [ext_diag_req], [ext_diag_resp], volkswagen_rx_offset)
+        if not query.get_data(timeout):
+          carlog.warning(f"Radar extended session returned no data on attempt {i+1}")
+          continue
+
+        # Communication Control
+        query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [comm_req], [comm_resp], volkswagen_rx_offset)
+        query.get_data(0)
+          
+        carlog.warning(f"Radar {txt} by communication control succeeded on attempt {i+1}")
+        return True
+            
+      except Exception as e:
+        carlog.error(f"Radar {txt} by communication control exception on attempt {i+1}: {repr(e)}")
+        continue
+
+    carlog.error(f"Radar {txt} by communication control failed")
+    return False
