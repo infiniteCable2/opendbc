@@ -232,24 +232,24 @@ class CarInterface(CarInterfaceBase):
 	  
     for i in range(retry):
       try:
-        if not disable:
-          # Tester Present
+		# Tester Present
+        if disable:
           query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [tp_req], [tp_resp], volkswagen_rx_offset, functional_addrs=[addr_diag])
           if not query.get_data(timeout):
             carlog.warning(f"Tester Present returned no data on attempt {i+1}")
             continue
 		  
-          # Extended Diagnostic Session
-          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [ext_diag_req], [ext_diag_resp], volkswagen_rx_offset)
-          if not query.get_data(timeout):
-            carlog.warning(f"Radar extended session returned no data on attempt {i+1}")
-            continue
+        # Extended Diagnostic Session
+        query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [ext_diag_req], [ext_diag_resp], volkswagen_rx_offset)
+        if not query.get_data(timeout):
+          carlog.warning(f"Radar extended session returned no data on attempt {i+1}")
+          continue
 		  
-          # Clear DTC (probably can soft reset the ecu to accept communication control while engine on)
-          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [clear_dtc_req], [clear_dtc_resp], volkswagen_rx_offset)
-          query.get_data(0)
+        # Clear DTC (probably can soft reset the ecu to accept communication control while engine on)
+        query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [clear_dtc_req], [clear_dtc_resp], volkswagen_rx_offset)
+        query.get_data(0)
 
-        # Communication Control
+        # Communication Control (spam after DTC clearing request)
         for j in range(retry_comm):
           try:
             query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [comm_req], [comm_resp], volkswagen_rx_offset)
