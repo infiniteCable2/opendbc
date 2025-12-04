@@ -7,7 +7,7 @@ from opendbc.car.lateral import apply_driver_steer_torque_limits, apply_std_curv
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.interfaces import CarControllerBase
 from opendbc.car.volkswagen import mlbcan, mqbcan, pqcan, mebcan
-from opendbc.car.volkswagen.values import CanBus, CarControllerParams, VolkswagenFlags, RADAR_PROPERTY_PAYLOADS
+from opendbc.car.volkswagen.values import CanBus, CarControllerParams, VolkswagenFlags
 from opendbc.car.volkswagen.mebutils import LongControlJerk, LongControlLimit, map_speed_to_acc_tempolimit, LatControlCurvature
 
 from opendbc.sunnypilot.car.volkswagen.icbm import IntelligentCruiseButtonManagementInterface
@@ -177,7 +177,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     
     # **** Acceleration Controls ******************************************** #
     
-    if self.frame % self.CCP.ACC_CONTROL_STEP == 0 and self.CP.openpilotLongitudinalControl and not CS.radar_disable_invalid:
+    if self.frame % self.CCP.ACC_CONTROL_STEP == 0 and self.CP.openpilotLongitudinalControl:
       stopping = actuators.longControlState == LongCtrlState.stopping
         
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
@@ -226,7 +226,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     # **** Radar disable **************************************************** #    
     # send radar replacement messages to keep the car happy and tester present to hold radar disabled state
     
-    if self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl and not CS.radar_disable_invalid:
+    if self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
       if self.frame % 100 == 0:
         can_sends.append(make_tester_present_msg(0x700, self.CAN.pt, suppress_response=True)) # Tester Present
         can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.pt, self.CP)) # AEB Control(1 Hz)
@@ -234,9 +234,6 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         can_sends.append(self.CCS.create_aeb_hud(self.packer_pt, self.CAN.pt)) # AEB HUD (5 Hz)
       if self.frame % 4 == 0: # not seen in MQBevo Gen 2 Audi RS3 2026
         can_sends.append(self.CCS.create_radar_distance(self.packer_pt, self.CAN.pt)) # Distance (25 Hz)
-      #for (bus, addr, frame, payload) in RADAR_PROPERTY_PAYLOADS: # radar property signals
-      #  if payload and (self.frame % frame == 0):
-      #    can_sends.append(CanData(addr, payload, bus))
 
     # **** HUD Controls ***************************************************** #
 
@@ -256,7 +253,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     if hud_control.leadDistanceBars != self.lead_distance_bars_last:
       self.distance_bar_frame = self.frame
     
-    if self.frame % self.CCP.ACC_HUD_STEP == 0 and self.CP.openpilotLongitudinalControl and not CS.radar_disable_invalid:
+    if self.frame % self.CCP.ACC_HUD_STEP == 0 and self.CP.openpilotLongitudinalControl:
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
         fcw_alert = hud_control.visualAlert == VisualAlert.fcw
         show_distance_bars = self.frame - self.distance_bar_frame < 400
