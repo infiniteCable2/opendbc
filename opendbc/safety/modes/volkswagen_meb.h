@@ -22,8 +22,6 @@
 #define MSG_AWV_03           0xDBU    // TX, AEB control message replacement
 #define MSG_MEB_Distance_01  0x24FU   // TX, distance message replacement
 #define MSG_MEB_AWV_01       0x16A954ADU   // TX, AEB HUD message replacement
-#define MSG_Radar_Property_01     0x1B000057U   // TX, radar message replacement
-#define MSG_Radar_Property_02     0x17F00057U   // TX, radar message replacement
 
 
 // PANDA SAFETY SHOULD INTRODUCE A .ignore_length flag (ALLOWED ONLY IF CHECKSUM CHECK IS REQUIRED TO BE SAFE)
@@ -49,13 +47,11 @@
   {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},                             \
   {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true},                               \
 
-#define VW_MEB_RADAR_TX_MSGS                             \
-  {MSG_DIAG_RADAR, 0, 8, .check_relay = false},          \
-  {MSG_AWV_03, 0, 48, .check_relay = false},             \
-  {MSG_MEB_Distance_01, 0, 64, .check_relay = false},    \
-  {MSG_MEB_AWV_01, 0, 8, .check_relay = false},          \
-  {MSG_Radar_Property_01, 0, 8, .check_relay = false},   \
-  {MSG_Radar_Property_02, 0, 8, .check_relay = false},   \
+#define VW_MEB_RADAR_TX_MSGS                          \
+  {MSG_DIAG_RADAR, 0, 8, .check_relay = false},       \
+  {MSG_AWV_03, 0, 48, .check_relay = true},           \
+  {MSG_MEB_Distance_01, 0, 64, .check_relay = true},  \
+  {MSG_MEB_AWV_01, 0, 8, .check_relay = true},        \
 
 static uint8_t volkswagen_crc8_lut_8h2f[256]; // Static lookup table for CRC8 poly 0x2F, aka 8H2F/AUTOSAR
 
@@ -358,6 +354,13 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
   if ((msg->addr == MSG_GRA_ACC_01) && !controls_allowed) {
     // disallow resume and set: bits 16 and 19
     if ((msg->data[2] & 0x9U) != 0U) {
+      tx = false;
+    }
+  }
+
+  // UDS: Only tester present ("\x02\x3E\x80\x00\x00\x00\x00\x00") allowed on diagnostics address
+  if (msg->addr == MSG_DIAGNOSTIC) {
+    if ((GET_BYTES(msg, 0, 4) != 0x00803E02U) || (GET_BYTES(msg, 4, 4) != 0x0U)) {
       tx = false;
     }
   }
