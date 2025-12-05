@@ -227,8 +227,8 @@ class CarInterface(CarInterfaceBase):
     comm_disable_req  = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, uds.CONTROL_TYPE.DISABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL]) # can be lost for engine on transition for enable rx
     comm_enable_req  = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, uds.CONTROL_TYPE.ENABLE_RX_ENABLE_TX, uds.MESSAGE_TYPE.NORMAL])
     comm_resp = b''
-    key_off_on_req = bytes([uds.SERVICE_TYPE.ECU_RESET, uds.RESET_TYPE.KEY_OFF_ON])
-    key_off_on_resp = bytes([uds.SERVICE_TYPE.ECU_RESET + 0x40, uds.RESET_TYPE.KEY_OFF_ON])
+    reset_req = bytes([uds.SERVICE_TYPE.ECU_RESET, uds.RESET_TYPE.SOFT])
+    reset_resp = bytes([uds.SERVICE_TYPE.ECU_RESET + 0x40, uds.RESET_TYPE.SOFT])
 
     txt = "disable" if disable else "enable"
 	  
@@ -245,6 +245,12 @@ class CarInterface(CarInterfaceBase):
           query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [ext_diag_req], [ext_diag_resp], volkswagen_rx_offset)
           if not query.get_data(timeout):
             carlog.warning(f"Radar extended session returned no data on attempt {i+1}")
+            continue
+
+          # Soft reset to allow radar disable with engine on 
+          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [reset_req], [reset_resp], volkswagen_rx_offset)
+          if not query.get_data(timeout):
+            carlog.warning(f"Radar soft reset returned no data on attempt {i+1}")
             continue
 
           # Programming Session
