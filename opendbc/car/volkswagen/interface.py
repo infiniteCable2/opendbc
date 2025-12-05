@@ -204,9 +204,9 @@ class CarInterface(CarInterfaceBase):
       if not CarInterface._is_cruise_online_meb(can_recv): # prevent programming session request, it will not work
         carlog.warning("Trying to disable the radar")
         CarInterface._radar_communication_control(CP, can_recv, can_send)
-	  else:
+      else:
         carlog.warning("The radar can not be disabled")
-		CP.flags &= ~VolkswagenFlags.DISABLE_RADAR.value # block sending uneccessary signals
+        CP.flags &= ~VolkswagenFlags.DISABLE_RADAR.value # block sending uneccessary signals
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
