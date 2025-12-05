@@ -220,7 +220,7 @@ class CarInterface(CarInterfaceBase):
     ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
     clear_dtc_req  = bytes([uds.SERVICE_TYPE.CLEAR_DIAGNOSTIC_INFORMATION, 0xFF, 0xFF, 0xFF])
     clear_dtc_resp = b'' #bytes([uds.SERVICE_TYPE.CLEAR_DIAGNOSTIC_INFORMATION + 0x40])
-    comm_disable_req  = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, uds.CONTROL_TYPE.ENABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
+    comm_disable_req  = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, uds.CONTROL_TYPE.DISABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL]) # can be lost for engine on transition for enable rx
     comm_enable_req  = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, uds.CONTROL_TYPE.ENABLE_RX_ENABLE_TX, uds.MESSAGE_TYPE.NORMAL])
     comm_resp = b''
     
