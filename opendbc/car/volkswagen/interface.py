@@ -203,6 +203,8 @@ class CarInterface(CarInterfaceBase):
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
+    # deinit is currently never executed in current state of Openpilot
+    # CarD is just killed, no reaction handling on SIGINT
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
       CarInterface._radar_communication_control(CP, can_recv, can_send, disable=False)
       #communication_control = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, 0x80 | uds.CONTROL_TYPE.ENABLE_RX_ENABLE_TX, uds.MESSAGE_TYPE.NORMAL])
@@ -218,6 +220,8 @@ class CarInterface(CarInterfaceBase):
     tp_resp = bytes([uds.SERVICE_TYPE.TESTER_PRESENT + 0x40, 0x00])
     ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
     ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
+    flash_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.PROGRAMMING])
+    flash_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.PROGRAMMING])
     clear_dtc_req  = bytes([uds.SERVICE_TYPE.CLEAR_DIAGNOSTIC_INFORMATION, 0xFF, 0xFF, 0xFF])
     clear_dtc_resp = b'' #bytes([uds.SERVICE_TYPE.CLEAR_DIAGNOSTIC_INFORMATION + 0x40])
     comm_disable_req  = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, uds.CONTROL_TYPE.DISABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL]) # can be lost for engine on transition for enable rx
@@ -243,10 +247,16 @@ class CarInterface(CarInterfaceBase):
             carlog.warning(f"Radar extended session returned no data on attempt {i+1}")
             continue
 
-          # Communication Control
-          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [comm_disable_req], [comm_resp], volkswagen_rx_offset)
-          query.get_data(0)
-          carlog.warning(f"Radar {txt} by communication control sent on attempt {i+1}")
+          # Programming Session
+          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [flash_req], [comm_resp], volkswagen_rx_offset)
+          query.get_data(0) # no waiting time for this to begin sending our own commands as fast as possible to prevent cruise faults
+          carlog.warning(f"Radar {txt} by programming session sent on attempt {i+1}")
+
+          ## Communication Control full disable required active reviving radar ecu -> deinit OP is never called -> radar wakes up after 2 ignition cycles
+		  # party tx disable is not working after engine on for newer car in MEB and MQBevo
+          #query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [comm_disable_req], [comm_resp], volkswagen_rx_offset)
+          #query.get_data(0)
+          #carlog.warning(f"Radar {txt} by communication control sent on attempt {i+1}")
 
         else:
           query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [key_off_on_req], [key_off_on_resp], volkswagen_rx_offset)
