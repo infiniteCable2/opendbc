@@ -240,28 +240,16 @@ class CarInterface(CarInterfaceBase):
             carlog.warning(f"Tester Present returned no data on attempt {i+1}")
             continue
 		  
-        # Extended Diagnostic Session
-        query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [ext_diag_req], [ext_diag_resp], volkswagen_rx_offset)
-        if not query.get_data(timeout):
-          carlog.warning(f"Radar extended session returned no data on attempt {i+1}")
-          continue
-		  
-        # Clear DTC (probably can soft reset the ecu to accept communication control while engine on)
-        query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [clear_dtc_req], [clear_dtc_resp], volkswagen_rx_offset)
-        query.get_data(0)
-
-        # Communication Control (spam after DTC clearing request ~ 200Hz burst)
-        sent = 0
-        start_time = time.monotonic()
-        while time.monotonic() - start_time < burst_duration_comm:
-          try:
-            query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [comm_req], [comm_resp], volkswagen_rx_offset)
-            query.get_data(timeout_comm)
-            sent += 1
-          except Exception as e:
+          # Extended Diagnostic Session
+          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [ext_diag_req], [ext_diag_resp], volkswagen_rx_offset)
+          if not query.get_data(timeout):
+            carlog.warning(f"Radar extended session returned no data on attempt {i+1}")
             continue
 
-        carlog.warning(f"Radar communication control burst finished, sent={sent} frames")
+        # Communication Control
+        query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [comm_req], [comm_resp], volkswagen_rx_offset)
+        query.get_data(0)
+
         carlog.warning(f"Radar {txt} by communication control sent on attempt {i+1}")
         return True
             
