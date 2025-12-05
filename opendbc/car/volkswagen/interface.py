@@ -247,7 +247,7 @@ class CarInterface(CarInterfaceBase):
           query.get_data(0)
           carlog.warning(f"Radar {txt} by communication control sent on attempt {i+1}")
 
-		else:
+        else:
           query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [key_off_on_req], [comm_resp], volkswagen_rx_offset)
           query.get_data(0)
           carlog.warning(f"Radar {txt} by key off on reset sent on attempt {i+1}")
