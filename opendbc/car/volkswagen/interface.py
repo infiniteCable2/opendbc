@@ -201,12 +201,11 @@ class CarInterface(CarInterfaceBase):
     # -> deinit is not called in OP -> errors in dash, recovers after second ignition cycle
     # Programming session is also rejected while engine on
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      if not CarInterface._is_cruise_online_meb(can_recv): # prevent programming session request, it will not work
+      if not CarInterface._is_cruise_state_allowed_meb(can_recv): # prevent programming session request, it will not work
         carlog.warning("Trying to disable the radar")
         CarInterface._radar_communication_control(CP, can_recv, can_send)
       else:
         carlog.warning("The radar can not be disabled")
-        CP.flags &= ~VolkswagenFlags.DISABLE_RADAR.value # block sending uneccessary signals
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
@@ -261,9 +260,9 @@ class CarInterface(CarInterfaceBase):
     return False
 
   @staticmethod
-  def _is_cruise_online_meb(can_recv, timeout: float = 0.5) -> bool:
+  def _is_cruise_state_allowed_meb(can_recv, timeout: float = 0.5) -> bool:
     # this is a safety measure
-    # detect if the cruise control is online/available (this happens after engine on transition)
+    # detect if the cruise control is in an allowed state
     # [Motor_51][TSK_Status]
     end_time = time.monotonic() + timeout
   
@@ -277,9 +276,12 @@ class CarInterface(CarInterfaceBase):
           dat = msg.dat
           tsk_status = msg.dat[11] & 0x07
 
-          if tsk_status != 0:
-            carlog.warning(f"Cruise is online: TSK_Status={tsk_status}")
+          if not tsk_status in (0, 1, 6): # disabled, initializing, temporary fault
+            carlog.warning(f"Cruise state is allowed: TSK_Status={tsk_status}")
             return True
+		  else:
+            carlog.warning(f"Cruise state is not allowed: TSK_Status={tsk_status}")
+            return False
   
-    carlog.warning("Cruise is offline")
+    carlog.warning("Cruise state unknown")
     return False
