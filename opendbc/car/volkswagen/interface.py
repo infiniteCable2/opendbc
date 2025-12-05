@@ -224,6 +224,7 @@ class CarInterface(CarInterfaceBase):
     comm_enable_req  = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, uds.CONTROL_TYPE.ENABLE_RX_ENABLE_TX, uds.MESSAGE_TYPE.NORMAL])
     comm_resp = b''
     key_off_on_req = bytes([uds.SERVICE_TYPE.ECU_RESET, uds.RESET_TYPE.KEY_OFF_ON])
+    key_off_on_resp = bytes([uds.SERVICE_TYPE.ECU_RESET + 0x40, uds.RESET_TYPE.KEY_OFF_ON])
 
     txt = "disable" if disable else "enable"
 	  
@@ -248,8 +249,11 @@ class CarInterface(CarInterfaceBase):
           carlog.warning(f"Radar {txt} by communication control sent on attempt {i+1}")
 
         else:
-          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [key_off_on_req], [comm_resp], volkswagen_rx_offset)
-          query.get_data(0)
+          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [key_off_on_req], [key_off_on_resp], volkswagen_rx_offset)
+          if not query.get_data(timeout):
+            carlog.warning(f"Radar {txt} by key off on reset returned no data on attempt {i+1}")
+            continue
+
           carlog.warning(f"Radar {txt} by key off on reset sent on attempt {i+1}")
 
         return True
