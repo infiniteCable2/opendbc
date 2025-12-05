@@ -248,7 +248,7 @@ class CarInterface(CarInterfaceBase):
             continue
 
           # Soft reset to allow radar disable with engine on 
-          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [reset_req], [reset_resp], volkswagen_rx_offset)
+          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [reset_req], [comm_resp], volkswagen_rx_offset)
           query.get_data(0)
           carlog.warning(f"Radar soft reset sent on attempt {i+1}")
 
