@@ -201,7 +201,12 @@ class CarInterface(CarInterfaceBase):
     # -> deinit is not called in OP -> errors in dash, recovers after second ignition cycle
     # Programming session is also rejected while engine on
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      CarInterface._radar_communication_control(CP, can_recv, can_send)
+      if not CarInterface._is_cruise_online_meb(can_recv): # prevent programming session request, it will not work
+        carlog.warning("Trying to disable the radar")
+        CarInterface._radar_communication_control(CP, can_recv, can_send)
+	  else:
+        carlog.warning("The radar can not be disabled")
+		CP.flags &= ~VolkswagenFlags.DISABLE_RADAR.value # block sending uneccessary signals
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
@@ -253,4 +258,28 @@ class CarInterface(CarInterfaceBase):
         continue
 
     carlog.error(f"Radar {txt} failed")
+    return False
+
+  @staticmethod
+  def _is_cruise_online_meb(can_recv, timeout: float = 0.5) -> bool:
+    # this is a safety measure
+    # detect if the cruise control is online/available (this happens after engine on transition)
+    # [Motor_51][TSK_Status]
+    end_time = time.monotonic() + timeout
+  
+    while time.monotonic() < end_time:
+      packets = can_recv(wait_for_one=True) or []
+      for packet in packets:
+        for msg in packet:
+          if msg.address != 0x10B:
+            continue
+  
+          dat = msg.dat
+          tsk_status = msg.dat[11] & 0x07
+
+          if tsk_status != 0:
+            carlog.warning(f"Cruise is online: TSK_Status={tsk_status}")
+            return True
+  
+    carlog.warning("Cruise is offline")
     return False
