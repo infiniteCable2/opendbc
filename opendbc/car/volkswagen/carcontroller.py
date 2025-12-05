@@ -227,9 +227,9 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     
     if self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl:
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
-        if self.frame % 1000 == 0: # comm control could be lost after ~30s, renew request frequently
-          radar_comm_disable_request = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, uds.CONTROL_TYPE.ENABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
-          can_sends.append(CanData(0x757, radar_comm_disable_request, self.CAN.pt))
+        #if self.frame % 1000 == 0: # comm control could be lost after ~30s, renew request frequently
+        #  radar_comm_disable_request = bytes([uds.SERVICE_TYPE.COMMUNICATION_CONTROL, uds.CONTROL_TYPE.DISABLE_RX_DISABLE_TX, uds.MESSAGE_TYPE.NORMAL])
+        #  can_sends.append(CanData(0x757, radar_comm_disable_request, self.CAN.pt))
         if self.frame % 100 == 0:
           can_sends.append(make_tester_present_msg(0x700, self.CAN.pt, suppress_response=True)) # Tester Present
           can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.pt, self.CP)) # AEB Control(1 Hz)
