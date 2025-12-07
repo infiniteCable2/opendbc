@@ -177,7 +177,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     
     # **** Acceleration Controls ******************************************** #
     
-    if self.frame % self.CCP.ACC_CONTROL_STEP == 0 and self.CP.openpilotLongitudinalControl and not RADAR_DISABLE_FAIL["value"]:
+    if self.frame % self.CCP.ACC_CONTROL_STEP == 0 and self.CP.openpilotLongitudinalControl and RADAR_DISABLE_FAIL["value"] == False:
       stopping = actuators.longControlState == LongCtrlState.stopping
         
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
@@ -225,7 +225,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         
     # **** Radar disable **************************************************** #
     
-    if self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl and not RADAR_DISABLE_FAIL["value"]:
+    if self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl and RADAR_DISABLE_FAIL["value"] == False:
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
         if self.frame % 100 == 0:
           can_sends.append(make_tester_present_msg(0x700, self.CAN.pt, suppress_response=True)) # Tester Present
@@ -253,7 +253,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     if hud_control.leadDistanceBars != self.lead_distance_bars_last:
       self.distance_bar_frame = self.frame
     
-    if self.frame % self.CCP.ACC_HUD_STEP == 0 and self.CP.openpilotLongitudinalControl and not RADAR_DISABLE_FAIL["value"]:
+    if self.frame % self.CCP.ACC_HUD_STEP == 0 and self.CP.openpilotLongitudinalControl and RADAR_DISABLE_FAIL["value"] == False:
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
         fcw_alert = hud_control.visualAlert == VisualAlert.fcw
         show_distance_bars = self.frame - self.distance_bar_frame < 400
