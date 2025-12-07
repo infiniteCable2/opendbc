@@ -206,7 +206,7 @@ class CarInterface(CarInterfaceBase):
           carlog.warning("Trying to disable the radar")
           CarInterface._radar_communication_control(CP, can_recv, can_send)
         else:
-          RADAR_DISABLE_FAIL = True
+          RADAR_DISABLE_FAIL["value"] = True
           carlog.warning("The radar can not be disabled")
 
   @staticmethod
