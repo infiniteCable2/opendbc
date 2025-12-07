@@ -70,8 +70,6 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     CS.enable_pred_react_to_speed_limits = CC.cruiseControl.speedLimitPredReactToSL
     CS.enable_pred_react_to_curves = CC.cruiseControl.speedLimitPredReactToCurves
 
-    if RADAR_DISABLE_FAIL and 
-
     # **** Steering Controls ************************************************ #
 
     if self.frame % self.CCP.STEER_STEP == 0:
