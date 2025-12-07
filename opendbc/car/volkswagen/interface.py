@@ -199,13 +199,13 @@ class CarInterface(CarInterfaceBase):
     # uds.CONTROL_TYPE.ENABLE_RX_DISABLE_TX is lost with engine on transition for newer MEB and MQBevo cars
     # uds.CONTROL_TYPE.DISABLE_RX_DISABLE_TX is probably not lost but the radar has to be revived manually
     # -> deinit is not called in OP -> errors in dash, recovers after second ignition cycle
-    # Programming session is also rejected while engine on
+    # Programming session is also rejected while engine on but recovers after key off on
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      #if CarInterface._is_cruise_state_allowed_meb(can_recv): # prevent programming session request, it will not work
-      carlog.warning("Trying to disable the radar")
-      CarInterface._radar_communication_control(CP, can_recv, can_send)
-      #else:
-      #  carlog.warning("The radar can not be disabled")
+      if CarInterface._is_engine_state_allowed_meb(can_recv): # prevent programming session request, it will not work
+        carlog.warning("Trying to disable the radar")
+        CarInterface._radar_communication_control(CP, can_recv, can_send)
+      else:
+        carlog.warning("The radar can not be disabled")
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
@@ -260,10 +260,10 @@ class CarInterface(CarInterfaceBase):
     return False
 
   @staticmethod
-  def _is_cruise_state_allowed_meb(can_recv, timeout: float = 0.5) -> bool:
+  def _is_engine_state_allowed_meb(can_recv, timeout: float = 0.5) -> bool:
     # this is a safety measure
-    # detect if the cruise control is in an allowed state
-    # [Motor_51][TSK_Status]
+    # detect if the radar can be disabled by engine state
+    # [Motor_54][Engine_On]
     end_time = time.monotonic() + timeout
   
     while time.monotonic() < end_time:
@@ -274,14 +274,14 @@ class CarInterface(CarInterfaceBase):
             continue
   
           dat = msg.dat
-          tsk_status = msg.dat[11] & 0x07
+          engine_on = bool((msg.dat[9] >> 5) & 0x01)
 
-          if tsk_status in (0, 1, 6): # disabled, initializing, temporary fault
-            carlog.warning(f"Cruise state is allowed: TSK_Status={tsk_status}")
-            return True
-          else:
-            carlog.warning(f"Cruise state is not allowed: TSK_Status={tsk_status}")
+          if engine_on:
+            carlog.warning(f"Engine state is not allowed: Engine_On={engine_on}")
             return False
+          else:
+            carlog.warning(f"Engine state is allowed: Engine_On={engine_on}")
+            return True
   
-    carlog.warning("Cruise state unknown")
+    carlog.warning("Engine state state unknown")
     return True
