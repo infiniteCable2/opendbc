@@ -201,11 +201,11 @@ class CarInterface(CarInterfaceBase):
     # -> deinit is not called in OP -> errors in dash, recovers after second ignition cycle
     # Programming session is also rejected while engine on
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-      if CarInterface._is_cruise_state_allowed_meb(can_recv): # prevent programming session request, it will not work
-        carlog.warning("Trying to disable the radar")
-        CarInterface._radar_communication_control(CP, can_recv, can_send)
-      else:
-        carlog.warning("The radar can not be disabled")
+      #if CarInterface._is_cruise_state_allowed_meb(can_recv): # prevent programming session request, it will not work
+      carlog.warning("Trying to disable the radar")
+      CarInterface._radar_communication_control(CP, can_recv, can_send)
+      #else:
+      #  carlog.warning("The radar can not be disabled")
 
   @staticmethod
   def deinit(CP, can_recv, can_send):
