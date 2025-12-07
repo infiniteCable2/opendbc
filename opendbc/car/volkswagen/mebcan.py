@@ -344,8 +344,8 @@ def create_aeb_control(packer, bus, CP):
 
 def create_aeb_hud(packer, bus):
   values = {
-    "AWV_Init":     0, # displays aeb disabled
-    "AWV_Disabled": 1, # displays not initialized white icon
+    "AWV_Enabled":  0, # displays aeb disabled
+    "AWV_Init":     1, # displays not initialized white icon
     "SET_ME_1":     1,
     "SET_ME_511":   511,
   }
