@@ -2076,8 +2076,8 @@ BO_ 380196006 Battery_Temperatures: 8 XXX
 BO_ 380196013 MEB_AWV_01: 8 XXX
  SG_ Distance_Warning : 12|1@0+ (1,0) [0|1] "" XXX
  SG_ FCW_Display : 13|1@0+ (1,0) [0|1] "" XXX
- SG_ AWV_Init : 15|1@0+ (1,0) [0|1] "" XXX
- SG_ AWV_Disabled : 17|1@0+ (1,0) [0|1] "" XXX
+ SG_ AWV_Enabled : 15|1@0+ (1,0) [0|1] "" XXX
+ SG_ AWV_Init : 17|1@0+ (1,0) [0|1] "" XXX
  SG_ FCW_Sound : 22|2@1+ (1,0) [0|3] "" XXX
  SG_ SET_ME_1 : 28|1@0+ (1,0) [0|1] "" XXX
  SG_ SET_ME_511 : 33|9@1+ (1,0) [0|127] "" XXX
