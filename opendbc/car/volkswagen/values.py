@@ -110,6 +110,8 @@ class CarControllerParams:
       }
 
     elif CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
+      self.AEB_CONTROL_STEP        = 100   # AWV_03 message frequency 1Hz
+      self.AEB_HUD_STEP            = 20    # MEB_AWV_01 message frequency 5Hz
       self.LDW_STEP                = 10    # LDW_02 message frequency 10Hz
       self.ACC_HUD_STEP            = 6     # MEB_ACC_01 message frequency 16Hz
       self.STEER_DRIVER_ALLOWANCE  = 60    # Driver torque 0.6 Nm, begin steering reduction from MAX
