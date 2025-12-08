@@ -194,6 +194,16 @@ class CarInterface(CarInterfaceBase):
     return ret
 
   @staticmethod
+  def pre_init(CP, CP_SP, can_recv, can_send):
+    # fork custom method in CarD called at a point, where car params can still be changed
+    # check pre conditions for successful radar disable
+    # put the device into dashcam mode if neccessary: no relay switching, no bus blocking with relay malfunction
+    if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
+      if CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
+        if not CarInterface._is_engine_state_allowed_meb(can_recv):
+          CP.dashcamOnly = True
+
+  @staticmethod
   def init(CP, CP_SP, can_recv, can_send, communication_control=None):
     # communication control can be rejected with engine on
     # uds.CONTROL_TYPE.ENABLE_RX_DISABLE_TX is lost with engine on transition for newer MEB and MQBevo cars
