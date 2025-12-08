@@ -17,7 +17,7 @@ TransmissionType = structs.CarParams.TransmissionType
 GearShifter = structs.CarState.GearShifter
 Button = namedtuple('Button', ['event_type', 'can_addr', 'can_msg', 'values'])
 
-RADAR_DISABLE_FAIL = {"value": False}
+RADAR_DISABLE_STATE: dict[str, bool] = {"error": False}
 
 
 class CanBus(CanBusBase):
