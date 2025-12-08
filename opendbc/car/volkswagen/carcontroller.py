@@ -7,7 +7,7 @@ from opendbc.car.lateral import apply_driver_steer_torque_limits, apply_std_curv
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.interfaces import CarControllerBase
 from opendbc.car.volkswagen import mlbcan, mqbcan, pqcan, mebcan
-from opendbc.car.volkswagen.values import CanBus, CarControllerParams, VolkswagenFlags, RADAR_DISABLE_FAIL
+from opendbc.car.volkswagen.values import CanBus, CarControllerParams, VolkswagenFlags, RADAR_DISABLE_STATE
 from opendbc.car.volkswagen.mebutils import LongControlJerk, LongControlLimit, map_speed_to_acc_tempolimit, LatControlCurvature
 
 from opendbc.sunnypilot.car.volkswagen.icbm import IntelligentCruiseButtonManagementInterface
@@ -178,7 +178,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     
     # **** Acceleration Controls ******************************************** #
     
-    if self.frame % self.CCP.ACC_CONTROL_STEP == 0 and self.CP.openpilotLongitudinalControl and RADAR_DISABLE_FAIL["value"] == False:
+    if self.frame % self.CCP.ACC_CONTROL_STEP == 0 and self.CP.openpilotLongitudinalControl and RADAR_DISABLE_STATE["error"] == False:
       stopping = actuators.longControlState == LongCtrlState.stopping
         
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
@@ -226,7 +226,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         
     # **** Radar disable **************************************************** #
     
-    if self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl and RADAR_DISABLE_FAIL["value"] == False:
+    if self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl and RADAR_DISABLE_STATE["error"] == False:
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
         if self.frame % self.CCP.AEB_CONTROL_STEP == 0:
           can_sends.append(make_tester_present_msg(0x700, self.CAN.pt, suppress_response=True)) # Tester Present
@@ -256,7 +256,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     if hud_control.leadDistanceBars != self.lead_distance_bars_last:
       self.distance_bar_frame = self.frame
     
-    if self.frame % self.CCP.ACC_HUD_STEP == 0 and self.CP.openpilotLongitudinalControl and RADAR_DISABLE_FAIL["value"] == False:
+    if self.frame % self.CCP.ACC_HUD_STEP == 0 and self.CP.openpilotLongitudinalControl and RADAR_DISABLE_STATE["error"] == False:
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
         fcw_alert = hud_control.visualAlert == VisualAlert.fcw
         show_distance_bars = self.frame - self.distance_bar_frame < 400
