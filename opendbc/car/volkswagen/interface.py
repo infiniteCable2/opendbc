@@ -275,11 +275,11 @@ class CarInterface(CarInterfaceBase):
       packets = can_recv(wait_for_one=True) or []
       for packet in packets:
         for msg in packet:
-          if msg.address != 0x10B:
+          if msg.address != 0x14C:
             continue
   
           dat = msg.dat
-          engine_on = bool((msg.dat[9] >> 5) & 0x001)
+          engine_on = bool((msg.dat[9] >> 5) & 0x01)
 
           if engine_on:
             carlog.warning(f"Engine state is not allowed: Engine_On={engine_on}")
