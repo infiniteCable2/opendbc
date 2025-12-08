@@ -5,7 +5,7 @@ from opendbc.car.disable_ecu import disable_ecu
 from opendbc.car.interfaces import CarInterfaceBase
 from opendbc.car.volkswagen.carcontroller import CarController
 from opendbc.car.volkswagen.carstate import CarState
-from opendbc.car.volkswagen.values import CanBus, CAR, NetworkLocation, TransmissionType, VolkswagenFlags, VolkswagenSafetyFlags, RADAR_DISABLE_FAIL
+from opendbc.car.volkswagen.values import CanBus, CAR, NetworkLocation, TransmissionType, VolkswagenFlags, VolkswagenSafetyFlags, RADAR_DISABLE_STATE
 from opendbc.car.volkswagen.radar_interface import RadarInterface
 from opendbc.car.carlog import carlog
 from opendbc.car.isotp_parallel_query import IsoTpParallelQuery
@@ -201,13 +201,14 @@ class CarInterface(CarInterfaceBase):
     # -> deinit is not called in OP -> errors in dash, recovers after second ignition cycle
     # Programming session is also rejected while engine on but recovers after key off on
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):
+      RADAR_DISABLE_STATE["error"] = False
       if CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
         if CarInterface._is_engine_state_allowed_meb(can_recv): # prevent programming session request, it will not work
           carlog.warning("Trying to disable the radar")
           if not CarInterface._radar_communication_control(CP, can_recv, can_send):
-            RADAR_DISABLE_FAIL["value"] = True
+            RADAR_DISABLE_STATE["error"] = True
         else:
-          RADAR_DISABLE_FAIL["value"] = True
+          RADAR_DISABLE_STATE["error"] = True
           carlog.warning("The radar can not be disabled")
 
   @staticmethod
