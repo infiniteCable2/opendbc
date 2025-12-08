@@ -223,13 +223,14 @@ class CarInterface(CarInterfaceBase):
     # disable/enable radar tx
     bus = CanBus(CP).pt
     addr_radar, addr_diag, volkswagen_rx_offset = 0x757, 0x700, 0x6A
-    retry, timeout = 3, 0.5
+    retry, timeout = 10, 0.1
 
     tp_req  = bytes([uds.SERVICE_TYPE.TESTER_PRESENT, 0x00])
     tp_resp = bytes([uds.SERVICE_TYPE.TESTER_PRESENT + 0x40, 0x00])
     ext_diag_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
     ext_diag_resp = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.EXTENDED_DIAGNOSTIC])
     flash_req  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL, uds.SESSION_TYPE.PROGRAMMING])
+    flash_resp  = bytes([uds.SERVICE_TYPE.DIAGNOSTIC_SESSION_CONTROL + 0x40, uds.SESSION_TYPE.PROGRAMMING])
     empty_resp = b''
 
     txt = "disable" if disable else "enable"
@@ -250,8 +251,10 @@ class CarInterface(CarInterfaceBase):
             continue
 
           # Programming Session
-          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [flash_req], [empty_resp], volkswagen_rx_offset)
-          query.get_data(0) # no waiting time for this to begin sending our own commands as fast as possible to prevent cruise faults
+          query = IsoTpParallelQuery(can_send, can_recv, bus, [(addr_radar, None)], [flash_req], [flash_resp], volkswagen_rx_offset)
+          if not query.get_data(timeout):
+            carlog.warning(f"Radar {txt} by programming session returned no data on attempt {i+1}")
+            continue
           carlog.warning(f"Radar {txt} by programming session sent on attempt {i+1}")
 
         return True
