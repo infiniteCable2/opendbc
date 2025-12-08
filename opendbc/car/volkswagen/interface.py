@@ -279,7 +279,7 @@ class CarInterface(CarInterfaceBase):
             continue
   
           dat = msg.dat
-          engine_on = bool((msg.dat[9] >> 5) & 0x01)
+          engine_on = bool((msg.dat[9] >> 5) & 0x001)
 
           if engine_on:
             carlog.warning(f"Engine state is not allowed: Engine_On={engine_on}")
