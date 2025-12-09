@@ -233,6 +233,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         if self.frame % self.CCP.AEB_CONTROL_STEP == 0:
           can_sends.append(make_tester_present_msg(0x700, self.CAN.pt, suppress_response=True)) # Tester Present
           can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.pt, self.CP)) # AEB Control(1 Hz)
+          can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.cam, self.CP)) # directed at the camera for Emergency Assist error mitigation
         if self.frame % self.CCP.AEB_HUD_STEP == 0:
           can_sends.append(self.CCS.create_aeb_hud(self.packer_pt, self.CAN.pt, self.radar_disabled_warning_timer < 600)) # AEB HUD (5 Hz)
         if self.frame % 4 == 0: # not seen in MQBevo Gen 2 Audi RS3 2026
