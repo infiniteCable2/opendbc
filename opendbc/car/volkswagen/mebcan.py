@@ -365,6 +365,27 @@ def create_radar_distance(packer, bus):
   # create empty dummy signal
   values = {}
   return packer.make_can_msg("MEB_Distance_01", bus, values)
+  
+
+def create_radar_unknown_01(packer, bus, CP):
+  # create dummy signal with default values
+  # probably a predicative control signal
+  values = {}
+  if CP.flags & VolkswagenFlags.MEB:
+    values.update({
+      "NEW_SIGNAL_1": 1,
+      "NEW_SIGNAL_2": 65535,
+      "NEW_SIGNAL_3": 1,
+      "NEW_SIGNAL_5": 3,
+    })
+    
+  elif CP.flags & VolkswagenFlags.MQB_EVO:
+    values.update({
+      "NEW_SIGNAL_4":     1,
+      "Dynamic_in_Drive": 1,
+    })
+    
+  return packer.make_can_msg("MEB_Radar_Unknown_01", bus, values)
 
 
 def create_ea_control(packer, bus):
