@@ -338,6 +338,11 @@ def create_aeb_control(packer, bus, CP):
     "SET_ME_1023":  1023,
     "SET_ME_1":     1,
   }
+
+  if CP.flags & VolkswagenFlags.MQB_EVO:
+    values.update({
+      "SET_ME_1_2": 1,
+    })
   
   return packer.make_can_msg("AWV_03", bus, values)
 
