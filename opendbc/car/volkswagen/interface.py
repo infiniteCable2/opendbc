@@ -202,6 +202,7 @@ class CarInterface(CarInterfaceBase):
       if CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
         if not CarInterface._is_engine_state_allowed_meb(can_recv):
           CP.dashcamOnly = True
+          CP.dashcamOnlyReason = 'DIS_RADAR_ENG_ON'
 
   @staticmethod
   def init(CP, CP_SP, can_recv, can_send, communication_control=None):
