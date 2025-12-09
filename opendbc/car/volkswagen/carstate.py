@@ -3,7 +3,7 @@ from opendbc.car import Bus, structs
 from opendbc.car.interfaces import CarStateBase
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.volkswagen.values import DBC, CanBus, NetworkLocation, TransmissionType, GearShifter, \
-                                                      CarControllerParams, VolkswagenFlags
+                                                      CarControllerParams, VolkswagenFlags, RADAR_DISABLE_STATE
 from opendbc.car.volkswagen.speed_limit_manager import SpeedLimitManager
 
 from opendbc.sunnypilot.car.volkswagen.mads import MadsCarState
@@ -343,6 +343,8 @@ class CarState(CarStateBase, MadsCarState):
 
     accFaulted = pt_cp.vl["Motor_51"]["TSK_Status"] in (6, 7)
     ret.accFaulted = self.update_acc_fault(accFaulted, parking_brake=ret.parkingBrake, drive_mode=drive_mode)
+
+    ret.radarDisableFailed = True if RADAR_DISABLE_STATE["error"] == True and self.CP.flags & VolkswagenFlags.DISABLE_RADAR else False
 
     if self.CP.flags & VolkswagenFlags.MQB_EVO:
       self.esp_hold_confirmation = bool(pt_cp.vl["ESP_21"]["ESP_Haltebestaetigung"])
