@@ -191,7 +191,7 @@ def create_acc_accel_control(packer, bus, CP, acc_type, acc_enabled, upper_jerk,
   commands = []
 
   # ACC_Anhalteweg: when stopping: MEB: values <> 0 the car can execute a hard brake probably if target is too close, MQBEvo: value 0 results in hard brake
-  terminal_rollout = 0.3 if CP.flags & VolkswagenFlags.MQB_EVO else 0
+  terminal_rollout = 0.5 if CP.flags & VolkswagenFlags.MQB_EVO else 0
 
   full_stop          = stopping and esp_hold
   full_stop_no_start = esp_hold and not starting
