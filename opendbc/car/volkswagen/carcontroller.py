@@ -225,7 +225,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
       #    can_sends.append(self.CCS.create_aeb_hud(self.packer_pt, False, False))
         
     # **** Radar disable **************************************************** #
-    # send radar replacement messages to revent errors
+    # send radar replacement messages to prevent errors, satisfy cruise state and keep safety relevant systems intact
     
     if self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl and not CS.out.radarDisableFailed:
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
