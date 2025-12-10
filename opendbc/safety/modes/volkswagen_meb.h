@@ -18,10 +18,11 @@
 #define MSG_EA_02            0x1F0U   // TX, for EA mitigation
 #define MSG_KLR_01           0x25DU   // TX, for capacitive steering wheel
 #define MSG_DIAG_RADAR       0x757U   // TX, for diagnostic messages for radar
-#define MSG_DIAGNOSTIC       0x700U   // TX, for general tester present on bus
-#define MSG_AWV_03           0xDBU    // TX, AEB control message replacement
-#define MSG_MEB_Distance_01  0x24FU   // TX, distance message replacement
-#define MSG_MEB_AWV_01       0x16A954ADU   // TX, AEB HUD message replacement
+#define MSG_DIAGNOSTIC       0x700U   // TX, for general tester present on bus for radar disable
+#define MSG_AWV_03           0xDBU    // TX, radar AEB control message replacement
+#define MSG_MEB_Distance_01  0x24FU   // TX, radar distance message replacement
+#define MSG_MEB_AWV_01       0x16A954ADU   // TX, radar AEB HUD message replacement
+#define MSG_MEB_PACC_01      0x17F00057U   // TX, radar PACC message replacement
 
 
 // PANDA SAFETY SHOULD INTRODUCE A .ignore_length flag (ALLOWED ONLY IF CHECKSUM CHECK IS REQUIRED TO BE SAFE)
@@ -47,11 +48,12 @@
   {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},       \
   {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true},         \
 
-#define VW_MEB_RADAR_TX_MSGS                          \
-  {MSG_DIAG_RADAR, 0, 8, .check_relay = false},       \
-  {MSG_AWV_03, 0, 48, .check_relay = true},           \
-  {MSG_MEB_Distance_01, 0, 64, .check_relay = true},  \
-  {MSG_MEB_AWV_01, 0, 8, .check_relay = true},        \
+#define VW_MEB_RADAR_TX_MSGS                                                                  \
+  {MSG_DIAG_RADAR, 0, 8, .check_relay = false},                                               \
+  {MSG_AWV_03, 0, 48, .check_relay = true},                                                   \
+  {MSG_MEB_Distance_01, 0, 64, .check_relay = true},                                          \
+  {MSG_MEB_AWV_01, 0, 8, .check_relay = true}, {MSG_MEB_AWV_01, 2, 8, .check_relay = false},  \
+  {MSG_MEB_PACC_01, 0, 8, .check_relay = true},                                               \
 
 static uint8_t volkswagen_crc8_lut_8h2f[256]; // Static lookup table for CRC8 poly 0x2F, aka 8H2F/AUTOSAR
 
