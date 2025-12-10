@@ -5,7 +5,7 @@ from opendbc.car.disable_ecu import disable_ecu
 from opendbc.car.interfaces import CarInterfaceBase
 from opendbc.car.volkswagen.carcontroller import CarController
 from opendbc.car.volkswagen.carstate import CarState
-from opendbc.car.volkswagen.values import CanBus, CAR, NetworkLocation, TransmissionType, VolkswagenFlags, VolkswagenSafetyFlags, RADAR_DISABLE_STATE
+from opendbc.car.volkswagen.values import CanBus, CAR, NetworkLocation, TransmissionType, DashcamOnlyReason, VolkswagenFlags, VolkswagenSafetyFlags, RADAR_DISABLE_STATE
 from opendbc.car.volkswagen.radar_interface import RadarInterface
 from opendbc.car.carlog import carlog
 from opendbc.car.isotp_parallel_query import IsoTpParallelQuery
@@ -202,7 +202,7 @@ class CarInterface(CarInterfaceBase):
       if CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
         if not CarInterface._is_engine_state_allowed_meb(can_recv):
           CP.dashcamOnly = True
-          CP.dashcamOnlyReason = 'DIS_RADAR_ENG_ON'
+          CP.dashcamOnlyReason = DashcamOnlyReason.radarDisableEngineOn
 
   @staticmethod
   def init(CP, CP_SP, can_recv, can_send, communication_control=None):
