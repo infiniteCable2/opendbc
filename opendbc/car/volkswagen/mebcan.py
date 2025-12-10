@@ -367,7 +367,7 @@ def create_radar_distance(packer, bus):
   return packer.make_can_msg("MEB_Distance_01", bus, values)
   
 
-def create_radar_unknown_01(packer, bus, CP):
+def create_radar_pacc(packer, bus, CP):
   # create dummy signal with default values
   # probably a predicative control signal
   values = {}
