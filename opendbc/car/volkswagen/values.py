@@ -15,6 +15,7 @@ Ecu = structs.CarParams.Ecu
 NetworkLocation = structs.CarParams.NetworkLocation
 TransmissionType = structs.CarParams.TransmissionType
 GearShifter = structs.CarState.GearShifter
+DashcamOnlyReason = structs.CarParams.DashcamOnlyReason
 Button = namedtuple('Button', ['event_type', 'can_addr', 'can_msg', 'values'])
 
 RADAR_DISABLE_STATE: dict[str, bool] = {"error": False}
