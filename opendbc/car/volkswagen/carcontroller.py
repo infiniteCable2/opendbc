@@ -259,6 +259,9 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         if self.frame % 20 == 0:
           can_sends.append(CanData(0x1B000057, bytes.fromhex("00 00 04 01 00 00 00 00"), self.CAN.cam))
 
+        if self.frame % 100 == 0:
+          can_sends.append(CanData(0x16A954C2, bytes.fromhex("00 00 00 00 00 00 00 00"), self.CAN.cam))
+
     # **** HUD Controls ***************************************************** #
 
     if self.frame % self.CCP.LDW_STEP == 0:
