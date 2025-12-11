@@ -208,6 +208,12 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
                                                            self.long_limit_control.get_upper_limit() if CC.longComfortMode else 0., self.long_limit_control.get_lower_limit() if CC.longComfortMode else 0.,
                                                            accel, acc_control, acc_hold_type, stopping, starting, CS.esp_hold_confirmation,
                                                            CS.out.vEgoRaw * CV.MS_TO_KPH, long_override, CS.travel_assist_available))
+        
+        can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, self.CAN.cam, self.CP, CS.acc_type, CC.enabled,
+                                                           self.long_jerk_control.get_jerk_up() if CC.longComfortMode else 4.0, self.long_jerk_control.get_jerk_down() if CC.longComfortMode else 4.0,
+                                                           self.long_limit_control.get_upper_limit() if CC.longComfortMode else 0., self.long_limit_control.get_lower_limit() if CC.longComfortMode else 0.,
+                                                           accel, acc_control, acc_hold_type, stopping, starting, CS.esp_hold_confirmation,
+                                                           CS.out.vEgoRaw * CV.MS_TO_KPH, long_override, CS.travel_assist_available))
 
       else:
         starting = actuators.longControlState == LongCtrlState.pid and (CS.esp_hold_confirmation or CS.out.vEgo < self.CP.vEgoStopping)
@@ -244,6 +250,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
           
         if self.frame % 50 == 0:
           can_sends.append(self.CCS.create_radar_pacc(self.packer_pt, self.CAN.pt, self.CP)) # pACC (2 Hz) prevent prdicative control error and keeps traffic sign detection working
+          can_sends.append(self.CCS.create_radar_pacc(self.packer_pt, self.CAN.cam, self.CP)) # pACC (2 Hz) prevent prdicative control error and keeps traffic sign detection working
           
         if self.frame % 4 == 0: # not seen in MQBevo Gen 2 Audi RS3 2026
           can_sends.append(self.CCS.create_radar_distance(self.packer_pt, self.CAN.pt)) # Distance (25 Hz) works without (no erors in dash), but send it anyway for now
