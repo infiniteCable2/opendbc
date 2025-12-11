@@ -210,12 +210,6 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
                                                            self.long_limit_control.get_upper_limit() if CC.longComfortMode else 0., self.long_limit_control.get_lower_limit() if CC.longComfortMode else 0.,
                                                            accel, acc_control, acc_hold_type, stopping, starting, CS.esp_hold_confirmation,
                                                            CS.out.vEgoRaw * CV.MS_TO_KPH, long_override, CS.travel_assist_available))
-        
-        can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, self.CAN.cam, self.CP, CS.acc_type, CC.enabled,
-                                                           self.long_jerk_control.get_jerk_up() if CC.longComfortMode else 4.0, self.long_jerk_control.get_jerk_down() if CC.longComfortMode else 4.0,
-                                                           self.long_limit_control.get_upper_limit() if CC.longComfortMode else 0., self.long_limit_control.get_lower_limit() if CC.longComfortMode else 0.,
-                                                           accel, acc_control, acc_hold_type, stopping, starting, CS.esp_hold_confirmation,
-                                                           CS.out.vEgoRaw * CV.MS_TO_KPH, long_override, CS.travel_assist_available))
 
       else:
         starting = actuators.longControlState == LongCtrlState.pid and (CS.esp_hold_confirmation or CS.out.vEgo < self.CP.vEgoStopping)
@@ -244,23 +238,23 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
           can_sends.append(make_tester_present_msg(0x700, self.CAN.pt, suppress_response=True)) # Tester Present to kepe the programming session
           
           can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.pt, self.CP)) # AEB Control (1 Hz)
-          can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.cam, self.CP)) # directed at the camera, prevent emergency assist error
+          #can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.cam, self.CP)) # directed at the camera, prevent emergency assist error
           
         if self.frame % self.CCP.AEB_HUD_STEP == 0:
           can_sends.append(self.CCS.create_aeb_hud(self.packer_pt, self.CAN.pt, self.radar_disabled_warning_timer < 600)) # AEB HUD (5 Hz)
-          can_sends.append(self.CCS.create_aeb_hud(self.packer_pt, self.CAN.cam, False)) # directed at the camera, prevent emergency assist error
+          #can_sends.append(self.CCS.create_aeb_hud(self.packer_pt, self.CAN.cam, False)) # directed at the camera, prevent emergency assist error
           
-        if self.frame % 50 == 0:
-          can_sends.append(self.CCS.create_radar_pacc(self.packer_pt, self.CAN.pt, self.CP)) # pACC (2 Hz) prevent prdicative control error and keeps traffic sign detection working
-          can_sends.append(self.CCS.create_radar_pacc(self.packer_pt, self.CAN.cam, self.CP)) # pACC (2 Hz) prevent prdicative control error and keeps traffic sign detection working
+        #if self.frame % 50 == 0:
+        #  can_sends.append(self.CCS.create_radar_pacc(self.packer_pt, self.CAN.pt, self.CP)) # pACC (2 Hz) prevent prdicative control error and keeps traffic sign detection working
+        #  can_sends.append(self.CCS.create_radar_pacc(self.packer_pt, self.CAN.cam, self.CP)) # pACC (2 Hz) prevent prdicative control error and keeps traffic sign detection working
           
-        if self.frame % 4 == 0: # not seen in MQBevo Gen 2 Audi RS3 2026
+        if self.frame % 4 == 0:
           can_sends.append(self.CCS.create_radar_distance(self.packer_pt, self.CAN.pt)) # Distance (25 Hz) works without (no erors in dash), but send it anyway for now
-          can_sends.append(self.CCS.create_radar_distance(self.packer_pt, self.CAN.cam)) # Distance (25 Hz) works without (no erors in dash), but send it anyway for now
+          #can_sends.append(self.CCS.create_radar_distance(self.packer_pt, self.CAN.cam)) # Distance (25 Hz) works without (no erors in dash), but send it anyway for now
 
-        if self.frame % 20 == 0:
-          can_sends.append(CanData(0x1B000057, bytes.fromhex("00 00 04 01 00 00 00 00"), self.CAN.cam))
-          can_sends.append(CanData(0x16A954FC, bytes.fromhex("00 00 95 00 00 00 00 00"), self.CAN.cam))
+        #if self.frame % 20 == 0:
+        #  can_sends.append(CanData(0x1B000057, bytes.fromhex("00 00 04 01 00 00 00 00"), self.CAN.cam))
+        #  can_sends.append(CanData(0x16A954FC, bytes.fromhex("00 00 95 00 00 00 00 00"), self.CAN.cam))
 
         if self.frame % 100 == 0:
           self.radar_keep_alive_counter = (self.radar_keep_alive_counter + 0x19) & 0xFF
@@ -323,9 +317,6 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         acc_hud_event = self.CCS.acc_hud_event(acc_hud_status, CS.esp_hold_confirmation, sl_predicative_active, CS.speed_limit_predicative_type, sl_active)
           
         can_sends.append(self.CCS.create_acc_hud_control(self.packer_pt, self.CAN.pt, acc_hud_status, hud_control.setSpeed * CV.MS_TO_KPH,
-                                                         hud_control.leadVisible, hud_control.leadDistanceBars + 1, show_distance_bars,
-                                                         CS.esp_hold_confirmation, distance, gap, fcw_alert, acc_hud_event, speed_limit))
-        can_sends.append(self.CCS.create_acc_hud_control(self.packer_pt, self.CAN.cam, acc_hud_status, hud_control.setSpeed * CV.MS_TO_KPH,
                                                          hud_control.leadVisible, hud_control.leadDistanceBars + 1, show_distance_bars,
                                                          CS.esp_hold_confirmation, distance, gap, fcw_alert, acc_hud_event, speed_limit))
 
