@@ -7,7 +7,7 @@
 #define MSG_Motor_54         0x14CU   // RX, for accel pedal
 #define MSG_HCA_03           0x303U   // TX by OP, Heading Control Assist steering torque
 #define MSG_QFK_01           0x13DU   // RX, for steering angle
-#define MSG_MEB_ACC_01       0x300U   // RX from ECU, for ACC status
+#define MSG_ACC_19           0x300U   // RX from ECU, for ACC status
 #define MSG_ACC_18           0x14DU   // RX from ECU, for ACC status
 #define MSG_GRA_ACC_01       0x12BU   // TX by OP, ACC control buttons for cancel/resume
 #define MSG_MOTOR_14         0x3BEU   // RX from ECU, for brake switch status
@@ -39,12 +39,12 @@
   {.msg = {{MSG_Motor_51, 0, 48, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
   {.msg = {{MSG_ESC_51, 0, 64, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
 
-#define VW_MEB_LONG_TX_MSGS                                                                \
-  {MSG_HCA_03, 0, 24, .check_relay = true},                                                \
-  {MSG_MEB_ACC_01, 0, 48, .check_relay = true}, {MSG_ACC_18, 0, 32, .check_relay = true},  \
-  {MSG_EA_01, 0, 8, .check_relay = false}, {MSG_EA_02, 0, 8, .check_relay = true},         \
-  {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},       \
-  {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true},         \
+#define VW_MEB_LONG_TX_MSGS                                                            \
+  {MSG_HCA_03, 0, 24, .check_relay = true},                                            \
+  {MSG_ACC_19, 0, 48, .check_relay = true}, {MSG_ACC_18, 0, 32, .check_relay = true},  \
+  {MSG_EA_01, 0, 8, .check_relay = false}, {MSG_EA_02, 0, 8, .check_relay = true},     \
+  {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},   \
+  {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true},     \
 
 #define VW_MEB_RADAR_TX_MSGS                          \
   {MSG_DIAG_RADAR, 0, 8, .check_relay = false},       \
