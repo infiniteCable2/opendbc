@@ -54,6 +54,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     self.speed_limit_last = 0
     self.speed_limit_changed_timer = 0
     self.radar_disabled_warning_timer = 0
+    self.radar_keep_alive_counter = 0
     self.LateralController = (
       LatControlCurvature(self.CCP.CURVATURE_PID, self.CCP.CURVATURE_LIMITS.CURVATURE_MAX, 1 / (DT_CTRL * self.CCP.STEER_STEP))
       if (CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO))
@@ -261,7 +262,10 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
           can_sends.append(CanData(0x16A954FC, bytes.fromhex("00 00 95 00 00 00 00 00"), self.CAN.cam))
 
         if self.frame % 100 == 0:
-          can_sends.append(CanData(0x16A954C2, bytes.fromhex("00 FF 00 00 00 00 00 00"), self.CAN.cam))
+          self.radar_keep_alive_counter = (self.radar_keep_alive_counter + 1) & 0xFF
+          payload = bytes([0x00, self.radar_keep_alive_counter, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+          can_sends.append(CanData(0x16A954C2, payload, self.CAN.pt))
+          can_sends.append(CanData(0x16A954C2, payload, self.CAN.cam))
 
     # **** HUD Controls ***************************************************** #
 
