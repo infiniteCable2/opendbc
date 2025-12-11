@@ -54,10 +54,10 @@
 
 #define VW_MEB_RADAR_TX_MSGS                          \
   {MSG_DIAG_RADAR, 0, 8, .check_relay = false},       \
-  {MSG_MEB_Distance_01, 0, 64, .check_relay = true},  \
   {MSG_AWV_03, 0, 48, .check_relay = true},           \
   {MSG_MEB_AWV_01, 0, 8, .check_relay = true},        \
-  
+
+// {MSG_MEB_Distance_01, 0, 64, .check_relay = true},  \
 // {MSG_MEB_Unknown_02, 0, 8, .check_relay = true}, {MSG_MEB_Unknown_02, 2, 8, .check_relay = true},    \
 // {MSG_MEB_PACC_01, 0, 8, .check_relay = true}, {MSG_MEB_PACC_01, 2, 8, .check_relay = false},  \
 // {MSG_MEB_Unknown_01, 0, 8, .check_relay = true}, {MSG_MEB_Unknown_01, 2, 8, .check_relay = false},  
