@@ -331,7 +331,7 @@ def create_acc_hud_control(packer, bus, acc_control, set_speed, lead_visible, di
     "SET_ME_0X7FFF":                 0x7FFF, # unknown
   }
 
-  return packer.make_can_msg("MEB_ACC_01", bus, values)
+  return packer.make_can_msg("ACC_19", bus, values)
   
   
 def create_aeb_control(packer, bus, CP):
