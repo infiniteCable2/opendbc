@@ -26,6 +26,7 @@
 #define MSG_MEB_PACC_01      0x17F00057U   // TX, radar PACC message replacement
 #define MSG_MEB_Unknown_01   0x1B000057U   // TX, radar message replacement
 #define MSG_MEB_Unknown_02   0x16A954C2U   // TX, radar message replacement
+#define MSG_MEB_Unknown_03   0x16A954FCU   // TX, radar message replacement
 
 
 // PANDA SAFETY SHOULD INTRODUCE A .ignore_length flag (ALLOWED ONLY IF CHECKSUM CHECK IS REQUIRED TO BE SAFE)
@@ -60,7 +61,7 @@
   {MSG_MEB_AWV_01, 0, 8, .check_relay = true}, {MSG_MEB_AWV_01, 2, 8, .check_relay = false},    \
   {MSG_MEB_PACC_01, 0, 8, .check_relay = true}, {MSG_MEB_PACC_01, 2, 8, .check_relay = false},  \
   {MSG_MEB_Unknown_01, 0, 8, .check_relay = true}, {MSG_MEB_Unknown_01, 2, 8, .check_relay = false},  \
-  {MSG_MEB_Unknown_02, 2, 8, .check_relay = true},  \
+  {MSG_MEB_Unknown_02, 2, 8, .check_relay = true}, {MSG_MEB_Unknown_03, 2, 8, .check_relay = true},  \
 
 static uint8_t volkswagen_crc8_lut_8h2f[256]; // Static lookup table for CRC8 poly 0x2F, aka 8H2F/AUTOSAR
 
