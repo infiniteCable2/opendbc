@@ -247,6 +247,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
           
         if self.frame % 4 == 0: # not seen in MQBevo Gen 2 Audi RS3 2026
           can_sends.append(self.CCS.create_radar_distance(self.packer_pt, self.CAN.pt)) # Distance (25 Hz) works without (no erors in dash), but send it anyway for now
+          can_sends.append(self.CCS.create_radar_distance(self.packer_pt, self.CAN.cam)) # Distance (25 Hz) works without (no erors in dash), but send it anyway for now
 
     # **** HUD Controls ***************************************************** #
 
