@@ -54,8 +54,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     self.speed_limit_last = 0
     self.speed_limit_changed_timer = 0
     self.radar_disabled_warning_timer = 0
-    self.radar_keep_alive_counter = 0x00
-    self.radar_activation_sequence = 0
+    self.force_ea_off = False
     self.LateralController = (
       LatControlCurvature(self.CCP.CURVATURE_PID, self.CCP.CURVATURE_LIMITS.CURVATURE_MAX, 1 / (DT_CTRL * self.CCP.STEER_STEP))
       if (CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO))
@@ -176,7 +175,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         blinker_active = CS.left_blinker_active or CS.right_blinker_active
         left_blinker = CC.leftBlinker if not blinker_active else False
         right_blinker = CC.rightBlinker if not blinker_active else False
-        can_sends.append(mebcan.create_blinker_control(self.packer_pt, self.CAN.pt, CS.ea_hud_stock_values, left_blinker, right_blinker))
+        can_sends.append(mebcan.create_blinker_control(self.packer_pt, self.CAN.pt, CS.ea_hud_stock_values, left_blinker, right_blinker, self.force_ea_off))
     
     # **** Acceleration Controls ******************************************** #
     
@@ -227,58 +226,22 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
       #    can_sends.append(self.CCS.create_aeb_hud(self.packer_pt, False, False))
         
     # **** Radar disable **************************************************** #
-    # send radar replacement messages to prevent errors, satisfy cruise state and keep safety relevant systems intact
+    # Send radar replacement messages cruise state relevant
+    # Disables Autonomous Emergency Braking (AEB), Front Collision Warning (FCW), Emergency Assist (EA)
     
     if self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl and not CS.out.radarDisableFailed:
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
         if self.radar_disabled_warning_timer < 600: # display a hud warning for some seconds as hint for the user
           self.radar_disabled_warning_timer += 1
+        else:
+          self.force_ea_off = True # EA is used for blinker control, set flag to prevent dash error after 6 seconds
           
         if self.frame % self.CCP.AEB_CONTROL_STEP == 0:
-          can_sends.append(make_tester_present_msg(0x700, self.CAN.pt, suppress_response=True)) # Tester Present to kepe the programming session
-          
+          can_sends.append(make_tester_present_msg(0x700, self.CAN.pt, suppress_response=True)) # Tester Present to keep the programming session
           can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.pt, self.CP)) # AEB Control (1 Hz)
-          #can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.cam, self.CP)) # directed at the camera, prevent emergency assist error
           
         if self.frame % self.CCP.AEB_HUD_STEP == 0:
           can_sends.append(self.CCS.create_aeb_hud(self.packer_pt, self.CAN.pt, self.radar_disabled_warning_timer < 600)) # AEB HUD (5 Hz)
-          #can_sends.append(self.CCS.create_aeb_hud(self.packer_pt, self.CAN.cam, False)) # directed at the camera, prevent emergency assist error
-          
-        #if self.frame % 50 == 0:
-        #  can_sends.append(self.CCS.create_radar_pacc(self.packer_pt, self.CAN.pt, self.CP)) # pACC (2 Hz) prevent prdicative control error and keeps traffic sign detection working
-        #  can_sends.append(self.CCS.create_radar_pacc(self.packer_pt, self.CAN.cam, self.CP)) # pACC (2 Hz) prevent prdicative control error and keeps traffic sign detection working
-          
-        if self.frame % 4 == 0:
-          can_sends.append(self.CCS.create_radar_distance(self.packer_pt, self.CAN.pt)) # Distance (25 Hz) works without (no erors in dash), but send it anyway for now
-          #can_sends.append(self.CCS.create_radar_distance(self.packer_pt, self.CAN.cam)) # Distance (25 Hz) works without (no erors in dash), but send it anyway for now
-
-        #if self.frame % 20 == 0:
-        #  can_sends.append(CanData(0x1B000057, bytes.fromhex("00 00 04 01 00 00 00 00"), self.CAN.cam))
-        #  can_sends.append(CanData(0x16A954FC, bytes.fromhex("00 00 95 00 00 00 00 00"), self.CAN.cam))
-
-        if self.frame % 100 == 0:
-          self.radar_keep_alive_counter = (self.radar_keep_alive_counter + 0x19) & 0xFF
-          if self.radar_activation_sequence >= 4:
-            payload = bytes([0x00, self.radar_keep_alive_counter, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
-            can_sends.append(CanData(0x16A954C2, payload, self.CAN.pt))
-            can_sends.append(CanData(0x16A954C2, payload, self.CAN.cam))
-
-        if self.frame % 1000 == 0:
-          self.radar_activation_sequence = 0
-            
-        if self.radar_activation_sequence < 4 and self.frame % 10 == 0:
-          if self.radar_activation_sequence == 0:
-            payload = bytes([0xEE, self.radar_keep_alive_counter, 0x1B, 0x00, 0x01, 0x00, 0x00, 0x00])
-          elif self.radar_activation_sequence == 1:
-            payload = bytes([0xE5, self.radar_keep_alive_counter, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00])
-          elif self.radar_activation_sequence == 2:
-            payload = bytes([0xEC, self.radar_keep_alive_counter, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00])
-          elif self.radar_activation_sequence == 3:
-            payload = bytes([0x00, self.radar_keep_alive_counter, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
-            
-          can_sends.append(CanData(0x16A954C2, payload, self.CAN.pt))
-          can_sends.append(CanData(0x16A954C2, payload, self.CAN.cam))
-          self.radar_activation_sequence += 1
 
     # **** HUD Controls ***************************************************** #
 
