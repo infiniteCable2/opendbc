@@ -55,6 +55,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     self.speed_limit_changed_timer = 0
     self.radar_disabled_warning_timer = 0
     self.radar_keep_alive_counter = 0
+    self.radar_activation_sequence = 0
     self.LateralController = (
       LatControlCurvature(self.CCP.CURVATURE_PID, self.CCP.CURVATURE_LIMITS.CURVATURE_MAX, 1 / (DT_CTRL * self.CCP.STEER_STEP))
       if (CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO))
@@ -263,9 +264,27 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
 
         if self.frame % 100 == 0:
           self.radar_keep_alive_counter = (self.radar_keep_alive_counter + 1) & 0xFF
-          payload = bytes([0x00, self.radar_keep_alive_counter, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+          if self.radar_activation_sequence >= 4:
+            payload = bytes([0x00, self.radar_keep_alive_counter, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+            can_sends.append(CanData(0x16A954C2, payload, self.CAN.pt))
+            can_sends.append(CanData(0x16A954C2, payload, self.CAN.cam))
+
+        if self.frame % 1000 == 0:
+          self.radar_activation_sequence = 0
+            
+        if self.radar_activation_sequence < 4 and self.frame % 10 == 0:
+          if self.radar_activation_sequence == 0:
+            payload = bytes([0xEE, self.radar_keep_alive_counter, 0x1B, 0x00, 0x01, 0x00, 0x00, 0x00])
+          elif self.radar_activation_sequence == 1:
+            payload = bytes([0xE5, self.radar_keep_alive_counter, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00])
+          elif self.radar_activation_sequence == 2:
+            payload = bytes([0xEC, self.radar_keep_alive_counter, 0x03, 0x00, 0x00, 0x00, 0x00, 0x00])
+          elif self.radar_activation_sequence == 3:
+            payload = bytes([0x00, self.radar_keep_alive_counter, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+            
           can_sends.append(CanData(0x16A954C2, payload, self.CAN.pt))
           can_sends.append(CanData(0x16A954C2, payload, self.CAN.cam))
+          self.radar_activation_sequence += 1
 
     # **** HUD Controls ***************************************************** #
 
