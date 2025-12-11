@@ -18,6 +18,7 @@
 #define MSG_EA_02            0x1F0U   // TX, for EA mitigation
 #define MSG_KLR_01           0x25DU   // TX, for capacitive steering wheel
 #define MSG_DIAG_RADAR       0x757U   // TX, for diagnostic messages for radar
+#define MSG_DIAG_RADAR_RX    0x7C1U   // TX, for diagnostic messages for radar
 #define MSG_DIAGNOSTIC       0x700U   // TX, for general tester present on bus for radar disable
 #define MSG_AWV_03           0xDBU    // TX, radar AEB control message replacement
 #define MSG_MEB_Distance_01  0x24FU   // TX, radar distance message replacement
@@ -51,7 +52,8 @@
   {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true},         \
 
 #define VW_MEB_RADAR_TX_MSGS                                                                    \
-  {MSG_DIAG_RADAR, 0, 8, .check_relay = false},                                                 \
+  {MSG_DIAG_RADAR, 0, 8, .check_relay = false}, {MSG_DIAG_RADAR, 2, 8, .check_relay = true},   \
+  {MSG_DIAG_RADAR_RX, 2, 8, .check_relay = true},   \
   {MSG_MEB_Distance_01, 0, 64, .check_relay = true}, {MSG_MEB_Distance_01, 2, 64, .check_relay = false},  \
   {MSG_AWV_03, 0, 48, .check_relay = true}, {MSG_AWV_03, 2, 48, .check_relay = false},          \
   {MSG_MEB_AWV_01, 0, 8, .check_relay = true}, {MSG_MEB_AWV_01, 2, 8, .check_relay = false},    \
