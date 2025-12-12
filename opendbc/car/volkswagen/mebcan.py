@@ -367,3 +367,9 @@ def create_aeb_hud(packer, bus, disabled):
   }
   
   return packer.make_can_msg("MEB_AWV_01", bus, values)
+
+
+def create_radar_objects(packer, bus):
+  # create empty dummy signal
+  values = {}
+  return packer.make_can_msg("MEB_Distance_01", bus, values)
