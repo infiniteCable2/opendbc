@@ -53,7 +53,7 @@ def create_eps_update(packer, bus, eps_stock_values, ea_simulated_torque):
   return packer.make_can_msg("LH_EPS_03", bus, values)
 
 
-def create_blinker_control(packer, bus, ea_hud_stock_values, left_blinker, right_blinker, force_ea_off):
+def create_blinker_control(packer, bus, ea_hud_stock_values, ea_control_stock_values, left_blinker, right_blinker, hide_error):
   values = {s: ea_hud_stock_values[s] for s in [
     "EA_Texte",
     "ACF_Lampe_Hands_Off",
@@ -72,10 +72,12 @@ def create_blinker_control(packer, bus, ea_hud_stock_values, left_blinker, right
       "EA_Blinken": 1 if left_blinker else (2 if right_blinker else ea_hud_stock_values["EA_Blinken"]),
     })
 
-  if force_ea_off:
+  # hide error when EA function is disabled by error state
+  # this is relevant for radar disable (EA error probably because of missing ethernet communication from radar)
+  if hide_error and ea_control_stock_values["EA_Funktionsstatus"] == 0:
     values.update({
       "EA_Texte": 0,
-      "EA_Unknown": 1,
+      "EA_Unknown": 1, # in error state: 3
     })
 
   return packer.make_can_msg("EA_02", bus, values)
@@ -365,49 +367,3 @@ def create_aeb_hud(packer, bus, disabled):
   }
   
   return packer.make_can_msg("MEB_AWV_01", bus, values)
-
-
-def create_radar_distance(packer, bus):
-  # create empty dummy signal
-  values = {
-    "Unknown_02": 2,
-  }
-  return packer.make_can_msg("MEB_Distance_01", bus, values)
-  
-
-def create_radar_pacc(packer, bus, CP):
-  # create dummy signal with default values
-  # probably a predicative control signal
-  values = {}
-  if CP.flags & VolkswagenFlags.MEB:
-    values.update({
-      "NEW_SIGNAL_1": 1,
-      "NEW_SIGNAL_2": 65535,
-      "NEW_SIGNAL_3": 1,
-      "NEW_SIGNAL_5": 3,
-    })
-    
-  elif CP.flags & VolkswagenFlags.MQB_EVO:
-    values.update({
-      "NEW_SIGNAL_4":     1,
-      "Dynamic_in_Drive": 1,
-    })
-    
-  return packer.make_can_msg("MEB_Radar_Unknown_01", bus, values)
-
-
-def create_ea_control(packer, bus):
-  values = {
-    "EA_Funktionsstatus": 1,  # Configured but disabled
-    "EA_Sollbeschleunigung": 2046,  # Inactive value
-  }
-
-  return packer.make_can_msg("EA_01", bus, values)
-
-
-def create_ea_hud(packer, bus):
-  values = {
-    "EA_Unknown": 1,  # Undocumented, value when inactive
-  }
-
-  return packer.make_can_msg("EA_02", bus, values)
