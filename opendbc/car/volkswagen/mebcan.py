@@ -372,4 +372,4 @@ def create_aeb_hud(packer, bus, disabled):
 def create_radar_objects(packer, bus):
   # create empty dummy signal
   values = {}
-  return packer.make_can_msg("MEB_Distance_01", bus, values)
+  return packer.make_can_msg("Strukturen_01", bus, values)
