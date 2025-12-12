@@ -54,7 +54,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     self.speed_limit_last = 0
     self.speed_limit_changed_timer = 0
     self.radar_disabled_warning_timer = 0
-    self.force_ea_off = False
+    self.hide_ea_error = False
     self.LateralController = (
       LatControlCurvature(self.CCP.CURVATURE_PID, self.CCP.CURVATURE_LIMITS.CURVATURE_MAX, 1 / (DT_CTRL * self.CCP.STEER_STEP))
       if (CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO))
@@ -175,7 +175,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         blinker_active = CS.left_blinker_active or CS.right_blinker_active
         left_blinker = CC.leftBlinker if not blinker_active else False
         right_blinker = CC.rightBlinker if not blinker_active else False
-        can_sends.append(mebcan.create_blinker_control(self.packer_pt, self.CAN.pt, CS.ea_hud_stock_values, left_blinker, right_blinker, self.force_ea_off))
+        can_sends.append(mebcan.create_blinker_control(self.packer_pt, self.CAN.pt, CS.ea_hud_stock_values, CS.ea_control_stock_values, left_blinker, right_blinker, self.hide_ea_error))
     
     # **** Acceleration Controls ******************************************** #
     
@@ -235,7 +235,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         if self.radar_disabled_warning_timer < 600: # display critical hud warnings for some seconds
           self.radar_disabled_warning_timer += 1
         else:
-          self.force_ea_off = True # block EA error after several seconds
+          self.hide_ea_error = True # block EA error after several seconds
           
         if self.frame % self.CCP.AEB_CONTROL_STEP == 0:
           can_sends.append(make_tester_present_msg(0x700, self.CAN.pt, suppress_response=True)) # Tester Present to keep the programming session
