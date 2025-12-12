@@ -227,7 +227,8 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         
     # **** Radar disable **************************************************** #
     # Send radar replacement messages cruise state relevant
-    # Disables Autonomous Emergency Braking (AEB), Front Collision Warning (FCW), Emergency Assist (EA)
+    # Disables Autonomous Emergency Braking (AEB), Front Collision Warning (FCW), Emergency Assist (EA),
+    # Predicative Speed Control, (for MQBevo Traffic Sign Detection)
     # Dash warnings for critical deactivations are shown for several seconds
     
     if self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl and not CS.out.radarDisableFailed:
