@@ -74,7 +74,7 @@ def create_blinker_control(packer, bus, ea_hud_stock_values, ea_control_stock_va
 
   # hide error when EA function is disabled by error state
   # this is relevant for radar disable (EA error probably because of missing ethernet communication from radar)
-  if hide_error and ea_control_stock_values["EA_Funktionsstatus"] == 0:
+  if hide_error and ea_control_stock_values["EA_Funktionsstatus"] in (0, 1, 7, 8): # init, off, rev err, irrev error
     values.update({
       "EA_Texte": 0,
       "EA_Unknown": 1, # in error state: 3
