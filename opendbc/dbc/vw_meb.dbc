@@ -1999,7 +1999,7 @@ BO_ 1716 VIN_01: 8 Gateway_MQB
  SG_ VIN_16 m2 : 48|8@1+ (1,0) [0|255] "" Airbag_MQB
  SG_ VIN_17 m2 : 56|8@1+ (1,0) [0|255] "" Airbag_MQB
 
-BO_ 316495015 MEB_VZE_01: 32 XXX
+BO_ 316495015 VZE_04: 32 XXX
  SG_ VZE_Anzeigemodus : 0|2@1+ (1,0) [0|3] "" ZR_High,ZR_LIMU,ZR_MIB_TOP_ab_Gen3
  SG_ Detected_01 : 8|1@0+ (1,0) [0|1] "" XXX
  SG_ VZE_Anzeigeunterdrueck_Zeichen_3 : 9|1@1+ (1,0) [0|1] "" Vector__XXX
