@@ -1960,6 +1960,8 @@ BO_ 452984919 MEB_Unknown_01: 8 XXX
  SG_ NEW_SIGNAL_3 : 24|1@0+ (1,0) [0|1] "" XXX
  SG_ NEW_SIGNAL_6 : 25|2@1+ (1,0) [0|3] "" XXX
 
+BO_ 380196034 MEB_Radar_Unknown_01: 8 XXX
+
 
 CM_ SG_ 134 LWI_Lenkradwinkel "Steering angle WITH variable ratio effect included";
 CM_ SG_ 159 EPS_Berechneter_LW "Raw steering angle, degrees";
