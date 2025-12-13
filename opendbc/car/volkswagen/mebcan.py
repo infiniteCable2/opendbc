@@ -53,7 +53,7 @@ def create_eps_update(packer, bus, eps_stock_values, ea_simulated_torque):
   return packer.make_can_msg("LH_EPS_03", bus, values)
 
 
-def create_blinker_control(packer, bus, ea_hud_stock_values, left_blinker, right_blinker):
+def create_blinker_control(packer, bus, ea_hud_stock_values, ea_control_stock_values, left_blinker, right_blinker, hide_error):
   values = {s: ea_hud_stock_values[s] for s in [
     "EA_Texte",
     "ACF_Lampe_Hands_Off",
@@ -70,6 +70,14 @@ def create_blinker_control(packer, bus, ea_hud_stock_values, left_blinker, right
   if ea_hud_stock_values["EA_Blinken"] == 0:
     values.update({
       "EA_Blinken": 1 if left_blinker else (2 if right_blinker else ea_hud_stock_values["EA_Blinken"]),
+    })
+
+  # hide error when EA function is disabled by error state
+  # this is relevant for radar disable (EA error probably because of missing ethernet communication from radar)
+  if hide_error and ea_control_stock_values["EA_Funktionsstatus"] in (0, 1, 7, 8): # init, off, rev err, irrev error
+    values.update({
+      "EA_Texte": 0,
+      "EA_Unknown": 1, # in error state: 3
     })
 
   return packer.make_can_msg("EA_02", bus, values)
@@ -190,6 +198,9 @@ def create_acc_accel_control(packer, bus, CP, acc_type, acc_enabled, upper_jerk,
   # - stopping command sent as long as actually stopping
   commands = []
 
+  # ACC_Anhalteweg: when stopping: MEB: values <> 0 the car can execute a hard brake probably if target is too close, MQBEvo: value 0 results in hard brake
+  terminal_rollout = 0.5 if CP.flags & VolkswagenFlags.MQB_EVO else 0
+
   full_stop          = stopping and esp_hold
   full_stop_no_start = esp_hold and not starting
   actually_stopping  = stopping and not esp_hold
@@ -215,7 +226,7 @@ def create_acc_accel_control(packer, bus, CP, acc_type, acc_enabled, upper_jerk,
     "ACC_pos_Sollbeschl_Grad_02": upper_jerk if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) and not full_stop_no_start else 0,
     "ACC_Anfahren":               starting,
     "ACC_Anhalten":               1 if actually_stopping else 0,
-    "ACC_Anhalteweg":             0 if actually_stopping else 20.46, # if used the car can execute a hard brake probably if target is too close
+    "ACC_Anhalteweg":             terminal_rollout if actually_stopping else 20.46,
     "ACC_Anforderung_HMS":        acc_hold_type,
     "ACC_AKTIV_regelt":           1 if acc_control == ACC_CTRL_ACTIVE else 0,
     "Speed":                      speed,
@@ -322,21 +333,43 @@ def create_acc_hud_control(packer, bus, acc_control, set_speed, lead_visible, di
     "SET_ME_0X7FFF":                 0x7FFF, # unknown
   }
 
-  return packer.make_can_msg("MEB_ACC_01", bus, values)
-
-
-def create_ea_control(packer, bus):
+  return packer.make_can_msg("ACC_19", bus, values)
+  
+  
+def create_aeb_control(packer, bus, CP):
+  # default inactive values basically present for every plattform (MEB Gen 1/2, MQBevo Gen 1)
   values = {
-    "EA_Funktionsstatus": 1,  # Configured but disabled
-    "EA_Sollbeschleunigung": 2046,  # Inactive value
+    "SET_ME_63":    63, 
+    "SET_ME_30":    30,
+    "SET_ME_127":   127,
+    "SET_ME_127_2": 127,
+    "SET_ME_63_2":  63,
+    "SET_ME_15_1":  15,
+    "SET_ME_255":   255,
+    "SET_ME_1023":  1023,
+    "SET_ME_1":     1,
   }
 
-  return packer.make_can_msg("EA_01", bus, values)
+  if CP.flags & VolkswagenFlags.MQB_EVO:
+    values.update({
+      "SET_ME_1_2": 1,
+    })
+  
+  return packer.make_can_msg("AWV_03", bus, values)
 
 
-def create_ea_hud(packer, bus):
+def create_aeb_hud(packer, bus, disabled):
   values = {
-    "EA_Unknown": 1,  # Undocumented, value when inactive
+    "AWV_Enabled":  not disabled, # displays aeb disabled
+    "AWV_Init":     1, # displays not initialized white icon
+    "SET_ME_1":     1,
+    "SET_ME_511":   511,
   }
+  
+  return packer.make_can_msg("MEB_AWV_01", bus, values)
 
-  return packer.make_can_msg("EA_02", bus, values)
+
+def create_radar_objects(packer, bus):
+  # create empty dummy signal
+  values = {}
+  return packer.make_can_msg("Strukturen_01", bus, values)

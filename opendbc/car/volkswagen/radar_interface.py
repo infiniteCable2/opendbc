@@ -23,8 +23,8 @@ SIGNAL_SETS = tuple(
 
 
 def get_radar_can_parser(CP):
-  if CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
-    messages = [("MEB_Distance_01", 25)]
+  if CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO) and not (CP.flags & VolkswagenFlags.DISABLE_RADAR):
+    messages = [("Strukturen_01", 25)]
   else:
     return None
 
@@ -69,7 +69,7 @@ class RadarInterface(RadarInterfaceBase):
       ret.errors.canError = True
       return ret
 
-    msg = self.rcp.vl["MEB_Distance_01"]
+    msg = self.rcp.vl["Strukturen_01"]
     get = msg.__getitem__
 
     active_objects: dict[int, tuple[float, float, float]] = {}

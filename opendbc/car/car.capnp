@@ -206,6 +206,7 @@ struct CarState {
   vehicleSensorsInvalid @52 :Bool;  # invalid steering angle readings, etc.
   lowSpeedAlert @56 :Bool;  # lost steering control due to a dynamic min steering speed
   blockPcmEnable @60 :Bool;  # whether to allow PCM to enable this frame
+  radarDisableFailed @63 :Bool;
 
   # cruise state
   cruiseState @10 :CruiseState;
@@ -542,6 +543,7 @@ struct CarParams {
   openpilotLongitudinalControl @37 :Bool; # is openpilot doing the longitudinal control?
   carVin @38 :Text; # VIN number queried during fingerprinting
   dashcamOnly @41: Bool;
+  dashcamOnlyReason @78 :DashcamOnlyReason; # optional specified dashcam only reason
   passive @73: Bool;   # is openpilot in control?
   transmissionType @43 :TransmissionType;
   carFw @44 :List(CarFw);
@@ -678,6 +680,11 @@ struct CarParams {
     manual @2;  # True "stick shift" only
     direct @3;  # Electric vehicle or other direct drive
     cvt @4;
+  }
+
+  enum DashcamOnlyReason {
+    unknown @0;
+    radarDisableEngineOn @1;  # Radar can not be disabled while engine on
   }
 
   struct CarFw {

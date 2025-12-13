@@ -1,6 +1,7 @@
 from collections import defaultdict, namedtuple
 from dataclasses import dataclass, field
 from enum import Enum, IntFlag, StrEnum
+from typing import List, Tuple
 
 from opendbc.car import Bus, CanBusBase, CarSpecs, DbcDict, PlatformConfig, Platforms, structs, uds
 from opendbc.car.lateral import CurvatureSteeringLimits
@@ -14,7 +15,10 @@ Ecu = structs.CarParams.Ecu
 NetworkLocation = structs.CarParams.NetworkLocation
 TransmissionType = structs.CarParams.TransmissionType
 GearShifter = structs.CarState.GearShifter
+DashcamOnlyReason = structs.CarParams.DashcamOnlyReason
 Button = namedtuple('Button', ['event_type', 'can_addr', 'can_msg', 'values'])
+
+RADAR_DISABLE_STATE: dict[str, bool] = {"error": False}
 
 
 class CanBus(CanBusBase):
@@ -107,6 +111,8 @@ class CarControllerParams:
       }
 
     elif CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
+      self.AEB_CONTROL_STEP        = 100   # AWV_03 message frequency 1Hz
+      self.AEB_HUD_STEP            = 20    # MEB_AWV_01 message frequency 5Hz
       self.LDW_STEP                = 10    # LDW_02 message frequency 10Hz
       self.ACC_HUD_STEP            = 6     # MEB_ACC_01 message frequency 16Hz
       self.STEER_DRIVER_ALLOWANCE  = 60    # Driver torque 0.6 Nm, begin steering reduction from MAX
@@ -241,6 +247,7 @@ class VolkswagenSafetyFlags(IntFlag):
   LONG_CONTROL = 1
   ALT_CRC_VARIANT_1 = 2
   NO_GAS_OFFSET = 4
+  DISABLE_RADAR = 8
 
 
 class VolkswagenFlags(IntFlag):
@@ -252,6 +259,7 @@ class VolkswagenFlags(IntFlag):
   STOCK_PSD_06_PRESENT = 1024
   STOCK_DIAGNOSE_01_PRESENT = 2048
   ALT_GEAR = 512
+  DISABLE_RADAR = 4096
 
   # Static flags
   PQ = 2

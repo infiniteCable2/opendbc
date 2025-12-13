@@ -194,6 +194,10 @@ class CarInterfaceBase(ABC, CarInterfaceBaseSP):
     return ret
 
   @staticmethod
+  def pre_init(CP: structs.CarParams, CP_SP: structs.CarParamsSP, can_recv: CanRecvCallable, can_send: CanSendCallable):
+    """Used to check conditions to disable longitudinal ECUs as needed and set/change car params"""
+  
+  @staticmethod
   def init(CP: structs.CarParams, CP_SP: structs.CarParamsSP, can_recv: CanRecvCallable, can_send: CanSendCallable):
     """Used to disable longitudinal ECUs as needed"""
 
