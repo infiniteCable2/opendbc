@@ -1,8 +1,7 @@
 import numpy as np
 
 from opendbc.can import CANPacker
-from opendbc.car import Bus, DT_CTRL, structs, make_tester_present_msg, uds
-from opendbc.car.can_definitions import CanData
+from opendbc.car import Bus, DT_CTRL, structs, make_tester_present_msg
 from opendbc.car.lateral import apply_driver_steer_torque_limits, apply_std_curvature_limits
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.interfaces import CarControllerBase
@@ -14,7 +13,6 @@ from opendbc.sunnypilot.car.volkswagen.icbm import IntelligentCruiseButtonManage
 
 VisualAlert = structs.CarControl.HUDControl.VisualAlert
 LongCtrlState = structs.CarControl.Actuators.LongControlState
-NetworkLocation = structs.CarParams.NetworkLocation
 
 
 class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterface):
