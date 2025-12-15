@@ -54,9 +54,6 @@ class CarInterface(CarInterfaceBase):
         
       if ret.flags & VolkswagenFlags.MEB_GEN2:
         safety_configs[0].safetyParam |= VolkswagenSafetyFlags.ALT_CRC_VARIANT_1.value
-
-      if ret.flags & VolkswagenFlags.MQB_EVO:
-        safety_configs[0].safetyParam |= VolkswagenSafetyFlags.NO_GAS_OFFSET.value
       
       ret.enableBsm = 0x24C in fingerprint[0]  # MEB_Side_Assist_01
       ret.transmissionType = TransmissionType.direct
