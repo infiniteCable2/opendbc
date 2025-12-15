@@ -155,7 +155,7 @@ class TestVolkswagenMqbEvoStockSafety(TestVolkswagenMebStockSafety):
   def setUp(self):
     self.packer = CANPackerSafety("vw_mqbevo")
     self.safety = libsafety_py.libsafety
-    self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagenMqbEvo, VolkswagenSafetyFlags.NO_GAS_OFFSET)
+    self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagenMqbEvo, 0)
     self.safety.init_tests()
     
 
@@ -240,7 +240,7 @@ class TestVolkswagenMqbEvoLongSafety(TestVolkswagenMebLongSafety):
   def setUp(self):
     self.packer = CANPackerSafety("vw_mqbevo")
     self.safety = libsafety_py.libsafety
-    safety_param = VolkswagenSafetyFlags.LONG_CONTROL + VolkswagenSafetyFlags.NO_GAS_OFFSET
+    safety_param = VolkswagenSafetyFlags.LONG_CONTROL
     self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagenMqbEvo, safety_param)
     self.safety.init_tests()
 
