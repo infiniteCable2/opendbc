@@ -246,7 +246,6 @@ class WMI(StrEnum):
 class VolkswagenSafetyFlags(IntFlag):
   LONG_CONTROL = 1
   ALT_CRC_VARIANT_1 = 2
-  NO_GAS_OFFSET = 4
   DISABLE_RADAR = 8
 
 
