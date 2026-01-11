@@ -549,13 +549,22 @@ class CarState(CarStateBase, MadsCarState):
 
   @staticmethod
   def get_can_parsers_meb(CP):
+    pt_messages = [
+      # frequency changes too much for the CANParser to figure out
+      ("Blinkmodi_02", 1),  # From J519 BCM (sent at 1Hz when no lights active, 50Hz when active)
+      ("SMLS_01", 1),       # From Stalk Controls
+    ]
+    if CP.networkLocation == NetworkLocation.fwdCamera:
+      if not (CP.flags & VolkswagenFlags.DISABLE_RADAR):
+        pt_messages.append(("AWV_03", 1)) # Front Collision Detection (1 Hz when inactive, 50 Hz when active)
+      
+    cam_messages = []
+    if CP.networkLocation == NetworkLocation.gateway:
+      if not (CP.flags & VolkswagenFlags.DISABLE_RADAR):
+        cam_messages.append(("AWV_03", 1)) # Front Collision Detection (1 Hz when inactive, 50 Hz when active)
+      
     return {
-       Bus.pt: CANParser(DBC[CP.carFingerprint][Bus.pt], [
-        # frequency changes too much for the CANParser to figure out
-        #("AWV_03", 1),        # Front Collision Detection (1 Hz when inactive, 50 Hz when active)
-        ("Blinkmodi_02", 1),  # From J519 BCM (sent at 1Hz when no lights active, 50Hz when active)
-        ("SMLS_01", 1),       # From Stalk Controls
-      ], CanBus(CP).pt),
+      Bus.pt: CANParser(DBC[CP.carFingerprint][Bus.pt], pt_messages, CanBus(CP).pt),
       Bus.main: CANParser(DBC[CP.carFingerprint][Bus.pt], [], CanBus(CP).main),
-      Bus.cam: CANParser(DBC[CP.carFingerprint][Bus.pt], [], CanBus(CP).cam),
+      Bus.cam: CANParser(DBC[CP.carFingerprint][Bus.pt], cam_messages, CanBus(CP).cam),
     }
