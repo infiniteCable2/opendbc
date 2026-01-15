@@ -4,7 +4,6 @@
 #include "opendbc/safety/modes/volkswagen_common.h"
 
 #define MSG_ESC_51           0xFCU    // RX, for wheel speeds
-#define MSG_Motor_54         0x14CU   // RX, for accel pedal
 #define MSG_HCA_03           0x303U   // TX by OP, Heading Control Assist steering torque
 #define MSG_QFK_01           0x13DU   // RX, for steering angle
 #define MSG_MEB_ACC_01       0x300U   // RX from ECU, for ACC status
@@ -12,7 +11,7 @@
 #define MSG_GRA_ACC_01       0x12BU   // TX by OP, ACC control buttons for cancel/resume
 #define MSG_MOTOR_14         0x3BEU   // RX from ECU, for brake switch status
 #define MSG_LDW_02           0x397U   // TX by OP, Lane line recognition and text alerts
-#define MSG_Motor_51         0x10BU   // RX for TSK state
+#define MSG_Motor_51         0x10BU   // RX for TSK state and accel pedal
 #define MSG_TA_01            0x26BU   // TX for Travel Assist status
 #define MSG_EA_01            0x1A4U   // TX, for EA mitigation
 #define MSG_EA_02            0x1F0U   // TX, for EA mitigation
@@ -23,7 +22,6 @@
   {.msg = {{MSG_LH_EPS_03, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
   {.msg = {{MSG_MOTOR_14, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},   \
   {.msg = {{MSG_GRA_ACC_01, 0, 8, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}}, \
-  {.msg = {{MSG_Motor_54, 0, 32, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
   {.msg = {{MSG_QFK_01, 0, 32, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
   
 #define VW_MEB_RX_CHECKS                                                                            \
@@ -66,8 +64,6 @@ static uint32_t volkswagen_meb_compute_crc(const CANPacket_t *msg) {
     crc ^= (uint8_t[]){0x20,0xCA,0x68,0xD5,0x1B,0x31,0xE2,0xDA,0x08,0x0A,0xD4,0xDE,0x9C,0xE4,0x35,0x5B}[counter];
   } else if (msg->addr == MSG_ESC_51) {
     crc ^= (uint8_t[]){0x77,0x5C,0xA0,0x89,0x4B,0x7C,0xBB,0xD6,0x1F,0x6C,0x4F,0xF6,0x20,0x2B,0x43,0xDD}[counter];
-  } else if (msg->addr == MSG_Motor_54) {
-    crc ^= (uint8_t[]){0x16,0x35,0x59,0x15,0x9A,0x2A,0x97,0xB8,0x0E,0x4E,0x30,0xCC,0xB3,0x07,0x01,0xAD}[counter];
   } else if (msg->addr == MSG_Motor_51) {
     crc ^= (uint8_t[]){0x77,0x5C,0xA0,0x89,0x4B,0x7C,0xBB,0xD6,0x1F,0x6C,0x4F,0xF6,0x20,0x2B,0x43,0xDD}[counter];
   } else if (msg->addr == MSG_MOTOR_14) {
@@ -273,9 +269,8 @@ static void volkswagen_meb_rx_hook(const CANPacket_t *msg) {
     }
 
 	// update accel pedal
-    if (msg->addr == MSG_Motor_54) {
-	  int gas_offset = volkswagen_no_gas_offset ? 0 : 4; // MQBevo (14.4) and MEB (14.8) different offset
-      int accel_pedal_value = ((msg->data[21] * 4) - (144 + gas_offset));
+    if (msg->addr == MSG_Motor_51) {
+      int accel_pedal_value = ((msg->data[1] >> 4) & 0x0FU) | ((msg->data[2] & 0x1FU) << 4);
       gas_pressed = accel_pedal_value > 0;
     }
   }
