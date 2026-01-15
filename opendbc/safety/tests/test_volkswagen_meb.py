@@ -15,7 +15,6 @@ MIN_ACCEL = -3.5
 # MEB message IDs
 MSG_ESC_51        = 0xFC
 MSG_QFK_01        = 0x13D
-MSG_Motor_54      = 0x14C
 MSG_Motor_51      = 0x10B
 MSG_ACC_18        = 0x14D
 MSG_MEB_ACC_01    = 0x300
@@ -58,8 +57,8 @@ class TestVolkswagenMebSafetyBase(common.PandaCarSafetyTest, common.CurvatureSte
 
   # Driver throttle input
   def _user_gas_msg(self, gas):
-    values = {"Accelerator_Pressure": gas}
-    return self.packer.make_can_msg_panda("Motor_54", 0, values)
+    values = {"Accel_Pedal_Pressure": gas}
+    return self.packer.make_can_msg_panda("Motor_51", 0, values)
 
   def _vehicle_moving_msg(self, speed_mps: float):
     return self._speed_msg(speed_mps)
