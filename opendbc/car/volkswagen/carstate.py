@@ -295,7 +295,8 @@ class CarState(CarStateBase, MadsCarState):
     #ret.carFaultedNonCritical = cam_cp.vl["EA_01"]["EA_Funktionsstatus"] in (3, 4, 5, 6) # prepared, not tested
 
     # Update gas, brakes, and gearshift.
-    ret.gasPressed   = pt_cp.vl["Motor_54"]["Accelerator_Pressure"] > 0 # MEB and MQBevo have other offsets in DBC (difference 0.4)
+    #ret.gasPressed   = pt_cp.vl["Motor_54"]["Accelerator_Pressure"] > 0 # MQBevo offset is not reliable (fluctuation or different statically in small range)
+    ret.gasPressed   = pt_cp.vl["Motor_51"]["Accel_Pedal_Pressure"] > 0 # detects accel pedal "a little bit" later than ["Motor_54"]["Accelerator_Pressure"]
     ret.brakePressed = bool(pt_cp.vl["Motor_14"]["MO_Fahrer_bremst"]) # includes regen braking by user
     ret.brake        = pt_cp.vl["ESC_51"]["Brake_Pressure"]
 
