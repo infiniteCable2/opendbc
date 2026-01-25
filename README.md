@@ -1,3 +1,5 @@
+used for analyzing newer plattform VW PPC -> not supported yet, don't use (steering command probably on ethernet but still accepted on sensor can, acc still ok, radar distance and emergency signals changed)
+
 <div align="center" style="text-align: center;">
 
 <h1>opendbc</h1>
