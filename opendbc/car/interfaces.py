@@ -96,9 +96,11 @@ class RadarInterfaceBase(ABC):
 
 
 class CarInterfaceBase(ABC, CarInterfaceBaseSP):
-  CarState: 'CarStateBase'
-  CarController: 'CarControllerBase'
-  RadarInterface: 'RadarInterfaceBase' = RadarInterfaceBase
+  CarState: type['CarStateBase']
+  CarController: type['CarControllerBase']
+  RadarInterface: type['RadarInterfaceBase'] = RadarInterfaceBase
+
+  DRIVABLE_GEARS: tuple[structs.CarState.GearShifter, ...] = ()
 
   def __init__(self, CP: structs.CarParams, CP_SP: structs.CarParamsSP):
     self.CP = CP
@@ -194,6 +196,10 @@ class CarInterfaceBase(ABC, CarInterfaceBaseSP):
     return ret
 
   @staticmethod
+  def pre_init(CP: structs.CarParams, CP_SP: structs.CarParamsSP, can_recv: CanRecvCallable, can_send: CanSendCallable):
+    """Used to check conditions to disable longitudinal ECUs as needed and set/change car params"""
+  
+  @staticmethod
   def init(CP: structs.CarParams, CP_SP: structs.CarParamsSP, can_recv: CanRecvCallable, can_send: CanSendCallable):
     """Used to disable longitudinal ECUs as needed"""
 
@@ -246,7 +252,6 @@ class CarInterfaceBase(ABC, CarInterfaceBaseSP):
     ret.stoppingDecelRate = 0.8 # brake_travel/s while trying to stop
     ret.vEgoStopping = 0.5
     ret.vEgoStarting = 0.5
-    ret.longitudinalTuning.kf = 1.
     ret.longitudinalTuning.kpBP = [0.]
     ret.longitudinalTuning.kpV = [0.]
     ret.longitudinalTuning.kiBP = [0.]
@@ -261,9 +266,6 @@ class CarInterfaceBase(ABC, CarInterfaceBaseSP):
     params = get_torque_params()[candidate]
 
     tune.init('torque')
-    tune.torque.kf = 1.0
-    tune.torque.kp = 1.0
-    tune.torque.ki = 0.3
     tune.torque.friction = params['FRICTION']
     tune.torque.latAccelFactor = params['LAT_ACCEL_FACTOR']
     tune.torque.latAccelOffset = 0.0

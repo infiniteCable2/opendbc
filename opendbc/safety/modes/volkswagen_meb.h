@@ -1,12 +1,12 @@
 #pragma once
 
-#include "opendbc/safety/safety_declarations.h"
+#include "opendbc/safety/declarations.h"
 #include "opendbc/safety/modes/volkswagen_common.h"
 
 #define MSG_ESC_51           0xFCU    // RX, for wheel speeds
 #define MSG_HCA_03           0x303U   // TX by OP, Heading Control Assist steering torque
 #define MSG_QFK_01           0x13DU   // RX, for steering angle
-#define MSG_MEB_ACC_01       0x300U   // RX from ECU, for ACC status
+#define MSG_ACC_19           0x300U   // RX from ECU, for ACC status
 #define MSG_ACC_18           0x14DU   // RX from ECU, for ACC status
 #define MSG_GRA_ACC_01       0x12BU   // TX by OP, ACC control buttons for cancel/resume
 #define MSG_MOTOR_14         0x3BEU   // RX from ECU, for brake switch status
@@ -16,6 +16,11 @@
 #define MSG_EA_01            0x1A4U   // TX, for EA mitigation
 #define MSG_EA_02            0x1F0U   // TX, for EA mitigation
 #define MSG_KLR_01           0x25DU   // TX, for capacitive steering wheel
+#define MSG_DIAGNOSTIC       0x700U   // TX, for general tester present on bus for radar disable
+#define MSG_AWV_03           0xDBU    // TX, radar AEB control message replacement
+#define MSG_MEB_AWV_01       0x16A954ADU   // TX, radar AEB HUD message replacement
+#define MSG_Strukturen_01    0x24FU   // TX, radar objects message replacement
+
 
 // PANDA SAFETY SHOULD INTRODUCE A .ignore_length flag (ALLOWED ONLY IF CHECKSUM CHECK IS REQUIRED TO BE SAFE)
 #define VW_MEB_COMMON_RX_CHECKS                                                                     \
@@ -31,6 +36,19 @@
 #define VW_MEB_GEN2_RX_CHECKS                                                                       \
   {.msg = {{MSG_Motor_51, 0, 48, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
   {.msg = {{MSG_ESC_51, 0, 64, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
+
+#define VW_MEB_LONG_TX_MSGS                                                            \
+  {MSG_HCA_03, 0, 24, .check_relay = true},                                            \
+  {MSG_ACC_19, 0, 48, .check_relay = true}, {MSG_ACC_18, 0, 32, .check_relay = true},  \
+  {MSG_EA_01, 0, 8, .check_relay = false}, {MSG_EA_02, 0, 8, .check_relay = true},     \
+  {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},   \
+  {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true},     \
+
+#define VW_MEB_RADAR_TX_MSGS                        \
+  {MSG_AWV_03, 0, 48, .check_relay = true},         \
+  {MSG_MEB_AWV_01, 0, 8, .check_relay = true},      \
+  {MSG_Strukturen_01, 0, 64, .check_relay = true},  \
+
 
 static uint8_t volkswagen_crc8_lut_8h2f[256]; // Static lookup table for CRC8 poly 0x2F, aka 8H2F/AUTOSAR
 
@@ -128,15 +146,19 @@ static uint32_t volkswagen_meb_gen2_compute_crc(const CANPacket_t *msg) {
 static safety_config volkswagen_meb_init(uint16_t param) {
   // Transmit of GRA_ACC_01 is allowed on bus 0 and 2 to keep compatibility with gateway and camera integration
   static const CanMsg VOLKSWAGEN_MEB_STOCK_TX_MSGS[] = {{MSG_HCA_03, 0, 24, .check_relay = true}, {MSG_GRA_ACC_01, 0, 8, .check_relay = false},
-                                                       {MSG_EA_01, 0, 8, .check_relay = false}, {MSG_EA_02, 0, 8, .check_relay = true},
-                                                       {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},
-                                                       {MSG_GRA_ACC_01, 2, 8, .check_relay = false}, {MSG_LDW_02, 0, 8, .check_relay = true}};
+                                                        {MSG_EA_01, 0, 8, .check_relay = false}, {MSG_EA_02, 0, 8, .check_relay = true},
+                                                        {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},
+                                                        {MSG_GRA_ACC_01, 2, 8, .check_relay = false}, {MSG_LDW_02, 0, 8, .check_relay = true}};
   
-  static const CanMsg VOLKSWAGEN_MEB_LONG_TX_MSGS[] = {{MSG_HCA_03, 0, 24, .check_relay = true},
-													   {MSG_MEB_ACC_01, 0, 48, .check_relay = true}, {MSG_ACC_18, 0, 32, .check_relay = true},
-                                                       {MSG_EA_01, 0, 8, .check_relay = false}, {MSG_EA_02, 0, 8, .check_relay = true},
-                                                       {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},
-                                                       {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true}};
+  static const CanMsg VOLKSWAGEN_MEB_LONG_TX_MSGS[] = {
+	VW_MEB_LONG_TX_MSGS
+  };
+
+  static const CanMsg VOLKSWAGEN_MEB_LONG_NO_RADAR_TX_MSGS[] = {
+	VW_MEB_LONG_TX_MSGS
+	VW_MEB_RADAR_TX_MSGS
+	{MSG_DIAGNOSTIC, 0, 8, .check_relay = false},
+  };
 
   static RxCheck volkswagen_meb_rx_checks[] = {
     VW_MEB_COMMON_RX_CHECKS
@@ -152,10 +174,10 @@ static safety_config volkswagen_meb_init(uint16_t param) {
   volkswagen_resume_button_prev = false;
 
   volkswagen_alt_crc_variant_1 = GET_FLAG(param, FLAG_VOLKSWAGEN_ALT_CRC_VARIANT_1);
-  volkswagen_no_gas_offset = GET_FLAG(param, FLAG_VOLKSWAGEN_NO_GAS_OFFSET);
 
 #ifdef ALLOW_DEBUG
   volkswagen_longitudinal = GET_FLAG(param, FLAG_VOLKSWAGEN_LONG_CONTROL);
+  volkswagen_disable_radar = GET_FLAG(param, FLAG_VOLKSWAGEN_DISABLE_RADAR);
 #endif
   
   gen_crc_lookup_table_8(0x2F, volkswagen_crc8_lut_8h2f);
@@ -163,7 +185,11 @@ static safety_config volkswagen_meb_init(uint16_t param) {
   safety_config ret;
   
   if (volkswagen_longitudinal) {
-    SET_TX_MSGS(VOLKSWAGEN_MEB_LONG_TX_MSGS, ret);
+	if (volkswagen_disable_radar) {
+	  SET_TX_MSGS(VOLKSWAGEN_MEB_LONG_NO_RADAR_TX_MSGS, ret);
+	} else {
+      SET_TX_MSGS(VOLKSWAGEN_MEB_LONG_TX_MSGS, ret);
+	}
   } else {
 	SET_TX_MSGS(VOLKSWAGEN_MEB_STOCK_TX_MSGS, ret);
   }
@@ -216,12 +242,7 @@ static void volkswagen_meb_rx_hook(const CANPacket_t *msg) {
     // Signal: LH_EPS_03.EPS_Lenkmoment (absolute torque)
     // Signal: LH_EPS_03.EPS_VZ_Lenkmoment (direction)
     if (msg->addr == MSG_LH_EPS_03) {
-      int torque_driver_new = msg->data[5] | ((msg->data[6] & 0x1FU) << 8);
-      int sign_driver_torque = (msg->data[6] & 0x80U) >> 7;
-      if (sign_driver_torque == 1) {
-        torque_driver_new *= -1;
-      }
-      update_sample(&torque_driver, torque_driver_new);
+      update_sample(&torque_driver, volkswagen_mlb_mqb_driver_input_torque(msg));
     }
 
     // Update cruise state
@@ -268,11 +289,12 @@ static void volkswagen_meb_rx_hook(const CANPacket_t *msg) {
       brake_pressed = GET_BIT(msg, 28U);
     }
 
-	// update accel pedal
+    // update accel pedal
     if (msg->addr == MSG_Motor_51) {
       int accel_pedal_value = ((msg->data[1] >> 4) & 0x0FU) | ((msg->data[2] & 0x1FU) << 4);
       gas_pressed = accel_pedal_value > 0;
     }
+	
   }
 }
 
@@ -326,6 +348,13 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
   if ((msg->addr == MSG_GRA_ACC_01) && !controls_allowed) {
     // disallow resume and set: bits 16 and 19
     if ((msg->data[2] & 0x9U) != 0U) {
+      tx = false;
+    }
+  }
+
+  // UDS: Only tester present ("\x02\x3E\x80\x00\x00\x00\x00\x00") allowed on diagnostics address
+  if (msg->addr == MSG_DIAGNOSTIC) {
+    if ((GET_BYTES(msg, 0, 4) != 0x00803E02U) || (GET_BYTES(msg, 4, 4) != 0x0U)) {
       tx = false;
     }
   }

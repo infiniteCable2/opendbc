@@ -5,7 +5,7 @@ from opendbc.car import structs, rate_limit, DT_CTRL, ACCELERATION_DUE_TO_GRAVIT
 from opendbc.car.vehicle_model import VehicleModel
 from typing import Tuple
 
-FRICTION_THRESHOLD = 0.3
+FRICTION_THRESHOLD = 0.2
 
 # ISO 11270
 ISO_LATERAL_ACCEL = 3.0  # m/s^2
@@ -32,7 +32,7 @@ class CurvatureSteeringLimits:
   CURVATURE_MAX: float
 
 
-def apply_driver_steer_torque_limits(apply_torque: int, apply_torque_last: int, driver_torque: float, LIMITS, steer_max: int = None):
+def apply_driver_steer_torque_limits(apply_torque: int, apply_torque_last: int, driver_torque: float, LIMITS, steer_max: int | None = None):
   # some safety modes utilize a dynamic max steer
   if steer_max is None:
     steer_max = LIMITS.STEER_MAX
