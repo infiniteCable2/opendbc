@@ -58,7 +58,6 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     self.apply_torque_last = 0
     self.apply_curvature_last = 0.
     self.steering_power_last = 0
-    self.steering_offset = 0.
     self.accel_last = 0.
     self.long_jerk_control = LongControlJerk(dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO) else None
     self.long_limit_control = LongControlLimit(dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO) else None
@@ -67,9 +66,6 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     self.gra_acc_counter_last = None
     self.hca_mitigation = HCAMitigation(self.CCP)
     self.klr_counter_last = None
-    self.eps_timer_soft_disable_alert = False
-    self.hca_frame_timer_running = 0
-    self.hca_frame_same_torque = 0
     self.lead_distance_bars_last = None
     self.distance_bar_frame = 0
     self.speed_limit_last = 0
@@ -81,7 +77,6 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
       if (CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO))
       else None
     )
-
 
   def update(self, CC, CC_SP, CS, now_nanos):
     actuators = CC.actuators
@@ -135,7 +130,16 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         self.apply_curvature_last = apply_curvature
         self.steering_power_last = steering_power
         
-      else:        
+      else:
+        # Logic to avoid HCA state 4 "refused":
+        #   * Don't steer unless HCA is in state 3 "ready" or 5 "active"
+        #   * Don't steer at standstill
+        #   * Don't send > 3.00 Newton-meters torque
+        #   * Don't send the same torque for > 6 seconds
+        #   * Don't send uninterrupted steering for > 360 seconds
+        # MQB racks reset the uninterrupted steering timer after a single frame
+        # of HCA disabled; this is done whenever output happens to be zero.
+        
         apply_torque = 0
         if CC.latActive:
           new_torque = int(round(actuators.torque * self.CCP.STEER_MAX))
