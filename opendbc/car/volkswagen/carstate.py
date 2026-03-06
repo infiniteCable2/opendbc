@@ -537,6 +537,7 @@ class CarState(CarStateBase, MadsCarState):
     return {
       Bus.pt: CANParser(DBC[CP.carFingerprint][Bus.pt], pt_messages, CanBus(CP).pt),
       Bus.cam: CANParser(DBC[CP.carFingerprint][Bus.pt], cam_messages, CanBus(CP).cam),
+      Bus.main: CANParser(DBC[CP.carFingerprint][Bus.pt], [], CanBus(CP).main),
     }
 
   @staticmethod
