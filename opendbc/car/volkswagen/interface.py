@@ -63,7 +63,7 @@ class CarInterface(CarInterfaceBase):
         ret.networkLocation = NetworkLocation.fwdCamera
 
       if ret.networkLocation == NetworkLocation.gateway:
-        ret.radarUnavailable = False
+        ret.radarUnavailable = 0x24F not in fingerprint[0] # Strukturen_01
         
       if 0x30B in fingerprint[0]:  # Kombi_01
         ret.flags |= VolkswagenFlags.KOMBI_PRESENT.value
