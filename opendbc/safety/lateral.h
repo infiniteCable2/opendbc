@@ -359,8 +359,8 @@ bool steer_power_cmd_checks(int desired_steer_power, bool steer_control_enabled,
 
   violation |= safety_max_limit_check(desired_steer_power, limits.max_power, 0);
   violation |= desired_steer_power > 0 && !steer_control_enabled;
-  violation |= !is_lat_active() && steer_control_enabled && desired_steer_power != 0 && desired_steer_power >= desired_steer_power_last;
-  violation |= !is_lat_active() && !steer_control_enabled && desired_steer_power != 0;
+  violation |= !(controls_allowed || controls_allowed_lateral) && steer_control_enabled && desired_steer_power != 0 && desired_steer_power >= desired_steer_power_last;
+  violation |= !(controls_allowed || controls_allowed_lateral) && !steer_control_enabled && desired_steer_power != 0;
 
   desired_steer_power_last = desired_steer_power;
  
@@ -371,7 +371,7 @@ bool steer_power_cmd_checks(int desired_steer_power, bool steer_control_enabled,
 bool steer_curvature_cmd_checks_roll(int desired_curvature, bool steer_control_enabled, const CurvatureSteeringLimits limits) {
   bool violation = false;
 
-  if (is_lat_active() && steer_control_enabled) {
+  if ((controls_allowed || controls_allowed_lateral) && steer_control_enabled) {
     violation |= safety_max_limit_check(desired_curvature, limits.max_curvature, -limits.max_curvature);
 
     // ISO jerk limit
@@ -418,7 +418,7 @@ bool steer_curvature_cmd_checks_roll(int desired_curvature, bool steer_control_e
 bool steer_curvature_cmd_checks_average(int desired_curvature, bool steer_control_enabled, const CurvatureSteeringLimits limits) {
   bool violation = false;
 
-  if (is_lat_active() && steer_control_enabled) {
+  if ((controls_allowed || controls_allowed_lateral) && steer_control_enabled) {
     violation |= safety_max_limit_check(desired_curvature, limits.max_curvature, -limits.max_curvature);
 
     // ISO jerk limit
