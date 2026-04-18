@@ -72,6 +72,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     self.speed_limit_changed_timer = 0
     self.radar_disabled_warning_timer = 0
     self.hide_ea_error = False
+    self.hca_status_recovery_last_press_frame = -self.CCP.HCA_STATUS_RECOVERY_RETRY_FRAMES
     self.LateralController = (
       LatControlCurvature(self.CCP.CURVATURE_PID, self.CCP.CURVATURE_LIMITS.CURVATURE_MAX, 1 / (DT_CTRL * self.CCP.STEER_STEP))
       if (CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO))
@@ -312,6 +313,12 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         if CC.cruiseControl.cancel or CC.cruiseControl.resume:
           can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, bus_send, CS.gra_stock_values,
                                                                cancel=CC.cruiseControl.cancel, resume=CC.cruiseControl.resume))
+        elif self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO) and CC.latActive and CS.hca_status_recovery_enabled and \
+            self.frame - self.hca_status_recovery_last_press_frame >= self.CCP.HCA_STATUS_RECOVERY_RETRY_FRAMES:
+          # On MY2025+ vehicles the steering command path moves to Automotive Ethernet, where it cannot be intercepted here.
+          # Try to resynchronize the HCA state by pulsing the Travel Assist activation button.
+          can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, bus_send, CS.gra_stock_values, travel_assist=True))
+          self.hca_status_recovery_last_press_frame = self.frame
         else: # Intelligent Cruise Button Management
           can_sends.extend(IntelligentCruiseButtonManagementInterface.update(self, CC_SP, CS, self.packer_pt, self.frame, bus_send))
 

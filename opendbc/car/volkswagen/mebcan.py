@@ -107,7 +107,7 @@ def create_lka_hud_control(packer, bus, ldw_stock_values, lat_active, steering_p
   return packer.make_can_msg("LDW_02", bus, values)
   
 
-def create_acc_buttons_control(packer, bus, gra_stock_values, cancel=False, resume=False, up=False, down=False):
+def create_acc_buttons_control(packer, bus, gra_stock_values, cancel=False, resume=False, up=False, down=False, travel_assist=False):
   values = {s: gra_stock_values[s] for s in [
     "GRA_Hauptschalter",           # ACC button, on/off
     "GRA_Typ_Hauptschalter",       # ACC main button type
@@ -122,6 +122,11 @@ def create_acc_buttons_control(packer, bus, gra_stock_values, cancel=False, resu
     "GRA_Tip_Wiederaufnahme": resume or up,
     "GRA_Tip_Setzen": down,
   })
+
+  if travel_assist:
+    if "GRA_TravelAssist" in gra_stock_values:
+      values["GRA_TravelAssist"] = 1
+
   return packer.make_can_msg("GRA_ACC_01", bus, values)
 
 

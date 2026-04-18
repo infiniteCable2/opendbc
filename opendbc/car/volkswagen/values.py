@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from enum import Enum, IntFlag, StrEnum
 from typing import List, Tuple
 
-from opendbc.car import Bus, CanBusBase, CarSpecs, DbcDict, PlatformConfig, Platforms, structs, uds
+from opendbc.car import Bus, CanBusBase, CarSpecs, DbcDict, DT_CTRL, PlatformConfig, Platforms, structs, uds
 from opendbc.car.lateral import CurvatureSteeringLimits
 from opendbc.can import CANDefine
 from opendbc.car.common.conversions import Conversions as CV
@@ -56,6 +56,9 @@ class CarControllerParams:
   ACC_CONTROL_STEP = 2                     # ACC_06/ACC_07/ACC_System frequency 50Hz
   AEB_CONTROL_STEP = 2                     # ACC_10 frequency 50Hz
   AEB_HUD_STEP = 20                        # ACC_15 frequency 5Hz
+  HCA_STATUS_WATCHDOG_WINDOW_FRAMES = round(5.0 / DT_CTRL)
+  HCA_STATUS_WATCHDOG_ALLOWED_FLUCTUATIONS_PER_SECOND = 2.0
+  HCA_STATUS_RECOVERY_RETRY_FRAMES = HCA_STATUS_WATCHDOG_WINDOW_FRAMES
 
   # Documented lateral limits: 3.00 Nm max, rate of change 5.00 Nm/sec.
   # MQB vs PQ maximums are shared, but rate-of-change limited differently
@@ -109,6 +112,8 @@ class CarControllerParams:
       self.AEB_HUD_STEP            = 20    # MEB_AWV_01 message frequency 5Hz
       self.LDW_STEP                = 10    # LDW_02 message frequency 10Hz
       self.ACC_HUD_STEP            = 6     # MEB_ACC_01 message frequency 16Hz
+      self.HCA_STATUS_WATCHDOG_MAX_FLUCTUATION_FRAMES = round(self.HCA_STATUS_WATCHDOG_WINDOW_FRAMES *
+                                                               DT_CTRL * self.HCA_STATUS_WATCHDOG_ALLOWED_FLUCTUATIONS_PER_SECOND)
       self.STEER_DRIVER_ALLOWANCE  = 60    # Driver torque 0.6 Nm, begin steering reduction from MAX
       self.STEER_DRIVER_SLIGHT_PRESS = 15  # Driver torque 0.15 Nm for slight steering override detection
       self.STEER_DRIVER_MAX        = 300   # Driver torque 3.0 Nm, stop steering reduction at MIN

@@ -1,3 +1,5 @@
+from collections import deque
+
 from opendbc.can import CANParser
 from opendbc.car import Bus, structs
 from opendbc.car.interfaces import CarStateBase
@@ -30,6 +32,10 @@ class CarState(CarStateBase, MadsCarState):
     self.speed_limit_predicative_type = 0
     self.force_rhd_for_bsm = False
     self.acc_type = 0
+    self.hca_status_last = None
+    self.hca_status_fluct_counter = 0
+    self.hca_status_fluctuation_frames = deque()
+    self.hca_status_recovery_enabled = False
 
   def update_button_enable(self, buttonEvents: list[structs.CarState.ButtonEvent]):
     if not self.CP.pcmCruise:
@@ -284,7 +290,9 @@ class CarState(CarStateBase, MadsCarState):
     drive_mode = ret.gearShifter == GearShifter.drive
     
     hca_status = self.CCP.hca_status_values.get(pt_cp.vl["QFK_01"]["LatCon_HCA_Status"])
-    ret.steerFaultTemporary, ret.steerFaultPermanent = self.update_hca_state(hca_status, drive_mode=drive_mode)
+    hca_status_fluctuation = self.update_hca_status_watchdog(hca_status)
+    self.hca_status_recovery_enabled = drive_mode and hca_status_fluctuation
+    ret.steerFaultTemporary, ret.steerFaultPermanent = self.update_hca_state(hca_status, drive_mode=drive_mode, hca_watchdog_fail=hca_status_fluctuation)
 
     # VW Emergency Assist status tracking and mitigation
     self.eps_stock_values = pt_cp.vl["LH_EPS_03"]
@@ -495,13 +503,29 @@ class CarState(CarStateBase, MadsCarState):
     hca_status = self.CCP.hca_status_values.get(pt_cp.vl["LH_EPS_03"]["EPS_HCA_Status"])
     ret.steerFaultTemporary, ret.steerFaultPermanent = self.update_hca_state(hca_status, drive_mode)
     return
+    
+  def update_hca_status_watchdog(self, hca_status):
+    # On MY2025+ vehicles the steering command path moves to Automotive Ethernet, where it cannot be intercepted here.
+    # Detect the resulting fluctuating HCA status so a user-facing warning can be raised.
+    current_frame = self.frame
 
-  def update_hca_state(self, hca_status, drive_mode=True):
+    if self.hca_status_last is not None and hca_status is not None and hca_status != self.hca_status_last:
+      self.hca_status_fluctuation_frames.append(current_frame)
+
+    self.hca_status_last = hca_status
+
+    while self.hca_status_fluctuation_frames and current_frame - self.hca_status_fluctuation_frames[0] >= self.CCP.HCA_STATUS_WATCHDOG_WINDOW_FRAMES:
+      self.hca_status_fluctuation_frames.popleft()
+
+    self.hca_status_fluct_counter = len(self.hca_status_fluctuation_frames)
+    return self.hca_status_fluct_counter >= self.CCP.HCA_STATUS_WATCHDOG_MAX_FLUCTUATION_FRAMES
+
+  def update_hca_state(self, hca_status, drive_mode=True, hca_watchdog_fail=False):
     # Treat FAULT as temporary for worst likely EPS recovery time, for cars without factory Lane Assist
     # DISABLED means the EPS hasn't been configured to support Lane Assist
     self.eps_init_complete = self.eps_init_complete or (hca_status in ("DISABLED", "READY", "ACTIVE") or self.frame > 600)
-    perm_fault = drive_mode and hca_status == "DISABLED" or (self.eps_init_complete and hca_status == "FAULT")
-    temp_fault = drive_mode and hca_status in ("REJECTED", "PREEMPTED") or not self.eps_init_complete
+    perm_fault = (drive_mode and hca_status == "DISABLED") or (self.eps_init_complete and hca_status == "FAULT")
+    temp_fault = (drive_mode and hca_status in ("REJECTED", "PREEMPTED")) or not self.eps_init_complete or (drive_mode and hca_watchdog_fail)
     return temp_fault, perm_fault
     
   def update_acc_fault(self, acc_fault, parking_brake=False, drive_mode=True, recovery_frames_max=100):
