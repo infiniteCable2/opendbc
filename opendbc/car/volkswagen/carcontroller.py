@@ -72,7 +72,9 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     self.speed_limit_changed_timer = 0
     self.radar_disabled_warning_timer = 0
     self.hide_ea_error = False
-    self.hca_status_recovery_last_press_frame = -self.CCP.HCA_STATUS_RECOVERY_RETRY_FRAMES
+    self.hca_status_recovery_last_press_frame = -1
+    self.hca_status_recovery_prev_enabled = False
+    self.hca_status_recovery_pending = False
     self.LateralController = (
       LatControlCurvature(self.CCP.CURVATURE_PID, self.CCP.CURVATURE_LIMITS.CURVATURE_MAX, 1 / (DT_CTRL * self.CCP.STEER_STEP))
       if (CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO))
@@ -306,6 +308,14 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
 
     # **** Stock ACC Button Controls **************************************** #
 
+    hca_status_recovery_supported = self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO)
+    if not CS.hca_status_recovery_enabled:
+      self.hca_status_recovery_pending = False
+    elif hca_status_recovery_supported:
+      recovery_rising_edge = not self.hca_status_recovery_prev_enabled
+      recovery_rearmed = self.frame >= CS.hca_status_recovery_rearm_frame and self.hca_status_recovery_last_press_frame < CS.hca_status_recovery_rearm_frame
+      self.hca_status_recovery_pending = self.hca_status_recovery_pending or recovery_rising_edge or recovery_rearmed
+
     gra_send_ready = CS.gra_stock_values["COUNTER"] != self.gra_acc_counter_last
     if gra_send_ready:
       bus_send = self.CAN.main if self.CP.flags & VolkswagenFlags.PQ else self.CAN.ext
@@ -313,12 +323,12 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         if CC.cruiseControl.cancel or CC.cruiseControl.resume:
           can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, bus_send, CS.gra_stock_values,
                                                                cancel=CC.cruiseControl.cancel, resume=CC.cruiseControl.resume))
-        elif self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO) and CC.latActive and CS.hca_status_recovery_enabled and \
-            self.frame - self.hca_status_recovery_last_press_frame >= self.CCP.HCA_STATUS_RECOVERY_RETRY_FRAMES:
+        elif hca_status_recovery_supported and CC.latActive and self.hca_status_recovery_pending:
           # On MY2025+ vehicles the steering command path moves to Automotive Ethernet, where it cannot be intercepted here.
           # Try to resynchronize the HCA state by pulsing the Travel Assist activation button.
           can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, bus_send, CS.gra_stock_values, travel_assist=True))
           self.hca_status_recovery_last_press_frame = self.frame
+          self.hca_status_recovery_pending = False
         else: # Intelligent Cruise Button Management
           can_sends.extend(IntelligentCruiseButtonManagementInterface.update(self, CC_SP, CS, self.packer_pt, self.frame, bus_send))
 
@@ -331,5 +341,6 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
 
     self.lead_distance_bars_last = hud_control.leadDistanceBars
     self.gra_acc_counter_last = CS.gra_stock_values["COUNTER"]
+    self.hca_status_recovery_prev_enabled = CS.hca_status_recovery_enabled
     self.frame += 1
     return new_actuators, can_sends

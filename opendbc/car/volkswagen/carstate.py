@@ -36,6 +36,7 @@ class CarState(CarStateBase, MadsCarState):
     self.hca_status_fluct_counter = 0
     self.hca_status_fluctuation_frames = deque()
     self.hca_status_recovery_enabled = False
+    self.hca_status_recovery_rearm_frame = 0
 
   def update_button_enable(self, buttonEvents: list[structs.CarState.ButtonEvent]):
     if not self.CP.pcmCruise:
@@ -518,6 +519,12 @@ class CarState(CarStateBase, MadsCarState):
       self.hca_status_fluctuation_frames.popleft()
 
     self.hca_status_fluct_counter = len(self.hca_status_fluctuation_frames)
+    if self.hca_status_fluct_counter >= self.CCP.HCA_STATUS_WATCHDOG_MAX_FLUCTUATION_FRAMES:
+      rearm_idx = self.hca_status_fluct_counter - self.CCP.HCA_STATUS_WATCHDOG_MAX_FLUCTUATION_FRAMES
+      self.hca_status_recovery_rearm_frame = self.hca_status_fluctuation_frames[rearm_idx] + self.CCP.HCA_STATUS_WATCHDOG_WINDOW_FRAMES
+    else:
+      self.hca_status_recovery_rearm_frame = current_frame
+
     return self.hca_status_fluct_counter >= self.CCP.HCA_STATUS_WATCHDOG_MAX_FLUCTUATION_FRAMES
 
   def update_hca_state(self, hca_status, drive_mode=True, hca_watchdog_fail=False):
