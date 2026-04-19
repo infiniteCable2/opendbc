@@ -251,22 +251,24 @@ class VolkswagenSafetyFlags(IntFlag):
 
 class VolkswagenFlags(IntFlag):
   # Detected flags
-  STOCK_HCA_PRESENT = 1
-  KOMBI_PRESENT = 4
-  STOCK_KLR_PRESENT = 64
-  STOCK_PSD_PRESENT = 32
-  STOCK_PSD_06_PRESENT = 1024
-  STOCK_DIAGNOSE_01_PRESENT = 2048
-  ALT_GEAR = 512
-  DISABLE_RADAR = 4096
+  STOCK_HCA_PRESENT         = 2 ** 0
+  KOMBI_PRESENT             = 2 ** 2
+  STOCK_KLR_PRESENT         = 2 ** 6
+  STOCK_PSD_PRESENT         = 2 ** 5
+  STOCK_PSD_06_PRESENT      = 2 ** 10
+  STOCK_DIAGNOSE_01_PRESENT = 2 ** 11
+  ALT_GEAR                  = 2 ** 9
+  DISABLE_RADAR             = 2 ** 12
+  STOCK_EA_PRESENT          = 2 ** 14
+  STOCK_VZE_PRESENT         = 2 ** 15
 
   # Static flags
-  PQ = 2
-  MEB = 16
-  MEB_GEN2 = 128
-  MQB_EVO = 256
-  MQB_EVO_GEN2 = 8192
-  MLB = 8
+  PQ           = 2 ** 1
+  MEB          = 2 ** 4
+  MEB_GEN2     = 2 ** 7
+  MQB_EVO      = 2 ** 8
+  MQB_EVO_GEN2 = 2 ** 13
+  MLB          = 2 ** 3
 
 
 @dataclass
