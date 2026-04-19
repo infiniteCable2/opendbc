@@ -23,8 +23,11 @@ SIGNAL_SETS = tuple(
 
 
 def get_radar_can_parser(CP):
-  if CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO) and not (CP.flags & VolkswagenFlags.DISABLE_RADAR):
-    messages = [("Strukturen_01", 25)]
+  if not (CP.flags & VolkswagenFlags.DISABLE_RADAR):
+    if CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO): # plattform
+      if CP.flags & VolkswagenFlags.MQB_EVO_GEN2: # generation specific
+        return None
+      messages = [("Strukturen_01", 25)]
   else:
     return None
 
