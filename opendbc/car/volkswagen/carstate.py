@@ -374,7 +374,7 @@ class CarState(CarStateBase, MadsCarState):
 
     # Speed Limit
     raining = pt_cp.vl["RLS_01"]["RS_Regenmenge"] > 0
-    vze_01_values = cam_cp.vl["VZE_04"] # Traffic Sign Recognition
+    vze_04_values = cam_cp.vl["VZE_04"] if self.CP.flags & VolkswagenFlags.STOCK_VZE_PRESENT else {} # Traffic Sign Recognition
     psd_04_values = alt_cp.vl["PSD_04"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {} # Predicative Street Data
     psd_05_values = alt_cp.vl["PSD_05"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {}
     psd_06_values = alt_cp.vl["PSD_06"] if self.CP.flags & VolkswagenFlags.STOCK_PSD_PRESENT else {}
@@ -382,7 +382,7 @@ class CarState(CarStateBase, MadsCarState):
     diagnose_01_values = pt_cp.vl["Diagnose_01"] if self.CP.flags & VolkswagenFlags.STOCK_DIAGNOSE_01_PRESENT else {}
 
     self.speed_limit_mgr.enable_predicative_speed_limit(self.enable_predicative_speed_limit, self.enable_pred_react_to_speed_limits, self.enable_pred_react_to_curves)
-    self.speed_limit_mgr.update(ret.vEgo, psd_04_values, psd_05_values, psd_06_values, vze_01_values, raining, diagnose_01_values)
+    self.speed_limit_mgr.update(ret.vEgo, psd_04_values, psd_05_values, psd_06_values, vze_04_values, raining, diagnose_01_values)
     ret.cruiseState.speedLimit = self.speed_limit_mgr.get_speed_limit()
     ret.cruiseState.speedLimitPredicative = self.speed_limit_mgr.get_speed_limit_predicative()
     self.speed_limit_predicative_type = self.speed_limit_mgr.get_speed_limit_predicative_type()
@@ -410,8 +410,8 @@ class CarState(CarStateBase, MadsCarState):
     ret.espDisabled = bool(pt_cp.vl["ESP_21"]["ESP_Tastung_passiv"]) # this is also true for ESC Sport mode
     ret.espActive   = bool(pt_cp.vl["ESP_21"]["ESP_Eingriff"])
 
-    self.ea_hud_stock_values = cam_cp.vl["EA_02"]
-    self.ea_control_stock_values = cam_cp.vl["EA_01"]
+    self.ea_hud_stock_values = cam_cp.vl["EA_02"] if self.CP.flags & VolkswagenFlags.STOCK_EA_PRESENT else {}
+    self.ea_control_stock_values = cam_cp.vl["EA_01"] if self.CP.flags & VolkswagenFlags.STOCK_EA_PRESENT else {}
 
     if self.CP.flags & VolkswagenFlags.MEB:
       ret.fuelGauge = pt_cp.vl["Motor_16"]["MO_Energieinhalt_BMS"]
