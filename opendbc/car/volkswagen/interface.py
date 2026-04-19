@@ -83,6 +83,12 @@ class CarInterface(CarInterfaceBase):
       if 0x3DC in fingerprint[0]:  # Gatway_73
         ret.flags |= VolkswagenFlags.ALT_GEAR.value
 
+      if all(msg in fingerprint[2] for msg in (0x1A4, 0x1F0)):  # EA_01, EA_02
+        ret.flags |= VolkswagenFlags.STOCK_EA_PRESENT.value
+
+      if 0x12DD54A7 in fingerprint[2]:  # VZE_04
+        ret.flags |= VolkswagenFlags.STOCK_VZE_PRESENT.value
+
       if ret.networkLocation == NetworkLocation.fwdCamera:
         ret.flags |= VolkswagenFlags.DISABLE_RADAR.value
         safety_configs[0].safetyParam |= VolkswagenSafetyFlags.DISABLE_RADAR.value
