@@ -8,6 +8,26 @@ Ecu = CarParams.Ecu
 
 
 FW_VERSIONS = {
+  CAR.FORD_EXPLORER_EV_MK1: {
+    (Ecu.inverter, 0x17fc007c, None): [
+      b'\xf1\x871EA907121BJ\xf1\x896125\xf1\x82010\x00',
+    ],
+    (Ecu.engine, 0x17fc0076, None): [
+      b'\xf1\x870EA906013F \xf1\x894095',
+    ],
+    (Ecu.transmission, 0x7e1, None): [],
+    (Ecu.srs, 0x715, None): [],
+    (Ecu.eps, 0x712, None): [],
+    (Ecu.fwdCamera, 0x74f, None): [
+      b'\xf1\x871EA980654M \xf1\x895556',
+    ],
+    (Ecu.cornerRadar, 0x74e, None): [],
+    (Ecu.adas, 0x769, None): [],
+    (Ecu.parkingAdas, 0x70a, None): [],
+    (Ecu.fwdRadar, 0x757, None): [
+      b'\xf1\x871EA907567B \xf1\x890232',
+    ],
+  },
   CAR.VOLKSWAGEN_ARTEON_MK1: {
     (Ecu.engine, 0x7e0, None): [
       b'\xf1\x8704L906026TM\xf1\x896847',
