@@ -640,6 +640,17 @@
     ],
     "package": "Co-Pilot360 Assist+"
   },
+  "Ford Explorer EV 2024-25": {
+    "platform": "FORD_EXPLORER_EV_MK1",
+    "make": "Ford",
+    "brand": "volkswagen",
+    "model": "Explorer EV",
+    "year": [
+      "2024",
+      "2025"
+    ],
+    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
+  },
   "Ford Explorer Hybrid 2020-24": {
     "platform": "FORD_EXPLORER_MK6",
     "make": "Ford",

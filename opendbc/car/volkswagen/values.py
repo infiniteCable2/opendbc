@@ -241,6 +241,7 @@ class WMI(StrEnum):
   VOLKSWAGEN_EUROPE_SUV = "WVG"
   VOLKSWAGEN_EUROPE_CAR = "WVW"
   VOLKSWAGEN_GROUP_RUS = "XW8"
+  FORD_EUROPE_CAR = "WF0"
 
 
 class VolkswagenSafetyFlags(IntFlag):
@@ -355,6 +356,9 @@ class Footnote(Enum):
     "Model-years 2022 and beyond may have a combined CAN gateway and BCM, which is supported by openpilot " +
     "in software, but doesn't yet have a harness available from the comma store.",
     Column.HARDWARE)
+  FORD_MEB = CarFootnote(
+    "Some Ford models are based on Volkswagen MEB plattform.",
+    Column.MODEL)
 
 
 @dataclass
@@ -367,6 +371,9 @@ class VWCarDocs(CarDocs):
     self.footnotes.append(Footnote.VW_EXP_LONG)
     if "SKODA" in CP.carFingerprint:
       self.footnotes.append(Footnote.SKODA_HEATED_WINDSHIELD)
+      
+    if "FORD" in CP.carFingerprint:
+      self.footnotes.append(Footnote.FORD_MEB)
 
     if abs(CP.minSteerSpeed - CarControllerParams.DEFAULT_MIN_STEER_SPEED) < 1e-3:
       self.min_steer_speed = 0
@@ -379,6 +386,13 @@ class VWCarDocs(CarDocs):
 class CAR(Platforms):
   config: VolkswagenMQBPlatformConfig | VolkswagenPQPlatformConfig
 
+  FORD_EXPLORER_EV_MK1 = VolkswagenMEBPlatformConfig(
+    [VWCarDocs("Ford Explorer EV Limited 2024-25")],
+    VolkswagenCarSpecs(mass=2090, wheelbase=2.77, steerRatio=21.7),
+    chassis_codes={"EF"},
+    wmis={WMI.FORD_EUROPE_CAR},
+    flags=VolkswagenFlags.MEB_GEN2,
+  )
   VOLKSWAGEN_ARTEON_MK1 = VolkswagenMQBPlatformConfig(
     [
       VWCarDocs("Volkswagen Arteon 2018-23", video="https://youtu.be/FAomFKPFlDA"),
