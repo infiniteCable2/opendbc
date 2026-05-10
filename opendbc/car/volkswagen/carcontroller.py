@@ -150,6 +150,18 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         self.apply_torque_last = apply_torque
         can_sends.append(self.CCS.create_steering_control(self.packer_pt, self.CAN.pt, apply_torque, hca_enabled))
 
+    # Emergency Assist mitigation
+    if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
+      if self.CP.flags & VolkswagenFlags.STOCK_KLR_PRESENT:
+        # send capacitive steering wheel touched
+        # propably EA is stock activated only for cars equipped with capacitive steering wheel
+        # (also stock long does resume from stop as long as hands on is detected additionally to OP resume spam)
+        klr_send_ready = CS.klr_stock_values["COUNTER"] != self.klr_counter_last
+        if klr_send_ready:
+          can_sends.append(mebcan.create_capacitive_wheel_touch(self.packer_pt, self.CAN.cam, CC.latActive, CS.klr_stock_values))
+          can_sends.append(mebcan.create_capacitive_wheel_touch(self.packer_pt, self.CAN.pt, CC.latActive, CS.klr_stock_values))
+        self.klr_counter_last = CS.klr_stock_values["COUNTER"]
+    else:
       if self.CP.flags & VolkswagenFlags.STOCK_HCA_PRESENT:
         # Pacify VW Emergency Assist driver inactivity detection by changing its view of driver steering input torque
         # to the greatest of actual driver input or 2x openpilot's output (1x openpilot output is not enough to
@@ -158,17 +170,6 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         if abs(CS.out.steeringTorque) > abs(ea_simulated_torque):
           ea_simulated_torque = CS.out.steeringTorque
         can_sends.append(self.CCS.create_eps_update(self.packer_pt, self.CAN.cam, CS.eps_stock_values, ea_simulated_torque))
-
-    # Emergency Assist intervention
-    if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO) and self.CP.flags & VolkswagenFlags.STOCK_KLR_PRESENT:
-      # send capacitive steering wheel touched
-      # propably EA is stock activated only for cars equipped with capacitive steering wheel
-      # (also stock long does resume from stop as long as hands on is detected additionally to OP resume spam)
-      klr_send_ready = CS.klr_stock_values["COUNTER"] != self.klr_counter_last
-      if klr_send_ready:
-        can_sends.append(mebcan.create_capacitive_wheel_touch(self.packer_pt, self.CAN.cam, CC.latActive, CS.klr_stock_values))
-        can_sends.append(mebcan.create_capacitive_wheel_touch(self.packer_pt, self.CAN.pt, CC.latActive, CS.klr_stock_values))
-      self.klr_counter_last = CS.klr_stock_values["COUNTER"]
 
     # **** Blinker Controls ************************************************** #
     # "Wechselblinken" has to be allowed in assistance blinker functions in gateway
