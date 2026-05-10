@@ -262,6 +262,7 @@ class VolkswagenFlags(IntFlag):
   DISABLE_RADAR             = 2 ** 12
   STOCK_EA_PRESENT          = 2 ** 14
   STOCK_VZE_PRESENT         = 2 ** 15
+  CLUSTER_NO_TA_LANES       = 2 ** 16
 
   # Static flags
   PQ           = 2 ** 1
@@ -601,7 +602,7 @@ class CAR(Platforms):
     chassis_codes={"GY"},
     wmis={WMI.AUDI_EUROPE_MPV},
     #model_years={"T"},
-    flags=VolkswagenFlags.MQB_EVO_GEN2,
+    flags=VolkswagenFlags.MQB_EVO_GEN2 | VolkswagenFlags.CLUSTER_NO_TA_LANES,
   )
   AUDI_Q2_MK1 = VolkswagenMQBPlatformConfig(
     [VWCarDocs("Audi Q2 2018")],
