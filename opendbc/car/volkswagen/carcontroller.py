@@ -160,7 +160,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         can_sends.append(self.CCS.create_eps_update(self.packer_pt, self.CAN.cam, CS.eps_stock_values, ea_simulated_torque))
 
     # Emergency Assist intervention
-    if (self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO)) and (self.CP.flags & VolkswagenFlags.STOCK_KLR_PRESENT):
+    if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO) and self.CP.flags & VolkswagenFlags.STOCK_KLR_PRESENT:
       # send capacitive steering wheel touched
       # propably EA is stock activated only for cars equipped with capacitive steering wheel
       # (also stock long does resume from stop as long as hands on is detected additionally to OP resume spam)
