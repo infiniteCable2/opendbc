@@ -291,7 +291,7 @@ class CarState(CarStateBase, MadsCarState):
     drive_mode = ret.gearShifter == GearShifter.drive
     
     hca_status = self.CCP.hca_status_values.get(pt_cp.vl["QFK_01"]["LatCon_HCA_Status"])
-    hca_status_fluctuation = self.update_hca_status_watchdog(hca_status)
+    hca_status_fluctuation = self.update_hca_status_watchdog(hca_status) if not (self.CP.flags & VolkswagenFlags.STOCK_HCA_PRESENT) else False
     self.hca_status_recovery_enabled = drive_mode and hca_status_fluctuation
     ret.steerFaultTemporary, ret.steerFaultPermanent = self.update_hca_state(hca_status, drive_mode=drive_mode, hca_watchdog_fail=hca_status_fluctuation)
 
