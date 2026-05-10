@@ -68,6 +68,9 @@ class CarInterface(CarInterfaceBase):
       if 0x30B in fingerprint[0]:  # Kombi_01
         ret.flags |= VolkswagenFlags.KOMBI_PRESENT.value
 
+      if 0x303 in fingerprint[2]:  # HCA_03
+        ret.flags |= VolkswagenFlags.STOCK_HCA_PRESENT.value
+
       if 0x25D in fingerprint[0]:  # KLR_01
         ret.flags |= VolkswagenFlags.STOCK_KLR_PRESENT.value
 
