@@ -177,7 +177,7 @@ class CarState(CarStateBase, MadsCarState):
     ret.steeringTorque = pt_cp.vl["Lenkhilfe_3"]["LH3_LM"] * (1, -1)[int(pt_cp.vl["Lenkhilfe_3"]["LH3_LMSign"])]
     ret.steeringPressed = abs(ret.steeringTorque) > self.CCP.STEER_DRIVER_ALLOWANCE
     hca_status = self.CCP.hca_status_values.get(pt_cp.vl["Lenkhilfe_2"]["LH2_Sta_HCA"])
-    ret.steerFaultTemporary, ret.steerFaultPermanent = self.update_hca_state(hca_status)
+    ret.steerFaultTemporary, ret.steerFaultPermanent, ret.steerFaultWarning = self.update_hca_state(hca_status)
 
     # Update gas, brakes, and gearshift.
     ret.gasPressed = pt_cp.vl["Motor_3"]["MO3_Pedalwert"] > 0
@@ -293,7 +293,9 @@ class CarState(CarStateBase, MadsCarState):
       (self.update_hca_status_watchdog(hca_status) if not (self.CP.flags & VolkswagenFlags.STOCK_HCA_PRESENT) else False) or
       self.test_hca_status_watchdog_fluctuation(self.frame)
     )
-    ret.steerFaultTemporary, ret.steerFaultPermanent = self.update_hca_state(hca_status, drive_mode=drive_mode, hca_watchdog_fail=hca_status_fluctuation)
+    ret.steerFaultTemporary, ret.steerFaultPermanent, ret.steerFaultWarning = self.update_hca_state(
+      hca_status, drive_mode=drive_mode, hca_watchdog_fail=hca_status_fluctuation
+    )
 
     # VW Emergency Assist status tracking and mitigation
     self.eps_stock_values = pt_cp.vl["LH_EPS_03"]
@@ -502,7 +504,7 @@ class CarState(CarStateBase, MadsCarState):
     ret.steeringPressed = abs(ret.steeringTorque) > self.CCP.STEER_DRIVER_ALLOWANCE
 
     hca_status = self.CCP.hca_status_values.get(pt_cp.vl["LH_EPS_03"]["EPS_HCA_Status"])
-    ret.steerFaultTemporary, ret.steerFaultPermanent = self.update_hca_state(hca_status, drive_mode)
+    ret.steerFaultTemporary, ret.steerFaultPermanent, ret.steerFaultWarning = self.update_hca_state(hca_status, drive_mode)
     return
     
   def update_hca_status_watchdog(self, hca_status):
@@ -530,8 +532,9 @@ class CarState(CarStateBase, MadsCarState):
     # DISABLED means the EPS hasn't been configured to support Lane Assist
     self.eps_init_complete = self.eps_init_complete or (hca_status in ("DISABLED", "READY", "ACTIVE") or self.frame > 600)
     perm_fault = (drive_mode and hca_status == "DISABLED") or (self.eps_init_complete and hca_status == "FAULT")
-    temp_fault = (drive_mode and hca_status in ("REJECTED", "PREEMPTED")) or not self.eps_init_complete or (drive_mode and hca_watchdog_fail)
-    return temp_fault, perm_fault
+    warning = drive_mode and hca_watchdog_fail
+    temp_fault = (drive_mode and hca_status in ("REJECTED", "PREEMPTED")) or not self.eps_init_complete
+    return temp_fault, perm_fault, warning
     
   def update_acc_fault(self, acc_fault, parking_brake=False, drive_mode=True, recovery_frames_max=100):
     # Ignore FAULT when not in drive mode and parked
