@@ -289,10 +289,7 @@ class CarState(CarStateBase, MadsCarState):
     drive_mode = ret.gearShifter == GearShifter.drive
     
     hca_status = self.CCP.hca_status_values.get(pt_cp.vl["QFK_01"]["LatCon_HCA_Status"])
-    hca_status_fluctuation = (
-      (self.update_hca_status_watchdog(hca_status) if not (self.CP.flags & VolkswagenFlags.STOCK_HCA_PRESENT) else False) or
-      self.test_hca_status_watchdog_fluctuation(self.frame)
-    )
+    hca_status_fluctuation = self.update_hca_status_watchdog(hca_status) if not (self.CP.flags & VolkswagenFlags.STOCK_HCA_PRESENT) else False
     ret.steerFaultTemporary, ret.steerFaultPermanent, ret.steerFaultWarning = self.update_hca_state(
       hca_status, drive_mode=drive_mode, hca_watchdog_fail=hca_status_fluctuation
     )
@@ -519,13 +516,6 @@ class CarState(CarStateBase, MadsCarState):
 
     self.hca_status_fluct_counter = len(self.hca_status_fluctuation_frames)
     return self.hca_status_fluct_counter >= self.CCP.HCA_STATUS_WATCHDOG_MAX_FLUCTUATION_FRAMES
-
-  @staticmethod
-  def test_hca_status_watchdog_fluctuation(frame):
-    # TODO: temporary test hook; remove after validating the HCA fluctuation warning path.
-    cycle_frames = 20 * 100
-    active_frames = 10 * 100
-    return frame % cycle_frames < active_frames
 
   def update_hca_state(self, hca_status, drive_mode=True, hca_watchdog_fail=False):
     # Treat FAULT as temporary for worst likely EPS recovery time, for cars without factory Lane Assist
