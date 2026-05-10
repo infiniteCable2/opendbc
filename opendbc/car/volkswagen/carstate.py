@@ -35,7 +35,6 @@ class CarState(CarStateBase, MadsCarState):
     self.hca_status_last = None
     self.hca_status_fluct_counter = 0
     self.hca_status_fluctuation_frames = deque()
-    self.hca_status_recovery_enabled = False
     self.hca_status_recovery_rearm_frame = 0
 
   def update_button_enable(self, buttonEvents: list[structs.CarState.ButtonEvent]):
@@ -292,7 +291,6 @@ class CarState(CarStateBase, MadsCarState):
     
     hca_status = self.CCP.hca_status_values.get(pt_cp.vl["QFK_01"]["LatCon_HCA_Status"])
     hca_status_fluctuation = self.update_hca_status_watchdog(hca_status) if not (self.CP.flags & VolkswagenFlags.STOCK_HCA_PRESENT) else False
-    self.hca_status_recovery_enabled = drive_mode and hca_status_fluctuation
     ret.steerFaultTemporary, ret.steerFaultPermanent = self.update_hca_state(hca_status, drive_mode=drive_mode, hca_watchdog_fail=hca_status_fluctuation)
 
     # VW Emergency Assist status tracking and mitigation
@@ -509,22 +507,13 @@ class CarState(CarStateBase, MadsCarState):
     # On MY2025+ vehicles the steering command path moves to Automotive Ethernet, where it cannot be intercepted here.
     # Detect the resulting fluctuating HCA status so a user-facing warning can be raised.
     current_frame = self.frame
-
     if self.hca_status_last is not None and hca_status is not None and hca_status != self.hca_status_last:
       self.hca_status_fluctuation_frames.append(current_frame)
-
     self.hca_status_last = hca_status
-
     while self.hca_status_fluctuation_frames and current_frame - self.hca_status_fluctuation_frames[0] >= self.CCP.HCA_STATUS_WATCHDOG_WINDOW_FRAMES:
       self.hca_status_fluctuation_frames.popleft()
 
     self.hca_status_fluct_counter = len(self.hca_status_fluctuation_frames)
-    if self.hca_status_fluct_counter >= self.CCP.HCA_STATUS_WATCHDOG_MAX_FLUCTUATION_FRAMES:
-      rearm_idx = self.hca_status_fluct_counter - self.CCP.HCA_STATUS_WATCHDOG_MAX_FLUCTUATION_FRAMES
-      self.hca_status_recovery_rearm_frame = self.hca_status_fluctuation_frames[rearm_idx] + self.CCP.HCA_STATUS_WATCHDOG_WINDOW_FRAMES
-    else:
-      self.hca_status_recovery_rearm_frame = current_frame
-
     return self.hca_status_fluct_counter >= self.CCP.HCA_STATUS_WATCHDOG_MAX_FLUCTUATION_FRAMES
 
   def update_hca_state(self, hca_status, drive_mode=True, hca_watchdog_fail=False):
