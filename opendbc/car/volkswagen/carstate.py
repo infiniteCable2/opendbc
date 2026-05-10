@@ -35,7 +35,6 @@ class CarState(CarStateBase, MadsCarState):
     self.hca_status_last = None
     self.hca_status_fluct_counter = 0
     self.hca_status_fluctuation_frames = deque()
-    self.hca_status_recovery_rearm_frame = 0
 
   def update_button_enable(self, buttonEvents: list[structs.CarState.ButtonEvent]):
     if not self.CP.pcmCruise:
