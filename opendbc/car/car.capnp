@@ -525,6 +525,7 @@ struct CarParams {
     indiDEPRECATED @27 :LateralINDITuning;
     lqrDEPRECATED @40 :LateralLQRTuning;
     torque @67 :LateralTorqueTuning;
+    curvature @68 :LateralCurvatureTuning;
   }
 
   steerLimitAlert @28 :Bool;
