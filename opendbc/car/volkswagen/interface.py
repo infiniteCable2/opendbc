@@ -130,10 +130,8 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.init('curvature')
       ret.lateralTuning.curvature.kpBP = [10., 40.]
       ret.lateralTuning.curvature.kiBP = [10., 40.]
-      ret.lateralTuning.curvature.kdBP = [10., 40.]
       ret.lateralTuning.curvature.kpV = [0., 1.45]
       ret.lateralTuning.curvature.kiV = [0., 0.12]
-      ret.lateralTuning.curvature.kdV = [0.06, 0.02]
       ret.lateralTuning.curvature.kf = 1.
       ret.lateralTuning.curvature.useCarSteerCurvature = True
     else:

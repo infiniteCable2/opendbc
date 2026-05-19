@@ -585,10 +585,7 @@ struct CarParams {
     kiBP @2 :List(Float32);
     kiV @3 :List(Float32);
     kf @4 :Float32;
-
-    kdBP @5 :List(Float32);
-    kdV @6 :List(Float32);
-    useCarSteerCurvature @7 :Bool;
+    useCarSteerCurvature @5 :Bool;
   }
 
   struct LateralTorqueTuning {
