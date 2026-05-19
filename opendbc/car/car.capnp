@@ -579,6 +579,18 @@ struct CarParams {
     kf @4 :Float32;
   }
 
+  struct LateralCurvatureTuning {
+    kpBP @0 :List(Float32);
+    kpV @1 :List(Float32);
+    kiBP @2 :List(Float32);
+    kiV @3 :List(Float32);
+    kf @4 :Float32;
+
+    kdBP @5 :List(Float32);
+    kdV @6 :List(Float32);
+    useCarSteerCurvature @7 :Bool;
+  }
+
   struct LateralTorqueTuning {
     friction @3 :Float32;
     steeringAngleDeadzoneDeg @5 :Float32;
