@@ -401,7 +401,7 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
   return tx;
 }
 
-static bool volkswagen_fwd_hook(int bus_num, int addr) {
+static bool volkswagen_meb_fwd_hook(int bus_num, int addr) {
   bool block_msg = false;
   
   // fwd hook is additive: check_relay + disable_static_blocking delegates selective blocking here
