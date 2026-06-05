@@ -323,10 +323,14 @@ static void volkswagen_meb_rx_hook(const CANPacket_t *msg) {
       int accel_pedal_value = ((msg->data[1] >> 4) & 0x0FU) | ((msg->data[2] & 0x1FU) << 4);
       gas_pressed = accel_pedal_value > 0;
     }
-	
+  }
+
+  if (msg->bus == 2U) {
 	// update AEB
     if (msg->addr == MSG_AWV_03) {
-      volkswagen_stock_aeb = GET_BIT(msg, 65U);
+      if (volkswagen_longitudinal) {
+        volkswagen_stock_aeb = GET_BIT(msg, 65U);
+	  }
     }
 	
   }
