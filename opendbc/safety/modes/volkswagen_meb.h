@@ -38,7 +38,7 @@
   {.msg = {{MSG_ESC_51, 0, 64, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
   
 #define VW_MEB_RADAR_RX_CHECKS                                                                      \
-  {.msg = {{MSG_AWV_03, 0, 48, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
+  {.msg = {{MSG_AWV_03, 2, 48, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
 
 #define VW_MEB_LONG_TX_MSGS                                                            \
   {MSG_HCA_03, 0, 24, .check_relay = true},                                            \
@@ -216,13 +216,13 @@ static safety_config volkswagen_meb_init(uint16_t param) {
   }
   
   if (volkswagen_alt_crc_variant_1) {
-	if (volkswagen_disable_radar) {
+	if (volkswagen_disable_radar || !volkswagen_longitudinal) {
 	  SET_RX_CHECKS(volkswagen_meb_gen2_no_radar_rx_checks, ret);
 	} else {
 	  SET_RX_CHECKS(volkswagen_meb_gen2_rx_checks, ret);
 	}
   } else {
-	if (volkswagen_disable_radar) {
+	if (volkswagen_disable_radar || !volkswagen_longitudinal) {
 	  SET_RX_CHECKS(volkswagen_meb_no_radar_rx_checks, ret);
 	} else {
 	  SET_RX_CHECKS(volkswagen_meb_rx_checks, ret);
