@@ -379,6 +379,13 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
     if (longitudinal_accel_checks(desired_accel, VOLKSWAGEN_MEB_LONG_LIMITS)) {
       tx = false;
     }
+
+    // Fallback: Don't send ACC_18 longitudinal control when the stock AEB system is active
+    // In normal operation, openpilot sends inactive_accel via carcontroller when AEB is detected.
+    // This check is a last-line defense against transient states where that didn't happen.
+    if (volkswagen_stock_aeb && (desired_accel != VOLKSWAGEN_MEB_LONG_LIMITS.inactive_accel)) {
+      tx = false;
+    }
   }
 
   // Fallback: Don't send ACC_18 longitudinal control when the stock AEB system is active
