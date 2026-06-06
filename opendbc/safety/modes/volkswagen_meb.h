@@ -42,7 +42,7 @@
 
 #define VW_MEB_LONG_TX_MSGS                                                            \
   {MSG_HCA_03, 0, 24, .check_relay = true},                                            \
-  {MSG_ACC_19, 0, 48, .check_relay = true, .disable_static_blocking = true}, {MSG_ACC_18, 0, 32, .check_relay = true, .disable_static_blocking = true},  \
+  {MSG_ACC_19, 0, 48, .check_relay = true}, {MSG_ACC_18, 0, 32, .check_relay = true},  \
   {MSG_EA_01, 0, 8, .check_relay = false}, {MSG_EA_02, 0, 8, .check_relay = true},     \
   {MSG_KLR_01, 0, 8, .check_relay = false}, {MSG_KLR_01, 2, 8, .check_relay = true},   \
   {MSG_LDW_02, 0, 8, .check_relay = true}, {MSG_TA_01, 0, 8, .check_relay = true},     \
@@ -381,9 +381,14 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
     }
   }
 
-  // Don't send longitudinal control or HUD messages when the stock AEB system is active
-  if (volkswagen_stock_aeb && ((msg->addr == MSG_ACC_18) || (msg->addr == MSG_ACC_19))) {
-    tx = false;
+  // Fallback: Don't send ACC_18 longitudinal control when the stock AEB system is active
+  // In normal operation, openpilot sends inactive_accel via carcontroller when AEB is detected.
+  // This check is a last-line defense against transient states where that didn't happen.
+  if (volkswagen_stock_aeb && (msg->addr == MSG_ACC_18)) {
+    int desired_accel = ((((msg->data[4] & 0x7U) << 8) | msg->data[3]) * 5U) - 7220U;
+    if (desired_accel != VOLKSWAGEN_MEB_LONG_LIMITS.inactive_accel) {
+      tx = false;
+    }
   }
 
   // FORCE CANCEL: ensuring that only the cancel button press is sent when controls are off.
@@ -405,26 +410,10 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
   return tx;
 }
 
-static bool volkswagen_meb_fwd_hook(int bus_num, int addr) {
-  bool block_msg = false;
-  
-  // fwd hook is additive: check_relay + disable_static_blocking delegates selective blocking here
-
-  if (bus_num == 2) {
-      // pass through stock longitudinal control and HUD when stock AEB is active
-    if (volkswagen_longitudinal && ((addr == MSG_ACC_18) || (addr == MSG_ACC_19)) && !volkswagen_stock_aeb) {
-      block_msg = true;
-    }
-  }
-
-  return block_msg;
-}
-
 const safety_hooks volkswagen_meb_hooks = {
   .init = volkswagen_meb_init,
   .rx = volkswagen_meb_rx_hook,
   .tx = volkswagen_meb_tx_hook,
-  .fwd = volkswagen_meb_fwd_hook,
   .get_counter = volkswagen_meb_get_counter,
   .get_checksum = volkswagen_meb_get_checksum,
   .compute_checksum = volkswagen_meb_gen2_compute_crc,
