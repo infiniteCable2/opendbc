@@ -263,7 +263,6 @@ class VolkswagenFlags(IntFlag):
   MQB_EVO      = 2 ** 8
   MQB_EVO_GEN2 = 2 ** 13
   MLB          = 2 ** 3
-  FORD_CAR     = 2 ** 17
 
 
 @dataclass
@@ -385,7 +384,7 @@ class CAR(Platforms):
     VolkswagenCarSpecs(mass=2090, wheelbase=2.77),
     chassis_codes={"EF"},
     wmis={WMI.FORD_EUROPE_CAR},
-    flags=VolkswagenFlags.MEB_GEN2 | VolkswagenFlags.FORD_CAR,
+    flags=VolkswagenFlags.MEB_GEN2,
   )
   VOLKSWAGEN_ARTEON_MK1 = VolkswagenMQBPlatformConfig(
     [
