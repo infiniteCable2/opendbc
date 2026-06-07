@@ -142,7 +142,8 @@ class CarInterface(CarInterfaceBase):
       ret.lateralTuning.curvature.kpV = [0., 1.45]
       ret.lateralTuning.curvature.kiV = [0., 0.12]
       ret.lateralTuning.curvature.kf = 1.
-      ret.lateralTuning.curvature.useCarSteerCurvature = True
+      if not (ret.flags & VolkswagenFlags.FORD_CAR): # for FORD something is very off with qkf curvature value
+        ret.lateralTuning.curvature.useCarSteerCurvature = True
     else:
       ret.steerActuatorDelay = 0.1
       ret.lateralTuning.pid.kpBP = [0.]
