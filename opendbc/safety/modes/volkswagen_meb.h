@@ -38,7 +38,7 @@
   {.msg = {{MSG_ESC_51, 0, 64, 100U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
   
 #define VW_MEB_RADAR_RX_CHECKS                                                                      \
-  {.msg = {{MSG_AWV_03, 2, 48, 1U, .max_counter = 15U, .ignore_frequency = true, .ignore_quality_flag = true}, { 0 }, { 0 }}}, \
+  {.msg = {{MSG_AWV_03, 2, 48, 1U, .max_counter = 15U, .ignore_frequency_check = true, .ignore_quality_flag = true}, { 0 }, { 0 }}}, \
 
 #define VW_MEB_LONG_TX_MSGS                                                            \
   {MSG_HCA_03, 0, 24, .check_relay = true},                                            \
