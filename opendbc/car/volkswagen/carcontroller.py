@@ -191,8 +191,8 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         starting = actuators.longControlState == LongCtrlState.starting and CS.out.vEgo <= self.CP.vEgoStarting # openpilot sets starting state after overriding, ensure being in range
         accel = float(np.clip(actuators.accel, self.CCP.ACCEL_MIN, self.CCP.ACCEL_MAX) if long_active else 0)
 
-        accel += self.long_danger_boost.update(long_active, stopping, hud_control.leadVisible, hud_control.leadDistance, accel)
-        accel = float(np.clip(accel, self.CCP.ACCEL_MIN, self.CCP.ACCEL_MAX))
+        #accel += self.long_danger_boost.update(long_active, stopping, hud_control.leadVisible, hud_control.leadDistance, accel)
+        #accel = float(np.clip(accel, self.CCP.ACCEL_MIN, self.CCP.ACCEL_MAX))
 
         long_override = CC.cruiseControl.override or CS.out.gasPressed
         self.long_override_counter = min(self.long_override_counter + 1, 5) if long_override else 0
