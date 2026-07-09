@@ -9,7 +9,7 @@ from opendbc.car.volkswagen.values import DBC, VolkswagenFlags
 # radar object drel is not end of radar facing side but probably the longitudinal center of object
 # dbc drel offset of -3.6m is measured for a point mass type object (person)
 # drel uncertainty statically subtracts something in beetwen the first half to end of a typical car length 
-DREL_UNCERTAINTY = 1.5 # in m
+DREL_FRONT_EDGE_MARGIN = 1.5 # in m
 
 RADAR_ADDR = 0x24F
 NO_OBJECT = 0
@@ -108,7 +108,7 @@ class RadarInterface(RadarInterfaceBase):
         pt = self._pts[obj_id]
 
       pt.measured = True
-      pt.dRel = d_rel - DREL_UNCERTAINTY
+      pt.dRel = d_rel - DREL_FRONT_EDGE_MARGIN
       pt.yRel = y_rel
       pt.vRel = v_rel
       pt.aRel = math.nan
