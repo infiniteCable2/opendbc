@@ -385,10 +385,10 @@ bool steer_power_cmd_checks(int desired_steer_power, bool steer_control_enabled,
 
   violation |= safety_max_limit_check(desired_steer_power, limits.max_power, 0);
   violation |= desired_steer_power > 0 && !steer_control_enabled;
-  violation |= !(controls_allowed || controls_allowed_lateral) && steer_control_enabled && desired_steer_power != 0 && desired_steer_power >= desired_steer_power_last;
+  violation |= !(controls_allowed || controls_allowed_lateral) && steer_control_enabled && desired_steer_power != 0 && desired_steer_power >= curvature_state.steer_power_last;
   violation |= !(controls_allowed || controls_allowed_lateral) && !steer_control_enabled && desired_steer_power != 0;
 
-  desired_steer_power_last = desired_steer_power;
+  curvature_state.steer_power_last = desired_steer_power;
  
   return violation;
 }

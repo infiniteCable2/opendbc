@@ -55,7 +55,8 @@ class RadarInterface(RadarInterfaceBase):
     self._pts = self.pts
 
   def update(self, can_strings):
-    """Entry‑point called by the vehicle loop every CAN tick."""
+    """Entrypoint called by the vehicle loop every CAN tick."""
+    # TODO: ret.errors.radarUnavailableTemporary = True
     if self.radar_off_can or self.rcp is None:
       return super().update(None)
 
@@ -107,12 +108,9 @@ class RadarInterface(RadarInterfaceBase):
       else:
         pt = self._pts[obj_id]
 
-      pt.measured = True
       pt.dRel = d_rel - DREL_FRONT_EDGE_MARGIN
       pt.yRel = y_rel
       pt.vRel = v_rel
-      pt.aRel = math.nan
-      pt.yvRel = math.nan
 
     inactive_ids = self._pts.keys() - active_objects.keys()
     for obj_id in inactive_ids:

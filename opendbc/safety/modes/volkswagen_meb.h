@@ -68,7 +68,6 @@ static uint32_t volkswagen_meb_compute_crc(const CANPacket_t *msg) {
 
   // This is CRC-8H2F/AUTOSAR with a twist. See the OpenDBC implementation
   // of this algorithm for a version with explanatory comments.
-  
   uint8_t crc = 0xFFU;
   for (int i = 1; i < len; i++) {
     crc ^= (uint8_t)msg->data[i];
