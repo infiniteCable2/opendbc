@@ -157,22 +157,6 @@ class LongControlLimit():
     return self.lower_limit   
 
 
-class LongControlDangerZoneBoost():
-  STOP_DISTANCE = 6.0
-  BOOST_DISTANCE_BP = [0.0, 6.0]
-  BOOST_DISTANCE_V = [0.20, 0.0]
-
-  def __init__(self, dt=DT_CTRL):
-    self.dt = dt
-
-  def update(self, long_active, stopping, lead_visible, lead_distance, accel):
-    if not long_active or stopping or not lead_visible or lead_distance <= 0 or accel >= 0:
-      return 0.0
-
-    boost_percent = np.interp(lead_distance, self.BOOST_DISTANCE_BP, self.BOOST_DISTANCE_V)
-    return accel * boost_percent
-
-
 def sigmoid_curvature_boost_meb(kappa: float, v_ego: float, kappa_thresh: float = 0.0) -> float:
   # compensate non linear behaviour: boost low curvatures
   # this is either a model issue (nerfing low curvatures) or a specific steering rack behaviour

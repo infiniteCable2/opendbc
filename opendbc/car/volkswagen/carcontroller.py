@@ -7,7 +7,7 @@ from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.interfaces import CarControllerBase
 from opendbc.car.volkswagen import mlbcan, mqbcan, pqcan, mebcan
 from opendbc.car.volkswagen.values import CanBus, CarControllerParams, VolkswagenFlags
-from opendbc.car.volkswagen.mebutils import LongControlDangerZoneBoost, LongControlJerk, LongControlLimit, map_speed_to_acc_tempolimit
+from opendbc.car.volkswagen.mebutils import LongControlJerk, LongControlLimit, map_speed_to_acc_tempolimit
 
 from opendbc.sunnypilot.car.volkswagen.icbm import IntelligentCruiseButtonManagementInterface
 
@@ -61,7 +61,6 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     self.accel_last = 0.
     self.long_jerk_control = LongControlJerk(dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO) else None
     self.long_limit_control = LongControlLimit(dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO) else None
-    self.long_danger_boost = LongControlDangerZoneBoost(dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO) else None
     self.long_override_counter = 0
     self.long_disabled_counter = 0
     self.gra_acc_counter_last = None
@@ -190,10 +189,6 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         long_active = CC.enabled and not CS.out.stockAeb
         starting = actuators.longControlState == LongCtrlState.starting and CS.out.vEgo <= self.CP.vEgoStarting # openpilot sets starting state after overriding, ensure being in range
         accel = float(np.clip(actuators.accel, self.CCP.ACCEL_MIN, self.CCP.ACCEL_MAX) if long_active else 0)
-
-        # support braking to full stop
-        #accel += self.long_danger_boost.update(long_active, stopping, hud_control.leadVisible, hud_control.leadDistance, accel)
-        #accel = float(np.clip(accel, self.CCP.ACCEL_MIN, self.CCP.ACCEL_MAX))
 
         long_override = CC.cruiseControl.override or CS.out.gasPressed
         self.long_override_counter = min(self.long_override_counter + 1, 5) if long_override else 0
