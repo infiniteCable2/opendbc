@@ -9,7 +9,7 @@ from collections.abc import Callable
 from opendbc.can import CANPacker
 from opendbc.safety import ALTERNATIVE_EXPERIENCE
 from opendbc.safety.tests.libsafety import libsafety_py
-from opendbc.car.lateral import ISO_LATERAL_JERK, MAX_LATERAL_ACCEL
+from opendbc.car.lateral import MAX_LATERAL_ACCEL, MAX_LATERAL_JERK
 
 from opendbc.safety.tests.mads_common import MadsSafetyTestBase
 
@@ -880,7 +880,7 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
     v = 1
     for sign in (1, -1):    
       max_curvature = self.MAX_CURVATURE_TEST * sign
-      max_curvature_rate = ISO_LATERAL_JERK / v**2
+      max_curvature_rate = MAX_LATERAL_JERK / v**2
       max_curvature_delta = max_curvature_rate * self.SEND_RATE * sign
       
       self._reset_speed_measurement(v)
@@ -903,7 +903,7 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
     for v in speeds:
       for sign in (1, -1):
         max_curvature = np.clip(((MAX_LATERAL_ACCEL / (v - 1)**2) * sign), -self.MAX_CURVATURE_TEST, self.MAX_CURVATURE_TEST)
-        max_curvature_rate = ISO_LATERAL_JERK / (v - 1)**2
+        max_curvature_rate = MAX_LATERAL_JERK / (v - 1)**2
         max_curvature_delta = max_curvature_rate * self.SEND_RATE * sign
       
         self._reset_speed_measurement(v)
@@ -924,7 +924,7 @@ class CurvatureSteeringSafetyTest(VehicleSpeedSafetyTest):
   def test_iso_jerk_limit(self):
     speeds = [2., 5., 10., 15., 50.]
     for v in speeds:
-        max_curvature_rate = ISO_LATERAL_JERK / (v - 1)**2
+        max_curvature_rate = MAX_LATERAL_JERK / (v - 1)**2
         max_curvature_delta = max_curvature_rate * self.SEND_RATE
       
         self._reset_speed_measurement(v)
@@ -1050,8 +1050,8 @@ class SafetyTest(SafetyTestBase):
     for tf in test_files:
       test = importlib.import_module("opendbc.safety.tests."+tf[:-3])
       for attr in dir(test):
-        if attr.startswith("Test") and attr != current_test:
-          tc = getattr(test, attr)
+        tc = getattr(test, attr)
+        if isinstance(tc, type) and issubclass(tc, SafetyTest) and attr != current_test:
           tx = tc.TX_MSGS
           if tx is not None and not attr.endswith('Base'):
             # No point in comparing different Tesla safety modes
@@ -1087,7 +1087,7 @@ class SafetyTest(SafetyTestBase):
                           'TestHyundaiLongitudinalESCCSafety'}
             if any(attr.startswith(test) for test in base_tests) and any(current_test.startswith(test) for test in base_tests):
               continue
-            volkswagen_shared = ('TestVolkswagenMqb', 'TestVolkswagenMlb')
+            volkswagen_shared = ('TestVolkswagenMqb', 'TestVolkswagenMlb', 'TestVolkswagenMeb')
             if attr.startswith(volkswagen_shared) and current_test.startswith(volkswagen_shared):
               continue
 

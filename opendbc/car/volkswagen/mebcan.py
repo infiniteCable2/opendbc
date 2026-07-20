@@ -24,7 +24,7 @@ ACC_HUD_ENABLED  = 2
 ACC_HUD_DISABLED = 0
 
   
-def create_steering_control(packer, bus, apply_curvature, lkas_enabled, power):
+def create_steering_control(packer, bus, apply_curvature, lkas_enabled, power=0):
   values = {
     "Curvature": abs(apply_curvature), # in rad/m
     "Curvature_VZ": 1 if apply_curvature > 0 and lkas_enabled else 0,
@@ -105,7 +105,7 @@ def create_lka_hud_control(packer, bus, CP, ldw_stock_values, lat_active, steeri
     "LDW_Texte": hud_alert,
   })
   return packer.make_can_msg("LDW_02", bus, values)
-  
+
 
 def create_acc_buttons_control(packer, bus, gra_stock_values, cancel=False, resume=False, up=False, down=False):
   values = {s: gra_stock_values[s] for s in [
@@ -144,7 +144,7 @@ def create_capacitive_wheel_touch(packer, bus, lat_active, klr_stock_values):
       "KLR_Touchauswertung": 10,
     })
   return packer.make_can_msg("KLR_01", bus, values)
-  
+
 
 def acc_control_value(main_switch_on, acc_faulted, long_active, override):
 
@@ -215,7 +215,7 @@ def create_acc_accel_control(packer, bus, CP, acc_type, acc_enabled, upper_jerk,
       acceleration = accel
   else:
     acceleration = ACCEL_INACTIVE # inactive accel
-  
+
   values = {
     "ACC_Typ":                    acc_type,
     "ACC_Status_ACC":             acc_control,

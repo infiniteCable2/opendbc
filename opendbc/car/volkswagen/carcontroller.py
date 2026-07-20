@@ -5,7 +5,7 @@ from opendbc.car import Bus, DT_CTRL, structs, make_tester_present_msg
 from opendbc.car.lateral import apply_driver_steer_torque_limits, apply_std_curvature_limits
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.interfaces import CarControllerBase
-from opendbc.car.volkswagen import mlbcan, mqbcan, pqcan, mebcan
+from opendbc.car.volkswagen import mebcan, mlbcan, mqbcan, pqcan
 from opendbc.car.volkswagen.values import CanBus, CarControllerParams, VolkswagenFlags
 from opendbc.car.volkswagen.mebutils import LongControlJerk, LongControlLimit, map_speed_to_acc_tempolimit
 
@@ -145,13 +145,14 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     # Emergency Assist mitigation
     if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
       if self.CP.flags & VolkswagenFlags.STOCK_KLR_PRESENT:
-        # send capacitive steering wheel touched
-        # propably EA is stock activated only for cars equipped with capacitive steering wheel
-        # (also stock long does resume from stop as long as hands on is detected additionally to OP resume spam)
+        # send capacitive steering wheel hands-on message to keep ACC resume active and control Emergency Assist
+        # MEB Emergency Assist brake jerks after 30s of continued hands-off time.
+        # We send the stock wheeltouch message to start the stock DM timer when openpilot latches the critical driver monitoring alert
         klr_send_ready = CS.klr_stock_values["COUNTER"] != self.klr_counter_last
         if klr_send_ready:
-          can_sends.append(mebcan.create_capacitive_wheel_touch(self.packer_pt, self.CAN.cam, CC.latActive, CS.klr_stock_values))
-          can_sends.append(mebcan.create_capacitive_wheel_touch(self.packer_pt, self.CAN.pt, CC.latActive, CS.klr_stock_values))
+          lat_active = CC.latActive and not CC.driverMonitoringEscalation
+          can_sends.append(mebcan.create_capacitive_wheel_touch(self.packer_pt, self.CAN.cam, lat_active, CS.klr_stock_values))
+          can_sends.append(mebcan.create_capacitive_wheel_touch(self.packer_pt, self.CAN.pt, lat_active, CS.klr_stock_values))
         self.klr_counter_last = CS.klr_stock_values["COUNTER"]
     else:
       if self.CP.flags & VolkswagenFlags.STOCK_HCA_PRESENT:
@@ -297,7 +298,8 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         if hud_control.leadVisible and self.frame * DT_CTRL > 1.0:  # Don't display lead until we know the scaling factor
           lead_distance = 512 if CS.upscale_lead_car_signal else 8
         acc_hud_status = self.CCS.acc_hud_status_value(CS.out.cruiseState.available, CS.out.accFaulted, CC.longActive)
-        # FIXME: follow the recent displayed-speed updates, also use mph_kmh toggle to fix display rounding problem?
+        # FIXME: PQ may need to use the on-the-wire mph/kmh toggle to fix rounding errors
+        # FIXME: Detect clusters with vEgoCluster offsets and apply an identical vCruiseCluster offset
         set_speed = hud_control.setSpeed * CV.MS_TO_KPH
         can_sends.append(self.CCS.create_acc_hud_control(self.packer_pt, self.CAN.pt, acc_hud_status, set_speed,
                                                          lead_distance, hud_control.leadDistanceBars))
@@ -317,7 +319,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     new_actuators = actuators.as_builder()
     new_actuators.torque = self.apply_torque_last / self.CCP.STEER_MAX
     new_actuators.torqueOutputCan = self.apply_torque_last
-    new_actuators.curvature = float(self.apply_curvature_last)
+    new_actuators.curvature = self.apply_curvature_last
     new_actuators.accel = self.accel_last
     new_actuators.speed = actuators.speed
 

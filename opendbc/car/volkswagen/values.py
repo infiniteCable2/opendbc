@@ -71,8 +71,8 @@ class CarControllerParams:
 
   DEFAULT_MIN_STEER_SPEED = 0.4            # m/s, newer EPS racks fault below this speed, don't show a low speed alert
 
-  ACCEL_MAX = 2.0                          # 2.0 m/s max acceleration
-  ACCEL_MIN = -3.5                         # 3.5 m/s max deceleration
+  ACCEL_MAX = 2.0                          # 2.0 m/s^2 max acceleration
+  ACCEL_MIN = -3.5                         # 3.5 m/s^2 max deceleration
 
   def __init__(self, CP):
     can_define = CANDefine(DBC[CP.carFingerprint][Bus.pt])
@@ -111,6 +111,7 @@ class CarControllerParams:
       self.AEB_HUD_STEP            = 20    # MEB_AWV_01 message frequency 5Hz
       self.LDW_STEP                = 10    # LDW_02 message frequency 10Hz
       self.ACC_HUD_STEP            = 6     # MEB_ACC_01 message frequency 16Hz
+      self.KLR_01_STEP = 6                # KLR_01 message frequency 17Hz
       self.HCA_STATUS_WATCHDOG_MAX_FLUCTUATION_FRAMES = round(self.HCA_STATUS_WATCHDOG_WINDOW_FRAMES *
                                                                DT_CTRL * self.HCA_STATUS_WATCHDOG_ALLOWED_FLUCTUATIONS_PER_SECOND)
       self.STEER_DRIVER_ALLOWANCE  = 60    # Driver torque 0.6 Nm, begin steering reduction from MAX
@@ -152,6 +153,7 @@ class CarControllerParams:
         "laneAssistTakeOverUrgent": 4,    # "Lane Assist: Please Take Over Steering" (red)
         "laneAssistTakeOver": 8,          # "Lane Assist: Please Take Over Steering" (white)
       }
+
       self.LDW_SOUNDS = {
         "None": 0,                        # No sound
         "Chime": 1,                       # Play a chime
@@ -313,6 +315,18 @@ class VolkswagenMQBevoPlatformConfig(PlatformConfig):
 
 
 @dataclass
+class VolkswagenMEBPlatformConfig(PlatformConfig):
+  dbc_dict: DbcDict = field(default_factory=lambda: {Bus.pt: 'vw_meb_generated', Bus.radar: 'vw_meb_generated'})
+  chassis_codes: set[str] = field(default_factory=set)
+  wmis: set[WMI] = field(default_factory=set)
+
+  def init(self):
+    self.flags |= VolkswagenFlags.MEB
+    if self.flags & VolkswagenFlags.MEB_GEN2:
+      self.dbc_dict = {Bus.pt: 'vw_meb_2024_generated', Bus.radar: 'vw_meb_2024_generated'}
+
+
+@dataclass
 class VolkswagenPQPlatformConfig(VolkswagenMQBPlatformConfig):
   dbc_dict: DbcDict = field(default_factory=lambda: {Bus.pt: 'vw_pq'})
 
@@ -378,7 +392,7 @@ class VWCarDocs(CarDocs):
 # FW_VERSIONS for that existing CAR.
 
 class CAR(Platforms):
-  config: VolkswagenMQBPlatformConfig | VolkswagenPQPlatformConfig
+  config: VolkswagenMQBPlatformConfig | VolkswagenPQPlatformConfig | VolkswagenMEBPlatformConfig
 
   FORD_EXPLORER_EV_MK1 = VolkswagenMEBPlatformConfig(
     [VWCarDocs("Ford Explorer EV Limited 2024-25")],
@@ -655,8 +669,8 @@ class CAR(Platforms):
     wmis={WMI.SEAT},
   )
   CUPRA_BORN_MK1 = VolkswagenMEBPlatformConfig(
-    [VWCarDocs("CUPRA Born 2022-23"),],
-    VolkswagenCarSpecs(mass=1950, wheelbase=2.766, steerRatio=15.9),
+    [VWCarDocs("CUPRA Born 2021-23"),],
+    VolkswagenCarSpecs(mass=1956, wheelbase=2.766),
     chassis_codes={"K1"},
     model_years={"N","P"},
     wmis={WMI.SEAT},

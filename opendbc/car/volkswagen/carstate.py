@@ -35,6 +35,7 @@ class CarState(CarStateBase, MadsCarState):
     self.hca_status_last = None
     self.hca_status_fluct_counter = 0
     self.hca_status_fluctuation_frames = deque()
+    self.travel_assist_available = False
 
   def update_button_enable(self, buttonEvents: list[structs.CarState.ButtonEvent]):
     if not self.CP.pcmCruise:
@@ -70,6 +71,8 @@ class CarState(CarStateBase, MadsCarState):
       return self.update_meb(pt_cp, cam_cp, alt_cp, ext_cp)
     elif self.CP.flags & VolkswagenFlags.MLB:
       return self.update_mlb(pt_cp, cam_cp, ext_cp, alt_cp)
+    elif self.CP.flags & VolkswagenFlags.MEB:
+      return self.update_meb(pt_cp, cam_cp, ext_cp)
 
     ret = structs.CarState()
     ret_sp = structs.CarStateSP()
@@ -530,6 +533,19 @@ class CarState(CarStateBase, MadsCarState):
     # grant a short time to recover a normal cruise state
     fault = acc_fault
     if parking_brake and not drive_mode:
+      fault = False
+      self.cruise_recovery_timer = self.frame
+    elif self.frame - self.cruise_recovery_timer < recovery_frames_max:
+      fault = False
+    return fault
+
+  def update_acc_fault(self, acc_fault, parking_brake=False, drive_mode=True, brake_pressed=False, recovery_frames_max=300):
+    # Ignore FAULT when not in drive mode and parked
+    # do not show misleading error during ignition in parked state
+    # grant a short time to recover a normal cruise state
+    # after hard brake, stock system prevents acc engage for ~3 seconds
+    fault = acc_fault
+    if (parking_brake and not drive_mode) or brake_pressed:
       fault = False
       self.cruise_recovery_timer = self.frame
     elif self.frame - self.cruise_recovery_timer < recovery_frames_max:

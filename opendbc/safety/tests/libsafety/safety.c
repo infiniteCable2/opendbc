@@ -186,28 +186,28 @@ int get_angle_meas_max(void){
 }
 
 void set_desired_steer_power_last(int power){
-  desired_steer_power_last = power;
+  curvature_state.steer_power_last = power;
 }
 
-void set_desired_curvature_last(int curvature){
-  desired_curvature_last = curvature;
+void set_desired_curvature_last(int t){
+  curvature_state.desired_last = t;
 }
 
 int get_desired_curvature_last(void){
-  return desired_curvature_last;
+  return curvature_state.desired_last;
 }
 
 void set_curvature_meas(int min, int max){
-  curvature_meas.min = min;
-  curvature_meas.max = max;
+  curvature_state.meas.min = min;
+  curvature_state.meas.max = max;
 }
 
 int get_curvature_meas_min(void){
-  return curvature_meas.min;
+  return curvature_state.meas.min;
 }
 
 int get_curvature_meas_max(void){
-  return curvature_meas.max;
+  return curvature_state.meas.max;
 }
 
 

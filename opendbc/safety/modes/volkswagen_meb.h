@@ -22,7 +22,6 @@
 #define MSG_Strukturen_01    0x24FU   // TX, radar objects message replacement
 
 
-// PANDA SAFETY SHOULD INTRODUCE A .ignore_length flag (ALLOWED ONLY IF CHECKSUM CHECK IS REQUIRED TO BE SAFE)
 #define VW_MEB_COMMON_RX_CHECKS                                                                     \
   {.msg = {{MSG_LH_EPS_03, 0, 8, 100U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
   {.msg = {{MSG_MOTOR_14, 0, 8, 10U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},   \
@@ -69,7 +68,7 @@ static uint32_t volkswagen_meb_compute_crc(const CANPacket_t *msg) {
 
   // This is CRC-8H2F/AUTOSAR with a twist. See the OpenDBC implementation
   // of this algorithm for a version with explanatory comments.
-
+  
   uint8_t crc = 0xFFU;
   for (int i = 1; i < len; i++) {
     crc ^= (uint8_t)msg->data[i];

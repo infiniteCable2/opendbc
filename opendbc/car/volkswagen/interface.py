@@ -103,6 +103,38 @@ class CarInterface(CarInterfaceBase):
       ret.networkLocation = NetworkLocation.gateway
       ret.dashcamOnly = is_release  # Release support needs HCA timeout fix, safety validation, revised J533 harness
 
+    elif ret.flags & VolkswagenFlags.MEB:
+      # Set global MEB parameters
+      safety_configs = [get_safety_config(structs.CarParams.SafetyModel.volkswagenMeb)]
+      if ret.flags & VolkswagenFlags.MEB_GEN2:
+        safety_configs[0].safetyParam |= VolkswagenSafetyFlags.MEB_ALT_CRC.value
+
+      ret.transmissionType = TransmissionType.direct
+      ret.steerControlType = structs.CarParams.SteerControlType.curvature
+      ret.steerAtStandstill = True
+
+      ret.lateralTuning.init('pid')
+      ret.lateralTuning.pid.kpBP = [10., 40.]
+      ret.lateralTuning.pid.kpV = [0., 1.45]
+      ret.lateralTuning.pid.kiBP = [10., 40.]
+      ret.lateralTuning.pid.kiV = [0., 0.12]
+      ret.lateralTuning.pid.kf = 1.
+
+      if any(msg in fingerprint[1] for msg in (0x520, 0x86, 0xFD, 0x13D)):  # Airbag_02, LWI_01, ESP_21, QFK_01
+        ret.networkLocation = NetworkLocation.gateway
+      else:
+        ret.networkLocation = NetworkLocation.fwdCamera
+
+      ret.enableBsm = 0x24C in fingerprint[0]  # MEB_Side_Assist_01
+
+      if 0x25D in fingerprint[0]:  # KLR_01
+        ret.flags |= VolkswagenFlags.STOCK_KLR_PRESENT.value
+      if 0x3DC in fingerprint[0]:  # Gateway_73
+        ret.flags |= VolkswagenFlags.ALT_GEAR.value
+
+      # only allow gateway harness to escalate Emergency Assist
+      ret.dashcamOnly = ret.networkLocation == NetworkLocation.fwdCamera
+
     else:
       # Set global MQB parameters
       safety_configs = [get_safety_config(structs.CarParams.SafetyModel.volkswagen)]
