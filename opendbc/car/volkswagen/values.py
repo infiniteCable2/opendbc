@@ -290,7 +290,7 @@ class VolkswagenMQBPlatformConfig(PlatformConfig):
 
 @dataclass
 class VolkswagenMEBPlatformConfig(PlatformConfig):
-  dbc_dict: DbcDict = field(default_factory=lambda: {Bus.pt: 'vw_meb', Bus.radar: 'vw_meb'})
+  dbc_dict: DbcDict = field(default_factory=lambda: {Bus.pt: 'vw_meb_generated', Bus.radar: 'vw_meb_generated'})
   chassis_codes: set[str] = field(default_factory=set)
   wmis: set[WMI] = field(default_factory=set)
   model_years: set[str] = field(default_factory=set)
@@ -298,12 +298,12 @@ class VolkswagenMEBPlatformConfig(PlatformConfig):
   def init(self):
     self.flags |= VolkswagenFlags.MEB
     if self.flags & VolkswagenFlags.MEB_GEN2:
-      self.dbc_dict = {Bus.pt: 'vw_meb_2024', Bus.radar: 'vw_meb_2024'}
-      
-      
+      self.dbc_dict = {Bus.pt: 'vw_meb_2024_generated', Bus.radar: 'vw_meb_2024_generated'}
+
+
 @dataclass
 class VolkswagenMQBevoPlatformConfig(PlatformConfig):
-  dbc_dict: DbcDict = field(default_factory=lambda: {Bus.pt: 'vw_mqbevo', Bus.radar: 'vw_mqbevo'})
+  dbc_dict: DbcDict = field(default_factory=lambda: {Bus.pt: 'vw_mqbevo_generated', Bus.radar: 'vw_mqbevo_generated'})
   chassis_codes: set[str] = field(default_factory=set)
   wmis: set[WMI] = field(default_factory=set)
   model_years: set[str] = field(default_factory=set)
@@ -311,19 +311,7 @@ class VolkswagenMQBevoPlatformConfig(PlatformConfig):
   def init(self):
     self.flags |= VolkswagenFlags.MQB_EVO
     if self.flags & VolkswagenFlags.MQB_EVO_GEN2:
-      self.dbc_dict = {Bus.pt: 'vw_mqbevo_2024', Bus.radar: 'vw_mqbevo_2024'}
-
-
-@dataclass
-class VolkswagenMEBPlatformConfig(PlatformConfig):
-  dbc_dict: DbcDict = field(default_factory=lambda: {Bus.pt: 'vw_meb_generated', Bus.radar: 'vw_meb_generated'})
-  chassis_codes: set[str] = field(default_factory=set)
-  wmis: set[WMI] = field(default_factory=set)
-
-  def init(self):
-    self.flags |= VolkswagenFlags.MEB
-    if self.flags & VolkswagenFlags.MEB_GEN2:
-      self.dbc_dict = {Bus.pt: 'vw_meb_2024_generated', Bus.radar: 'vw_meb_2024_generated'}
+      self.dbc_dict = {Bus.pt: 'vw_mqbevo_2024_generated', Bus.radar: 'vw_mqbevo_2024_generated'}
 
 
 @dataclass

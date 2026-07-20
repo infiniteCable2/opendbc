@@ -136,7 +136,7 @@ class TestVolkswagenMebStockSafety(TestVolkswagenMebSafetyBase):
                            2: [MSG_HCA_03, MSG_LDW_02, MSG_EA_02]}
 
   def setUp(self):
-    self.packer = CANPackerSafety("vw_meb")
+    self.packer = CANPackerSafety("vw_meb_generated")
     self.safety = libsafety_py.libsafety
     self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagenMeb, 0)
     self.safety.init_tests()
@@ -153,7 +153,7 @@ class TestVolkswagenMebStockSafety(TestVolkswagenMebSafetyBase):
 
 class TestVolkswagenMqbEvoStockSafety(TestVolkswagenMebStockSafety):  
   def setUp(self):
-    self.packer = CANPackerSafety("vw_mqbevo")
+    self.packer = CANPackerSafety("vw_mqbevo_generated")
     self.safety = libsafety_py.libsafety
     self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagenMqbEvo, 0)
     self.safety.init_tests()
@@ -173,7 +173,7 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
   INACTIVE_ACCEL = 3.01
   
   def setUp(self):
-    self.packer = CANPackerSafety("vw_meb")
+    self.packer = CANPackerSafety("vw_meb_generated")
     self.safety = libsafety_py.libsafety
     self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagenMeb, VolkswagenSafetyFlags.LONG_CONTROL)
     self.safety.init_tests()
@@ -238,7 +238,7 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
 
 class TestVolkswagenMqbEvoLongSafety(TestVolkswagenMebLongSafety): 
   def setUp(self):
-    self.packer = CANPackerSafety("vw_mqbevo")
+    self.packer = CANPackerSafety("vw_mqbevo_generated")
     self.safety = libsafety_py.libsafety
     safety_param = VolkswagenSafetyFlags.LONG_CONTROL
     self.safety.set_safety_hooks(CarParams.SafetyModel.volkswagenMqbEvo, safety_param)
