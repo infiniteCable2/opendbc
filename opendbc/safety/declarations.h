@@ -153,11 +153,13 @@ typedef struct {
 
 typedef struct {
   // curvature cmd limits
-  const int max_curvature;
-  const float curvature_to_can;
-  const float send_rate;
-  const bool inactive_curvature_is_zero; // if false, enforces angle near meas when disabled (default)
-  const int max_power;
+  const int max_curvature;               // rad/m * curvature_to_can
+  const float curvature_to_can;          // CAN units per rad/m
+  const uint32_t frequency;              // Hz
+  const int max_curvature_error;         // rad/m * curvature_to_can, max deviation from measured curvature (0 disables)
+  const float curvature_error_min_speed; // min speed for the curvature error check [m/s]
+  const int max_steer_power;             // max steer power if EPS supports it (0 disables)
+  const bool inactive_curvature_is_zero; // true resets desired to 0 on violation, false resets to measured curvature
 } CurvatureSteeringLimits;
 
 typedef struct {
@@ -248,15 +250,11 @@ bool safety_tx_hook(CANPacket_t *msg);
 int to_signed(int d, int bits);
 void update_sample(struct sample_t *sample, int sample_new);
 bool get_longitudinal_allowed(void);
-bool get_longitudinal_allowed_override(void);
 int ROUND(float val);
 void gen_crc_lookup_table_8(uint8_t poly, uint8_t crc_lut[]);
 void gen_crc_lookup_table_16(uint16_t poly, uint16_t crc_lut[]);
 bool steer_torque_cmd_checks(int desired_torque, int steer_req, const TorqueSteeringLimits limits);
 bool steer_angle_cmd_checks(int desired_angle, bool steer_control_enabled, const AngleSteeringLimits limits);
-bool steer_power_cmd_checks(int desired_steer_power, bool steer_control_enabled, const CurvatureSteeringLimits limits);
-bool steer_curvature_cmd_checks_roll(int desired_curvature, bool steer_control_enabled, const CurvatureSteeringLimits limits);
-bool steer_curvature_cmd_checks_average(int desired_curvature, bool steer_control_enabled, const CurvatureSteeringLimits limits);
 bool steer_angle_cmd_checks_vm(int desired_angle, bool steer_control_enabled, const AngleSteeringLimits limits,
                                const AngleSteeringParams params);
 bool steer_curvature_cmd_checks(int desired_curvature, int steer_power, bool steer_control_enabled, const CurvatureSteeringLimits limits);
@@ -382,6 +380,5 @@ extern const safety_hooks volkswagen_mlb_hooks;
 extern const safety_hooks volkswagen_mqb_hooks;
 extern const safety_hooks volkswagen_meb_hooks;
 extern const safety_hooks volkswagen_pq_hooks;
-extern const safety_hooks volkswagen_meb_hooks;
 extern const safety_hooks rivian_hooks;
 extern const safety_hooks psa_hooks;

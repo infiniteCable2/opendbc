@@ -13,6 +13,8 @@ DREL_FRONT_EDGE_MARGIN = 1.5 # in m
 
 RADAR_ADDR = 0x24F
 NO_OBJECT = 0
+DISTANCE_STATUS_VALID = 0
+RADAR_UNAVAILABLE_THRESH = 5
 LANE_TYPES = ("Same_Lane", "Left_Lane", "Right_Lane")
 SIGNAL_SETS = tuple(
   (
@@ -48,6 +50,7 @@ class RadarInterface(RadarInterfaceBase):
     self.updated_messages: set[int] = set()
     self.trigger_msg: int = RADAR_ADDR
     self._track_id_counter: int = 0
+    self.radar_unavailable_cnt: int = 0
 
     self.radar_off_can: bool = CP.radarUnavailable
     self.rcp: CANParser | None = get_radar_can_parser(CP)
@@ -56,7 +59,6 @@ class RadarInterface(RadarInterfaceBase):
 
   def update(self, can_strings):
     """Entrypoint called by the vehicle loop every CAN tick."""
-    # TODO: ret.errors.radarUnavailableTemporary = True
     if self.radar_off_can or self.rcp is None:
       return super().update(None)
 
@@ -82,6 +84,18 @@ class RadarInterface(RadarInterfaceBase):
 
     msg = self.rcp.vl["Strukturen_01"]
     get = msg.__getitem__
+
+    # Radar reports its overall validity via Distance_Status (0 = Valid, 3 = Invalid).
+    # Treat consecutive invalid reports as a temporary radar unavailability, similar to Ford MRR.
+    if get("Distance_Status") != DISTANCE_STATUS_VALID:
+      self.radar_unavailable_cnt += 1
+    else:
+      self.radar_unavailable_cnt = 0
+
+    if self.radar_unavailable_cnt >= RADAR_UNAVAILABLE_THRESH:
+      self._pts.clear()
+      ret.errors.radarUnavailableTemporary = True
+      return ret
 
     active_objects: dict[int, tuple[float, float, float]] = {}
     for obj_id_sig, long_sig, lat_sig, vel_sig in SIGNAL_SETS:

@@ -16,6 +16,7 @@
 #define MSG_EA_01            0x1A4U   // TX, for EA mitigation
 #define MSG_EA_02            0x1F0U   // TX, for EA mitigation
 #define MSG_KLR_01           0x25DU   // TX, for capacitive steering wheel
+#define MSG_ESP_21           0xFDU    // RX, redundant vehicle speed source
 #define MSG_DIAGNOSTIC       0x700U   // TX, for general tester present on bus for radar disable
 #define MSG_AWV_03           0xDBU    // TX, radar AEB control message replacement
 #define MSG_MEB_AWV_01       0x16A954ADU   // TX, radar AEB HUD message replacement
@@ -26,15 +27,16 @@
   {.msg = {{MSG_LH_EPS_03, 0, 8, 100U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
   {.msg = {{MSG_MOTOR_14, 0, 8, 10U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},   \
   {.msg = {{MSG_GRA_ACC_01, 0, 8, 33U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}}, \
-  {.msg = {{MSG_QFK_01, 0, 32, 100U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
+  {.msg = {{MSG_QFK_01, 0, 32, 50U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
+  {.msg = {{MSG_ESP_21, 0, 8, 50U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
   
 #define VW_MEB_RX_CHECKS                                                                            \
   {.msg = {{MSG_Motor_51, 0, 32, 50U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
-  {.msg = {{MSG_ESC_51, 0, 48, 100U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
-  
+  {.msg = {{MSG_ESC_51, 0, 48, 50U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
+
 #define VW_MEB_GEN2_RX_CHECKS                                                                       \
   {.msg = {{MSG_Motor_51, 0, 48, 50U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},  \
-  {.msg = {{MSG_ESC_51, 0, 64, 100U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
+  {.msg = {{MSG_ESC_51, 0, 64, 50U, .max_counter = 15U, .ignore_quality_flag = true}, { 0 }, { 0 }}},    \
   
 #define VW_MEB_RADAR_RX_CHECKS                                                                      \
   {.msg = {{MSG_AWV_03, 2, 48, 1U, .max_counter = 15U, .ignore_frequency_check = true, .ignore_quality_flag = true}, { 0 }, { 0 }}}, \
@@ -52,17 +54,6 @@
   {MSG_Strukturen_01, 0, 64, .check_relay = true},  \
 
 
-static uint8_t volkswagen_crc8_lut_8h2f[256]; // Static lookup table for CRC8 poly 0x2F, aka 8H2F/AUTOSAR
-
-static uint32_t volkswagen_meb_get_checksum(const CANPacket_t *msg) {
-  return (uint8_t)msg->data[0];
-}
-
-static uint8_t volkswagen_meb_get_counter(const CANPacket_t *msg) {
-  // MQB message counters are consistently found at LSB 8.
-  return (uint8_t)msg->data[1] & 0xFU;
-}
-
 static uint32_t volkswagen_meb_compute_crc(const CANPacket_t *msg) {
   int len = GET_LEN(msg);
 
@@ -74,7 +65,7 @@ static uint32_t volkswagen_meb_compute_crc(const CANPacket_t *msg) {
     crc = volkswagen_crc8_lut_8h2f[crc];
   }
   
-  uint8_t counter = volkswagen_meb_get_counter(msg);
+  uint8_t counter = volkswagen_mqb_meb_get_counter(msg);
   if (msg->addr == MSG_LH_EPS_03) {
     crc ^= (uint8_t[]){0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5}[counter];
   } else if (msg->addr == MSG_GRA_ACC_01) {
@@ -127,7 +118,7 @@ static uint32_t volkswagen_meb_gen2_compute_crc(const CANPacket_t *msg) {
     crc = volkswagen_crc8_lut_8h2f[crc];
   }
   
-  uint8_t counter = volkswagen_meb_get_counter(msg);
+  uint8_t counter = volkswagen_mqb_meb_get_counter(msg);
   if (msg->addr == MSG_QFK_01) {
 	crc ^= (uint8_t[]){0x18,0x71,0x10,0x8D,0xD7,0xAA,0xB0,0x78,0xAC,0x12,0xAE,0x0C,0xDD,0xF1,0x85,0x68}[counter];
   } else if (msg->addr == MSG_ESC_51) {
@@ -188,8 +179,7 @@ static safety_config volkswagen_meb_init(uint16_t param) {
 	VW_MEB_GEN2_RX_CHECKS
   };
 
-  volkswagen_set_button_prev = false;
-  volkswagen_resume_button_prev = false;
+  volkswagen_common_init();
   volkswagen_stock_aeb = false;
 
   volkswagen_alt_crc_variant_1 = GET_FLAG(param, FLAG_VOLKSWAGEN_ALT_CRC_VARIANT_1);
@@ -198,9 +188,7 @@ static safety_config volkswagen_meb_init(uint16_t param) {
   volkswagen_longitudinal = GET_FLAG(param, FLAG_VOLKSWAGEN_LONG_CONTROL);
   volkswagen_disable_radar = GET_FLAG(param, FLAG_VOLKSWAGEN_DISABLE_RADAR);
 #endif
-  
-  gen_crc_lookup_table_8(0x2F, volkswagen_crc8_lut_8h2f);
-  
+
   safety_config ret;
   
   if (volkswagen_longitudinal) {
@@ -232,11 +220,13 @@ static safety_config volkswagen_meb_init(uint16_t param) {
 
 // lateral limits for curvature
 static const CurvatureSteeringLimits VOLKSWAGEN_MEB_STEERING_LIMITS = {
-  .max_curvature = 29105, // 0.195 rad/m
-  .curvature_to_can = 149253.7313, // 1 / 6.7e-6 rad/m to can
-  .send_rate = 0.02,
-  .inactive_curvature_is_zero = true,
-  .max_power = 125 // 50%
+  .max_curvature = 29105,
+  .curvature_to_can = 149253.7313f,
+  .frequency = 50,                   // Hz
+  .max_curvature_error = 0,          // disabled, MEB doesn't track rack
+  .curvature_error_min_speed = 0.0,  // disabled
+  .max_steer_power = 125,
+  .inactive_curvature_is_zero = false, // MEB winds down with measured curvature
 };
 
 static void volkswagen_meb_rx_hook(const CANPacket_t *msg) {
@@ -244,25 +234,25 @@ static void volkswagen_meb_rx_hook(const CANPacket_t *msg) {
 
     // Update in-motion state by sampling wheel speeds
     if (msg->addr == MSG_ESC_51) {
-      uint32_t fr = msg->data[10] | msg->data[11] << 8;
-      uint32_t rr = msg->data[14] | msg->data[15] << 8;
-      uint32_t rl = msg->data[12] | msg->data[13] << 8;
-      uint32_t fl = msg->data[8] | msg->data[9] << 8;
-
+      uint32_t fl = msg->data[8] | (msg->data[9] << 8);
+      uint32_t fr = msg->data[10] | (msg->data[11] << 8);
+      uint32_t rl = msg->data[12] | (msg->data[13] << 8);
+      uint32_t rr = msg->data[14] | (msg->data[15] << 8);
       vehicle_moving = (fr > 0U) || (rr > 0U) || (rl > 0U) || (fl > 0U);
-
-      UPDATE_VEHICLE_SPEED(((fr + rr + rl + fl) / 4 ) * 0.0075 / 3.6);
+      UPDATE_VEHICLE_SPEED((fr + rr + rl + fl) / 4.0 * 0.0075 * KPH_TO_MS);
     }
 
-    if (msg->addr == MSG_QFK_01) { // we do not need conversion deg to can, same scaling as HCA_03 curvature
-      int current_curvature = ((msg->data[6] & 0x7F) << 8) | msg->data[5];
-      
-      bool current_curvature_sign = GET_BIT(msg, 55U);
-      if (!current_curvature_sign) {
-        current_curvature *= -1;
-      }
+    // Check vehicle speed with redundant source
+    if (msg->addr == MSG_ESP_21) {
+      // Signal: ESP_v_Signal
+      float esp_speed = ((msg->data[5] << 8) | msg->data[4]) * 0.01 * KPH_TO_MS;
+      UPDATE_VEHICLE_SPEED_2(esp_speed);
+    }
 
-      update_sample(&curvature_meas, current_curvature);
+    if (msg->addr == MSG_QFK_01) {
+      int current_curvature = ((msg->data[6] & 0x7FU) << 8) | msg->data[5];
+      current_curvature *= GET_BIT(msg, 55U) ? 1 : -1;
+      update_sample(&curvature_state.meas, current_curvature);
     }
 
     // Update driver input torque samples
@@ -359,11 +349,7 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
     bool steer_req = (((msg->data[1] >> 4) & 0x0FU) == 4U);
     int steer_power = msg->data[2];
 
-    if (steer_power_cmd_checks(steer_power, steer_req, VOLKSWAGEN_MEB_STEERING_LIMITS)) {
-      tx = false;
-    }
-
-	if (steer_curvature_cmd_checks_average(desired_curvature_raw, steer_req, VOLKSWAGEN_MEB_STEERING_LIMITS)) {
+    if (steer_curvature_cmd_checks(desired_curvature_raw, steer_power, steer_req, VOLKSWAGEN_MEB_STEERING_LIMITS)) {
       tx = false;
     }
   }
@@ -373,25 +359,14 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
   if (msg->addr == MSG_ACC_18) {
     // WARNING: IF WE TAKE THE SIGNAL FROM THE CAR WHILE ACC ACTIVE AND BELOW ABOUT 3km/h, THE CAR ERRORS AND PUTS ITSELF IN PARKING MODE WITH EPB!
     int desired_accel = ((((msg->data[4] & 0x7U) << 8) | msg->data[3]) * 5U) - 7220U;
-
     if (longitudinal_accel_checks(desired_accel, VOLKSWAGEN_MEB_LONG_LIMITS)) {
       tx = false;
     }
 
     // Fallback: Don't send ACC_18 longitudinal control when the stock AEB system is active
     // In normal operation, openpilot sends inactive_accel via carcontroller when AEB is detected.
-    // This check is a last-line defense against transient states where that didn't happen.
+    // This check is a last-line defense against transient states that that didn't happen.
     if (volkswagen_stock_aeb && (desired_accel != VOLKSWAGEN_MEB_LONG_LIMITS.inactive_accel)) {
-      tx = false;
-    }
-  }
-
-  // Fallback: Don't send ACC_18 longitudinal control when the stock AEB system is active
-  // In normal operation, openpilot sends inactive_accel via carcontroller when AEB is detected.
-  // This check is a last-line defense against transient states where that didn't happen.
-  if (volkswagen_stock_aeb && (msg->addr == MSG_ACC_18)) {
-    int desired_accel = ((((msg->data[4] & 0x7U) << 8) | msg->data[3]) * 5U) - 7220U;
-    if (desired_accel != VOLKSWAGEN_MEB_LONG_LIMITS.inactive_accel) {
       tx = false;
     }
   }
@@ -419,7 +394,7 @@ const safety_hooks volkswagen_meb_hooks = {
   .init = volkswagen_meb_init,
   .rx = volkswagen_meb_rx_hook,
   .tx = volkswagen_meb_tx_hook,
-  .get_counter = volkswagen_meb_get_counter,
-  .get_checksum = volkswagen_meb_get_checksum,
+  .get_counter = volkswagen_mqb_meb_get_counter,
+  .get_checksum = volkswagen_mqb_meb_get_checksum,
   .compute_checksum = volkswagen_meb_gen2_compute_crc,
 };

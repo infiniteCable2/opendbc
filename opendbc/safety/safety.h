@@ -86,12 +86,6 @@ struct sample_t angle_meas;         // last 6 steer angles
 // for safety modes with curvature steering control
 CurvatureSteeringState curvature_state;
 
-// for safety modes with curvature steering control
-struct sample_t roll; // last 6 roll values
-struct sample_t curvature_meas;         // last 6 steer curvatures
-int desired_curvature_last = 0;
-int desired_steer_power_last = 0;
-
 int alternative_experience = 0;
 
 // time since safety mode has been changed
@@ -466,8 +460,6 @@ int set_safety_hooks(uint16_t mode, uint16_t param) {
   ts_steer_req_mismatch_last = 0;
   valid_steer_req_count = 0;
   invalid_steer_req_count = 0;
-  desired_curvature_last = 0;
-  desired_steer_power_last = 0;
 
   // gas interceptor
   enable_gas_interceptor = false;
