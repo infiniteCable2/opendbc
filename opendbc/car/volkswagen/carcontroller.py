@@ -319,7 +319,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     new_actuators = actuators.as_builder()
     new_actuators.torque = self.apply_torque_last / self.CCP.STEER_MAX
     new_actuators.torqueOutputCan = self.apply_torque_last
-    new_actuators.curvature = self.apply_curvature_last
+    new_actuators.curvature = float(self.apply_curvature_last)
     new_actuators.accel = self.accel_last
     new_actuators.speed = actuators.speed
 
