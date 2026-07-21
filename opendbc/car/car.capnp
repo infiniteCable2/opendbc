@@ -371,14 +371,13 @@ struct CarControl {
   orientationNED @13 :List(Float32);
   angularVelocity @14 :List(Float32);
   currentCurvature @17 :Float32;  # From vehicle model
-  curvatureControllerActive @18: Bool;
-  rollCompensation @19 :Float32;
-  steerLimited @20: Bool;
-  forceRHDForBSM @21: Bool;
-  longComfortMode @22: Bool;
-  disableCarSteerAlerts @23: Bool;
-
   driverMonitoringEscalation @18 :Bool; # trigger the car's stock driver monitoring escalation
+  curvatureControllerActive @19: Bool;
+  rollCompensation @20 :Float32;
+  steerLimited @21: Bool;
+  forceRHDForBSM @22: Bool;
+  longComfortMode @23: Bool;
+  disableCarSteerAlerts @24: Bool;
 
   cruiseControl @4 :CruiseControl;
   hudControl @5 :HUDControl;
