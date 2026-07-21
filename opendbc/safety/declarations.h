@@ -152,17 +152,6 @@ typedef struct {
 } AngleSteeringParams;
 
 typedef struct {
-  // curvature cmd limits
-  const int max_curvature;               // rad/m * curvature_to_can
-  const float curvature_to_can;          // CAN units per rad/m
-  const uint32_t frequency;              // Hz
-  const int max_curvature_error;         // rad/m * curvature_to_can, max deviation from measured curvature (0 disables)
-  const float curvature_error_min_speed; // min speed for the curvature error check [m/s]
-  const int max_steer_power;             // max steer power if EPS supports it (0 disables)
-  const bool inactive_curvature_is_zero; // true resets desired to 0 on violation, false resets to measured curvature
-} CurvatureSteeringLimits;
-
-typedef struct {
   // acceleration cmd limits
   const int max_accel;
   const int min_accel;
