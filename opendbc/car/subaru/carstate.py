@@ -11,8 +11,8 @@ from opendbc.sunnypilot.car.subaru.stop_and_go import SnGCarState
 
 
 class CarState(CarStateBase, MadsCarState, SnGCarState):
-  def __init__(self, CP, CP_SP):
-    CarStateBase.__init__(self, CP, CP_SP)
+  def __init__(self, CP, CP_SP, CP_IC):
+    CarStateBase.__init__(self, CP, CP_SP, CP_IC)
     MadsCarState.__init__(self, CP, CP_SP)
     SnGCarState.__init__(self, CP, CP_SP)
     can_define = CANDefine(DBC[CP.carFingerprint][Bus.pt])
@@ -20,12 +20,13 @@ class CarState(CarStateBase, MadsCarState, SnGCarState):
 
     self.angle_rate_calulator = CanSignalRateCalculator(50)
 
-  def update(self, can_parsers) -> tuple[structs.CarState, structs.CarStateSP]:
+  def update(self, can_parsers) -> tuple[structs.CarState, structs.CarStateSP, structs.CarStateIC]:
     cp = can_parsers[Bus.pt]
     cp_cam = can_parsers[Bus.cam]
     cp_alt = can_parsers[Bus.alt]
     ret = structs.CarState()
     ret_sp = structs.CarStateSP()
+    ret_ic = structs.CarStateIC()
 
     throttle_msg = cp.vl["Throttle"] if not (self.CP.flags & SubaruFlags.HYBRID) else cp_alt.vl["Throttle_Hybrid"]
     ret.gasPressed = throttle_msg["Throttle_Pedal"] > 1e-5
@@ -146,7 +147,7 @@ class CarState(CarStateBase, MadsCarState, SnGCarState):
     MadsCarState.update_mads(self, ret, can_parsers)
     SnGCarState.update(self, ret, can_parsers)
 
-    return ret, ret_sp
+    return ret, ret_sp, ret_ic
 
   @staticmethod
   def get_can_parsers(CP, CP_SP):

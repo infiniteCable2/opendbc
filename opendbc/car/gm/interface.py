@@ -38,8 +38,8 @@ class CarInterface(CarInterfaceBase, CarInterfaceExt):
   DRIVABLE_GEARS = (structs.CarState.GearShifter.sport, structs.CarState.GearShifter.low,
                     structs.CarState.GearShifter.eco, structs.CarState.GearShifter.manumatic)
 
-  def __init__(self, CP, CP_SP):
-    CarInterfaceBase.__init__(self, CP, CP_SP)
+  def __init__(self, CP, CP_SP, CP_IC):
+    CarInterfaceBase.__init__(self, CP, CP_SP, CP_IC)
     CarInterfaceExt.__init__(self, CP, CarInterfaceBase)
 
   @staticmethod

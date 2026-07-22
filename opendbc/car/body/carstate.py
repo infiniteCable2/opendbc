@@ -5,10 +5,14 @@ from opendbc.car.body.values import DBC
 
 
 class CarState(CarStateBase):
-  def update(self, can_parsers) -> tuple[structs.CarState, structs.CarStateSP]:
+  def __init__(self, CP, CP_SP, CP_IC):
+    super().__init__(CP, CP_SP, CP_IC)
+
+  def update(self, can_parsers) -> tuple[structs.CarState, structs.CarStateSP, structs.CarStateIC]:
     cp = can_parsers[Bus.main]
     ret = structs.CarState()
     ret_sp = structs.CarStateSP()
+    ret_ic = structs.CarStateIC()
 
     ret.wheelSpeeds.fl = cp.vl['MOTORS_DATA']['SPEED_L']
     ret.wheelSpeeds.fr = cp.vl['MOTORS_DATA']['SPEED_R']
@@ -29,7 +33,7 @@ class CarState(CarStateBase):
     ret.cruiseState.enabled = True
     ret.cruiseState.available = True
 
-    return ret, ret_sp
+    return ret, ret_sp, ret_ic
 
   @staticmethod
   def get_can_parsers(CP, CP_SP):

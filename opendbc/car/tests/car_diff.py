@@ -69,14 +69,18 @@ def replay_segment(platform: str, can_msgs: list[Any]) -> tuple[structs.CarParam
   CarInterface = interfaces[platform]
   CP = CarInterface.get_params(platform, fingerprint, [], False, False, False)
   CP_SP = CarInterface.get_params_sp(CP, platform, fingerprint, [], False, False, False)
-  CI = CarInterface(CP, CP_SP)
+  CP_IC = CarInterface.get_params_ic(CP, platform, fingerprint, [], False, False, False)
+  CI = CarInterface(CP, CP_SP, CP_IC)
   CC = structs.CarControl().as_reader()
+  CC_SP = structs.CarControlSP()
+  CC_IC = structs.CarControlIC()
 
   states, timestamps = [], []
   for msg in can_msgs:
     frames = [CanData(c.address, c.dat, c.src) for c in msg.can]
-    states.append(CI.update([(msg.logMonoTime, frames)]))
-    CI.apply(CC, msg.logMonoTime)
+    CS, _, _ = CI.update([(msg.logMonoTime, frames)])
+    states.append(CS)
+    CI.apply(CC, CC_SP, CC_IC, msg.logMonoTime)
     timestamps.append(msg.logMonoTime)
   return CP, states, timestamps
 

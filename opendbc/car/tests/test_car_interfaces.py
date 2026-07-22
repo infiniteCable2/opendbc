@@ -59,7 +59,9 @@ def get_fuzzy_car_interface(car_name: str, draw: DrawType) -> CarInterfaceBase:
                                        alpha_long=params['alpha_long'], is_release=False, docs=False)
   car_params_sp = CarInterface.get_params_sp(car_params, car_name, params['fingerprints'], params['car_fw'],
                                              alpha_long=params['alpha_long'], is_release_sp=False, docs=False)
-  return CarInterface(car_params, car_params_sp)
+  car_params_ic = CarInterface.get_params_ic(car_params, car_name, params['fingerprints'], params['car_fw'],
+                                             alpha_long=params['alpha_long'], is_release_sp=False, docs=False)
+  return CarInterface(car_params, car_params_sp, car_params_ic)
 
 
 def _make_car_test(car_name):
@@ -104,9 +106,10 @@ def _make_car_test(car_name):
     now_nanos = 0
     CC = structs.CarControl().as_reader()
     CC_SP = structs.CarControlSP()
+    CC_IC = structs.CarControlIC()
     for _ in range(10):
       car_interface.update([])
-      car_interface.apply(CC, CC_SP, now_nanos)
+      car_interface.apply(CC, CC_SP, CC_IC, now_nanos)
       now_nanos += DT_CTRL * 1e9  # 10 ms
 
     CC = structs.CarControl()
@@ -116,7 +119,7 @@ def _make_car_test(car_name):
     CC = CC.as_reader()
     for _ in range(10):
       car_interface.update([])
-      car_interface.apply(CC, CC_SP, now_nanos)
+      car_interface.apply(CC, CC_SP, CC_IC, now_nanos)
       now_nanos += DT_CTRL * 1e9  # 10ms
 
     # Test radar interface

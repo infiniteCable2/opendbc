@@ -164,5 +164,54 @@ class CarControlSP:
 
 
 @auto_dataclass
+class CarStateIC:
+  steeringCurvature: float = auto_field()
+  steeringSlightlyPressed: bool = auto_field()
+  steerFaultWarning: bool = auto_field()
+  radarDisableFailed: bool = auto_field()
+  batteryDetails: 'CarStateIC.BatteryDetails' = field(default_factory=lambda: CarStateIC.BatteryDetails())
+  cruiseSpeedLimit: float = auto_field()
+  cruiseSpeedLimitPredicative: float = auto_field()
+
+  @auto_dataclass
+  class BatteryDetails:
+    capacity: float = auto_field()
+    charge: float = auto_field()
+    soc: float = auto_field()
+    temperature: float = auto_field()
+    heaterActive: bool = auto_field()
+    voltage: float = auto_field()
+    current: float = auto_field()
+    power: float = auto_field()
+
+
+@auto_dataclass
+class CarControlIC:
+  curvatureControllerActive: bool = auto_field()
+  rollCompensation: float = auto_field()
+  steerLimited: bool = auto_field()
+  forceRHDForBSM: bool = auto_field()
+  longComfortMode: bool = auto_field()
+  disableCarSteerAlerts: bool = auto_field()
+  cruiseSpeedLimit: bool = auto_field()
+  cruiseSpeedLimitPredicative: bool = auto_field()
+  cruiseSpeedLimitPredReactToSL: bool = auto_field()
+  cruiseSpeedLimitPredReactToCurves: bool = auto_field()
+  hudLeadFollowTime: float = auto_field()
+  hudLeadDistance: float = auto_field()
+
+
+@auto_dataclass
+class CarParamsIC:
+  dashcamOnlyReason: 'CarParamsIC.DashcamOnlyReason' = field(
+    default_factory=lambda: CarParamsIC.DashcamOnlyReason.unknown
+  )
+
+  class DashcamOnlyReason(StrEnum):
+    unknown = auto()
+    radarDisableEngineOn = auto()
+
+
+@auto_dataclass
 class CarStateSP:
   speedLimit: float = auto_field()

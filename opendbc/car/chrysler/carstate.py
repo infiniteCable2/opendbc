@@ -11,8 +11,8 @@ ButtonType = structs.CarState.ButtonEvent.Type
 
 
 class CarState(CarStateBase, MadsCarState, CarStateExt):
-  def __init__(self, CP, CP_SP):
-    CarStateBase.__init__(self, CP, CP_SP)
+  def __init__(self, CP, CP_SP, CP_IC):
+    CarStateBase.__init__(self, CP, CP_SP, CP_IC)
     MadsCarState.__init__(self, CP, CP_SP)
     CarStateExt.__init__(self, CP, CP_SP)
     self.CP = CP
@@ -29,7 +29,7 @@ class CarState(CarStateBase, MadsCarState, CarStateExt):
 
     self.distance_button = 0
 
-  def update(self, can_parsers) -> tuple[structs.CarState, structs.CarStateSP]:
+  def update(self, can_parsers) -> tuple[structs.CarState, structs.CarStateSP, structs.CarStateIC]:
     cp = can_parsers[Bus.pt]
     cp_cam = can_parsers[Bus.cam]
 
@@ -38,6 +38,7 @@ class CarState(CarStateBase, MadsCarState, CarStateExt):
 
     ret = structs.CarState()
     ret_sp = structs.CarStateSP()
+    ret_ic = structs.CarStateIC()
 
     prev_distance_button = self.distance_button
     self.distance_button = cp.vl["CRUISE_BUTTONS"]["ACC_Distance_Dec"]
@@ -112,11 +113,12 @@ class CarState(CarStateBase, MadsCarState, CarStateExt):
       *self.button_events,
     ]
 
-    return ret, ret_sp
+    return ret, ret_sp, ret_ic
 
   def update_cusw(self, cp, cp_cam):
     ret = structs.CarState()
     ret_sp = structs.CarStateSP()
+    ret_ic = structs.CarStateIC()
 
     ret.doorOpen = any([cp.vl["DOORS"]["DOOR_OPEN_FL"],
                         cp.vl["DOORS"]["DOOR_OPEN_FR"],
@@ -160,7 +162,7 @@ class CarState(CarStateBase, MadsCarState, CarStateExt):
 
     self.lkas_car_model = cp_cam.vl["DAS_6"]["CAR_MODEL"]
 
-    return ret, ret_sp
+    return ret, ret_sp, ret_ic
 
   @staticmethod
   def get_can_parsers(CP, CP_SP):
