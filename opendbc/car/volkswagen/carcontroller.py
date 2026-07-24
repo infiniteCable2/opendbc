@@ -38,8 +38,8 @@ class HCAMitigation:
 
 
 class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterface):
-  def __init__(self, dbc_names, CP, CP_SP):
-    CarControllerBase.__init__(self, dbc_names, CP, CP_SP)
+  def __init__(self, dbc_names, CP, CP_SP, CP_IC):
+    CarControllerBase.__init__(self, dbc_names, CP, CP_SP, CP_IC)
     IntelligentCruiseButtonManagementInterface.__init__(self, CP, CP_SP)
     self.CCP = CarControllerParams(CP)
     self.CAN = CanBus(CP)
@@ -73,16 +73,16 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     self.radar_disabled_warning_timer = 0
     self.hide_ea_error = False
 
-  def update(self, CC, CC_SP, CS, now_nanos):
+  def update(self, CC, CC_SP, CC_IC, CS, now_nanos):
     actuators = CC.actuators
     hud_control = CC.hudControl
     can_sends = []
 
     # copy custom data to carstate
-    CS.force_rhd_for_bsm = CC.forceRHDForBSM
-    CS.enable_predicative_speed_limit = CC.cruiseControl.speedLimitPredicative
-    CS.enable_pred_react_to_speed_limits = CC.cruiseControl.speedLimitPredReactToSL
-    CS.enable_pred_react_to_curves = CC.cruiseControl.speedLimitPredReactToCurves
+    CS.force_rhd_for_bsm = CC_IC.forceRHDForBSM
+    CS.enable_predicative_speed_limit = CC_IC.cruiseSpeedLimitPredicative
+    CS.enable_pred_react_to_speed_limits = CC_IC.cruiseSpeedLimitPredReactToSL
+    CS.enable_pred_react_to_curves = CC_IC.cruiseSpeedLimitPredReactToCurves
 
     # **** Steering Controls ************************************************ #
 
@@ -96,10 +96,10 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         if CC.latActive:
           hca_enabled = True
           # no closed loop correction for FORD as long as the current curvature car signal is verified
-          steer_correction = CS.out.steeringCurvature - CC.currentCurvature + CC.rollCompensation if not (self.CP.flags & VolkswagenFlags.FORD_CAR) else 0.
+          steer_correction = CS.out_ic.steeringCurvature - CC.currentCurvature + CC_IC.rollCompensation if not (self.CP.flags & VolkswagenFlags.FORD_CAR) else 0.
           apply_curvature = actuators.curvature + steer_correction
           apply_curvature = self.CCP.CURVATURE_LIMITS.apply_limits(apply_curvature, self.apply_curvature_last, CS.out.vEgoRaw,
-                                                                    CS.out.steeringCurvature, CC.latActive, self.CCP.STEER_STEP)
+                                                                    CS.out_ic.steeringCurvature, CC.latActive, self.CCP.STEER_STEP)
 
           min_power = max(self.steering_power_last - self.CCP.STEERING_POWER_STEP, self.CCP.STEERING_POWER_MIN)
           max_power = min(self.steering_power_last + self.CCP.STEERING_POWER_STEP, self.CCP.STEERING_POWER_MAX)
@@ -107,11 +107,11 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
                                                                      [self.CCP.STEERING_POWER_MAX, self.CCP.STEERING_POWER_MIN]))
           target_power = int(np.interp(CS.out.vEgo, [0., 0.5], [self.CCP.STEERING_POWER_MIN, target_power_driver]))
           steering_power = min(max(target_power, min_power), max_power)
-          
+
         else:
           if self.steering_power_last > 0: # keep HCA alive until steering power has reduced to zero
             hca_enabled = True
-            apply_curvature = np.clip(CS.out.steeringCurvature, -self.CCP.CURVATURE_LIMITS.CURVATURE_MAX, self.CCP.CURVATURE_LIMITS.CURVATURE_MAX) # synchronize with current curvature
+            apply_curvature = np.clip(CS.out_ic.steeringCurvature, -self.CCP.CURVATURE_LIMITS.CURVATURE_MAX, self.CCP.CURVATURE_LIMITS.CURVATURE_MAX) # synchronize with current curvature
             steering_power = max(self.steering_power_last - self.CCP.STEERING_POWER_STEP, 0)
           else:
             hca_enabled = False
@@ -178,7 +178,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     
     # **** Acceleration Controls ******************************************** #
     
-    if self.frame % self.CCP.ACC_CONTROL_STEP == 0 and self.CP.openpilotLongitudinalControl and not CS.out.radarDisableFailed:
+    if self.frame % self.CCP.ACC_CONTROL_STEP == 0 and self.CP.openpilotLongitudinalControl and not CS.out_ic.radarDisableFailed:
       stopping = actuators.longControlState == LongCtrlState.stopping
         
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
@@ -199,16 +199,18 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         long_disabling = not long_active and self.long_disabled_counter < 5
 
         critical_state = hud_control.visualAlert == VisualAlert.fcw
-        if CC.longComfortMode:
-          self.long_jerk_control.update(long_active, long_override, hud_control.leadDistance, hud_control.leadVisible, accel, critical_state)
-          self.long_limit_control.update(long_active, CS.out.vEgoRaw, hud_control.setSpeed, hud_control.leadDistance, hud_control.leadVisible, critical_state)
-          
-        acc_control = self.CCS.acc_control_value(CS.out.cruiseState.available, CS.out.accFaulted, long_active, long_override)          
+        if CC_IC.longComfortMode:
+          self.long_jerk_control.update(long_active, long_override, CC_IC.hudLeadDistance, hud_control.leadVisible, accel, critical_state)
+          self.long_limit_control.update(long_active, CS.out.vEgoRaw, hud_control.setSpeed, CC_IC.hudLeadDistance, hud_control.leadVisible, critical_state)
+
+        acc_control = self.CCS.acc_control_value(CS.out.cruiseState.available, CS.out.accFaulted, long_active, long_override)
         acc_hold_type = self.CCS.acc_hold_type(CS.out.cruiseState.available, CS.out.accFaulted, long_active, starting, stopping,
                                                CS.esp_hold_confirmation, long_override, long_override_begin, long_disabling)
         can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, self.CAN.pt, self.CP, CS.acc_type, long_active,
-                                                           self.long_jerk_control.get_jerk_up() if CC.longComfortMode else 4.0, self.long_jerk_control.get_jerk_down() if CC.longComfortMode else 4.0,
-                                                           self.long_limit_control.get_upper_limit() if CC.longComfortMode else 0., self.long_limit_control.get_lower_limit() if CC.longComfortMode else 0.,
+                                                           self.long_jerk_control.get_jerk_up() if CC_IC.longComfortMode else 4.0,
+                                                           self.long_jerk_control.get_jerk_down() if CC_IC.longComfortMode else 4.0,
+                                                           self.long_limit_control.get_upper_limit() if CC_IC.longComfortMode else 0.,
+                                                           self.long_limit_control.get_lower_limit() if CC_IC.longComfortMode else 0.,
                                                            accel, acc_control, acc_hold_type, stopping, starting, CS.esp_hold_confirmation,
                                                            CS.out.vEgoRaw * CV.MS_TO_KPH, long_override, CS.travel_assist_available))
 
@@ -233,7 +235,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     # Predicative Speed Control, (for MQBevo Traffic Sign Detection)
     # Dash warnings for critical deactivations are shown for several seconds
     
-    if self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl and not CS.out.radarDisableFailed:
+    if self.CP.flags & VolkswagenFlags.DISABLE_RADAR and self.CP.openpilotLongitudinalControl and not CS.out_ic.radarDisableFailed:
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
         if self.radar_disabled_warning_timer < 600: # display critical hud warnings for some seconds
           self.radar_disabled_warning_timer += 1
@@ -258,7 +260,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         hud_alert = self.CCP.LDW_MESSAGES["laneAssistTakeOver"]
 
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
-        sound_alert = self.CCP.LDW_SOUNDS["Chime"] if hud_alert == self.CCP.LDW_MESSAGES["laneAssistTakeOver"] and not CC.disableCarSteerAlerts else self.CCP.LDW_SOUNDS["None"]
+        sound_alert = self.CCP.LDW_SOUNDS["Chime"] if hud_alert == self.CCP.LDW_MESSAGES["laneAssistTakeOver"] and not CC_IC.disableCarSteerAlerts else self.CCP.LDW_SOUNDS["None"]
         can_sends.append(self.CCS.create_lka_hud_control(self.packer_pt, self.CAN.pt, self.CP, CS.ldw_stock_values, CC.latActive,
                                                          CS.out.steeringPressed, hud_alert, hud_control, sound_alert))
       else:
@@ -268,24 +270,24 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     if hud_control.leadDistanceBars != self.lead_distance_bars_last:
       self.distance_bar_frame = self.frame
     
-    if self.frame % self.CCP.ACC_HUD_STEP == 0 and self.CP.openpilotLongitudinalControl and not CS.out.radarDisableFailed:
+    if self.frame % self.CCP.ACC_HUD_STEP == 0 and self.CP.openpilotLongitudinalControl and not CS.out_ic.radarDisableFailed:
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
         fcw_alert = hud_control.visualAlert == VisualAlert.fcw
         show_distance_bars = self.frame - self.distance_bar_frame < 400
-        gap = max(8, CS.out.vEgo * hud_control.leadFollowTime)
-        distance = max(8, hud_control.leadDistance) if hud_control.leadDistance != 0 else 0
-        
+        gap = max(8, CS.out.vEgo * CC_IC.hudLeadFollowTime)
+        distance = max(8, CC_IC.hudLeadDistance) if CC_IC.hudLeadDistance != 0 else 0
+
         # AEB fallback: when stock AEB is active, HUD shows inactive state to allow stock system takeover
         long_active = CC.enabled and not CS.out.stockAeb
         acc_hud_status = self.CCS.acc_hud_status_value(CS.out.cruiseState.available, CS.out.accFaulted, long_active,
                                                         CC.cruiseControl.override or CS.out.gasPressed)
-          
-        sl_predicative_active = True if CC.cruiseControl.speedLimitPredicative and CS.out.cruiseState.speedLimitPredicative != 0 else False
-        if CC.cruiseControl.speedLimit and CS.out.cruiseState.speedLimit != 0 and self.speed_limit_last != CS.out.cruiseState.speedLimit:
-          self.speed_limit_changed_timer = self.frame 
-        self.speed_limit_last = CS.out.cruiseState.speedLimit
+
+        sl_predicative_active = True if CC_IC.cruiseSpeedLimitPredicative and CS.out_ic.cruiseSpeedLimitPredicative != 0 else False
+        if CC_IC.cruiseSpeedLimit and CS.out_ic.cruiseSpeedLimit != 0 and self.speed_limit_last != CS.out_ic.cruiseSpeedLimit:
+          self.speed_limit_changed_timer = self.frame
+        self.speed_limit_last = CS.out_ic.cruiseSpeedLimit
         sl_active = self.frame - self.speed_limit_changed_timer < 400
-        speed_limit = CS.out.cruiseState.speedLimitPredicative if sl_predicative_active else (CS.out.cruiseState.speedLimit if sl_active else 0)
+        speed_limit = CS.out_ic.cruiseSpeedLimitPredicative if sl_predicative_active else (CS.out_ic.cruiseSpeedLimit if sl_active else 0)
           
         acc_hud_event = self.CCS.acc_hud_event(acc_hud_status, CS.esp_hold_confirmation, sl_predicative_active, CS.speed_limit_predicative_type, sl_active)
           

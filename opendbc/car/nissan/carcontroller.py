@@ -12,8 +12,8 @@ VisualAlert = structs.CarControl.HUDControl.VisualAlert
 
 
 class CarController(CarControllerBase):
-  def __init__(self, dbc_names, CP, CP_SP):
-    super().__init__(dbc_names, CP, CP_SP)
+  def __init__(self, dbc_names, CP, CP_SP, CP_IC):
+    super().__init__(dbc_names, CP, CP_SP, CP_IC)
     self.car_fingerprint = CP.carFingerprint
 
     self.angle_filter = FirstOrderFilter(0.0, 0.1, DT_CTRL)
@@ -22,7 +22,7 @@ class CarController(CarControllerBase):
 
     self.packer = CANPacker(dbc_names[Bus.pt])
 
-  def update(self, CC, CC_SP, CS, now_nanos):
+  def update(self, CC, CC_SP, CC_IC, CS, now_nanos):
     actuators = CC.actuators
     hud_control = CC.hudControl
     pcm_cancel_cmd = CC.cruiseControl.cancel

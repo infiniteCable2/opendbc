@@ -182,18 +182,15 @@ struct CarState {
   brakeHoldActive @38 :Bool;
 
   # steering wheel
-  steeringCurvature @62 :Float32;  # EPS steering curvature equivalent in radiant
   steeringAngleDeg @7 :Float32;
   steeringAngleOffsetDeg @37 :Float32; # Offset between sensors in case there multiple
   steeringRateDeg @15 :Float32;    # optional
   steeringTorque @8 :Float32;      # Native CAN units, only needed on cars where it's used for control
   steeringTorqueEps @27 :Float32;  # Native CAN units, only needed on cars where it's used for control
   steeringPressed @9 :Bool;        # is the user overring the steering wheel?
-  steeringSlightlyPressed @64 :Bool; # is the user slightly overring the steering wheel?
   steeringDisengage @58 :Bool;     # more force than steeringPressed, disengages for applicable brands
   steerFaultTemporary @35 :Bool;
   steerFaultPermanent @36 :Bool;
-  steerFaultWarning @65 :Bool;
 
   invalidLkasSetting @55 :Bool;    # stock LKAS is incorrectly configured (i.e. on or off)
   stockAeb @30 :Bool;
@@ -206,7 +203,6 @@ struct CarState {
   vehicleSensorsInvalid @52 :Bool;  # invalid steering angle readings, etc.
   lowSpeedAlert @56 :Bool;  # lost steering control due to a dynamic min steering speed
   blockPcmEnable @60 :Bool;  # whether to allow PCM to enable this frame
-  radarDisableFailed @63 :Bool;
 
   # cruise state
   cruiseState @10 :CruiseState;
@@ -232,20 +228,6 @@ struct CarState {
   fuelGauge @41 :Float32; # battery or fuel tank level from [0.0, 1.0]
   charging @43 :Bool;
 
-  # battery data
-  batteryDetails @61 :BatteryDetails;
-
-  struct BatteryDetails {
-    capacity @0 :Float32;
-    charge @1 :Float32;
-    soc @2 :Float32;
-    temperature @3 :Float32;
-    heaterActive @4 :Bool;
-    voltage @5 :Float32;
-    current @6 :Float32;
-    power @7 :Float32;
-  }
-
   struct WheelSpeeds {
     # optional wheel speeds
     fl @0 :Float32;
@@ -261,8 +243,7 @@ struct CarState {
     available @2 :Bool;
     standstill @4 :Bool;
     nonAdaptive @5 :Bool;
-    speedLimit @7 :Float32;
-    speedLimitPredicative @8 :Float32;
+
     speedOffsetDEPRECATED @3 :Float32;
   }
 
@@ -372,12 +353,6 @@ struct CarControl {
   angularVelocity @14 :List(Float32);
   currentCurvature @17 :Float32;  # From vehicle model
   driverMonitoringEscalation @18 :Bool; # trigger the car's stock driver monitoring escalation
-  curvatureControllerActive @19: Bool;
-  rollCompensation @20 :Float32;
-  steerLimited @21: Bool;
-  forceRHDForBSM @22: Bool;
-  longComfortMode @23: Bool;
-  disableCarSteerAlerts @24: Bool;
 
   cruiseControl @4 :CruiseControl;
   hudControl @5 :HUDControl;
@@ -410,10 +385,6 @@ struct CarControl {
     cancel @0: Bool;
     resume @1: Bool;
     override @4: Bool;
-    speedLimit @5: Bool;
-    speedLimitPredicative @6: Bool;
-	speedLimitPredReactToSL @7: Bool;
-	speedLimitPredReactToCurves @8: Bool;
     speedOverrideDEPRECATED @2: Float32;
     accelOverrideDEPRECATED @3: Float32;
   }
@@ -429,8 +400,6 @@ struct CarControl {
     rightLaneDepart @8: Bool;
     leftLaneDepart @9: Bool;
     leadDistanceBars @10: Int8;  # 1-3: 1 is closest, 3 is farthest. some ports may utilize 2-4 bars instead
-    leadFollowTime @ 11: Float32;
-    leadDistance @ 12: Float32;
 
     # not used with the dash, TODO: separate structs for dash UI and device UI
     audibleAlert @5: AudibleAlert;
@@ -524,7 +493,6 @@ struct CarParams {
     indiDEPRECATED @27 :LateralINDITuning;
     lqrDEPRECATED @40 :LateralLQRTuning;
     torque @67 :LateralTorqueTuning;
-    curvature @79 :LateralCurvatureTuning;
   }
 
   steerLimitAlert @28 :Bool;
@@ -544,7 +512,6 @@ struct CarParams {
   openpilotLongitudinalControl @37 :Bool; # is openpilot doing the longitudinal control?
   carVin @38 :Text; # VIN number queried during fingerprinting
   dashcamOnly @41: Bool;
-  dashcamOnlyReason @78 :DashcamOnlyReason; # optional specified dashcam only reason
   passive @73: Bool;   # is openpilot in control?
   transmissionType @43 :TransmissionType;
   carFw @44 :List(CarFw);
@@ -576,15 +543,6 @@ struct CarParams {
     kiBP @2 :List(Float32);
     kiV @3 :List(Float32);
     kf @4 :Float32;
-  }
-
-  struct LateralCurvatureTuning {
-    kpBP @0 :List(Float32);
-    kpV @1 :List(Float32);
-    kiBP @2 :List(Float32);
-    kiV @3 :List(Float32);
-    kf @4 :Float32;
-    useCarSteerCurvature @5 :Bool;
   }
 
   struct LateralTorqueTuning {
@@ -689,11 +647,6 @@ struct CarParams {
     manual @2;  # True "stick shift" only
     direct @3;  # Electric vehicle or other direct drive
     cvt @4;
-  }
-
-  enum DashcamOnlyReason {
-    unknown @0;
-    radarDisableEngineOn @1;  # Radar can not be disabled while engine on
   }
 
   struct CarFw {

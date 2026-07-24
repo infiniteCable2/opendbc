@@ -260,13 +260,13 @@ class LatControlCurvature():
   def reset(self):
     self.pid.reset()
   
-  def update(self, CS, CC, desired_curvature):
+  def update(self, CS, CC, CC_IC, desired_curvature):
     actual_curvature_vm    = CC.currentCurvature # includes roll
     actual_curvature_pose  = CC.angularVelocity[2] / max(CS.vEgo, 0.1)
     actual_curvature       = np.interp(CS.vEgo, [2.0, 5.0], [actual_curvature_vm, actual_curvature_pose])
-    desired_curvature_corr = desired_curvature - CC.rollCompensation
+    desired_curvature_corr = desired_curvature - CC_IC.rollCompensation
     error                  = desired_curvature - actual_curvature
-    freeze_integrator      = CC.steerLimited or CS.vEgo < 5
+    freeze_integrator      = CC_IC.steerLimited or CS.vEgo < 5
     output_curvature       = self.pid.update(error, feedforward=desired_curvature_corr, speed=CS.vEgo,
                                              freeze_integrator=freeze_integrator, override=CS.steeringPressed)
     return output_curvature

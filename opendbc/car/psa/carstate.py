@@ -9,12 +9,16 @@ TransmissionType = structs.CarParams.TransmissionType
 
 
 class CarState(CarStateBase):
-  def update(self, can_parsers) -> structs.CarState:
+  def __init__(self, CP, CP_SP, CP_IC):
+    super().__init__(CP, CP_SP, CP_IC)
+
+  def update(self, can_parsers) -> tuple[structs.CarState, structs.CarStateSP, structs.CarStateIC]:
     cp = can_parsers[Bus.main]
     cp_adas = can_parsers[Bus.adas]
     cp_cam = can_parsers[Bus.cam]
     ret = structs.CarState()
     ret_sp = structs.CarStateSP()
+    ret_ic = structs.CarStateIC()
 
     # car speed
     self.parse_wheel_speeds(ret,
@@ -63,7 +67,7 @@ class CarState(CarStateBase):
     # lock info
     ret.doorOpen = any((cp_cam.vl['Dat_BSI']['DRIVER_DOOR'], cp_cam.vl['Dat_BSI']['PASSENGER_DOOR']))
     ret.seatbeltUnlatched = cp_cam.vl['RESTRAINTS']['DRIVER_SEATBELT'] != 2
-    return ret, ret_sp
+    return ret, ret_sp, ret_ic
 
   @staticmethod
   def get_can_parsers(CP, CP_SP):

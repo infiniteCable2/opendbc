@@ -13,8 +13,8 @@ ButtonType = structs.CarState.ButtonEvent.Type
 
 
 class CarState(CarStateBase, CarStateExt):
-  def __init__(self, CP, CP_SP):
-    CarStateBase.__init__(self, CP, CP_SP)
+  def __init__(self, CP, CP_SP, CP_IC):
+    CarStateBase.__init__(self, CP, CP_SP, CP_IC)
     CarStateExt.__init__(self, CP, CP_SP)
     self.can_define = CANDefine(DBC[CP.carFingerprint][Bus.party])
     self.shifter_values = self.can_define.dv["DI_systemStatus"]["DI_gear"]
@@ -37,11 +37,12 @@ class CarState(CarStateBase, CarStateExt):
     self.autopark_prev = autopark_now
     self.cruise_enabled_prev = cruise_enabled
 
-  def update(self, can_parsers) -> tuple[structs.CarState, structs.CarStateSP]:
+  def update(self, can_parsers) -> tuple[structs.CarState, structs.CarStateSP, structs.CarStateIC]:
     cp_party = can_parsers[Bus.party]
     cp_ap_party = can_parsers[Bus.ap_party]
     ret = structs.CarState()
     ret_sp = structs.CarStateSP()
+    ret_ic = structs.CarStateIC()
 
     # Vehicle speed
     ret.vEgoRaw = cp_party.vl["DI_speed"]["DI_vehicleSpeed"] * CV.KPH_TO_MS
@@ -143,7 +144,7 @@ class CarState(CarStateBase, CarStateExt):
 
     CarStateExt.update(self, ret, ret_sp, can_parsers)
 
-    return ret, ret_sp
+    return ret, ret_sp, ret_ic
 
   @staticmethod
   def get_can_parsers(CP, CP_SP):

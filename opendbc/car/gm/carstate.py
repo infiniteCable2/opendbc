@@ -19,8 +19,8 @@ BUTTONS_DICT = {CruiseButtons.RES_ACCEL: ButtonType.accelCruise, CruiseButtons.D
 
 
 class CarState(CarStateBase, CarStateExt):
-  def __init__(self, CP, CP_SP):
-    CarStateBase.__init__(self, CP, CP_SP)
+  def __init__(self, CP, CP_SP, CP_IC):
+    CarStateBase.__init__(self, CP, CP_SP, CP_IC)
     CarStateExt.__init__(self, CP, CP_SP)
     can_define = CANDefine(DBC[CP.carFingerprint][Bus.pt])
     self.shifter_values = can_define.dv["ECMPRDNL2"]["PRNDL2"]
@@ -44,13 +44,14 @@ class CarState(CarStateBase, CarStateExt):
           return True
     return False
 
-  def update(self, can_parsers) -> tuple[structs.CarState, structs.CarStateSP]:
+  def update(self, can_parsers) -> tuple[structs.CarState, structs.CarStateSP, structs.CarStateIC]:
     pt_cp = can_parsers[Bus.pt]
     cam_cp = can_parsers[Bus.cam]
     loopback_cp = can_parsers[Bus.loopback]
 
     ret = structs.CarState()
     ret_sp = structs.CarStateSP()
+    ret_ic = structs.CarStateIC()
 
     prev_cruise_buttons = self.cruise_buttons
     prev_distance_button = self.distance_button
@@ -164,7 +165,7 @@ class CarState(CarStateBase, CarStateExt):
 
     CarStateExt.update(self, ret, can_parsers)
 
-    return ret, ret_sp
+    return ret, ret_sp, ret_ic
 
   @staticmethod
   def get_can_parsers(CP, CP_SP):

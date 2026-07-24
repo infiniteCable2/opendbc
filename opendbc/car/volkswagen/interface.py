@@ -5,7 +5,7 @@ from opendbc.car.disable_ecu import disable_ecu
 from opendbc.car.interfaces import CarInterfaceBase
 from opendbc.car.volkswagen.carcontroller import CarController
 from opendbc.car.volkswagen.carstate import CarState
-from opendbc.car.volkswagen.values import CanBus, CAR, NetworkLocation, TransmissionType, DashcamOnlyReason, VolkswagenFlags, VolkswagenSafetyFlags, RADAR_DISABLE_STATE
+from opendbc.car.volkswagen.values import CanBus, CAR, NetworkLocation, TransmissionType, VolkswagenFlags, VolkswagenSafetyFlags, RADAR_DISABLE_STATE
 from opendbc.car.volkswagen.radar_interface import RadarInterface
 from opendbc.car.carlog import carlog
 from opendbc.car.isotp_parallel_query import IsoTpParallelQuery
@@ -230,11 +230,17 @@ class CarInterface(CarInterfaceBase):
                      car_fw: list[structs.CarParams.CarFw], alpha_long: bool, is_release_sp: bool, docs: bool) -> structs.CarParamsSP:
 
     ret.intelligentCruiseButtonManagementAvailable = stock_cp.pcmCruise
-                       
+
     return ret
 
   @staticmethod
-  def pre_init(CP, CP_SP, can_recv, can_send):
+  def _get_params_ic(stock_cp: structs.CarParams, ret: structs.CarParamsIC, candidate, fingerprint: dict[int, dict[int, int]],
+                     car_fw: list[structs.CarParams.CarFw], alpha_long: bool, is_release_sp: bool, docs: bool) -> structs.CarParamsIC:
+
+    return ret
+
+  @staticmethod
+  def pre_init(CP, CP_SP, CP_IC, can_recv, can_send):
     # fork custom method in CarD called at a point, where car params can still be changed
     # check pre conditions for successful radar disable
     # put the device into dashcam mode if neccessary: no relay switching, no bus blocking with relay malfunction
@@ -242,10 +248,10 @@ class CarInterface(CarInterfaceBase):
       if CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
         if not CarInterface._is_engine_state_allowed_meb(can_recv):
           CP.dashcamOnly = True
-          CP.dashcamOnlyReason = DashcamOnlyReason.radarDisableEngineOn
+          CP_IC.dashcamOnlyReason = structs.CarParamsIC.DashcamOnlyReason.radarDisableEngineOn
 
   @staticmethod
-  def init(CP, CP_SP, can_recv, can_send, communication_control=None):
+  def init(CP, CP_SP, CP_IC, can_recv, can_send, communication_control=None):
     # communication control can be rejected with engine on
     # uds.CONTROL_TYPE.ENABLE_RX_DISABLE_TX is lost with engine on transition for newer MEB and MQBevo cars
     # uds.CONTROL_TYPE.DISABLE_RX_DISABLE_TX is probably not lost but the radar has to be revived manually
@@ -263,7 +269,7 @@ class CarInterface(CarInterfaceBase):
           carlog.warning("The radar can not be disabled")
 
   @staticmethod
-  def deinit(CP, can_recv, can_send):
+  def deinit(CP, CP_SP, CP_IC, can_recv, can_send):
     # deinit is currently never executed in current state of Openpilot
     # CarD is just killed, no reaction handling on SIGINT
     if CP.openpilotLongitudinalControl and (CP.flags & VolkswagenFlags.DISABLE_RADAR):

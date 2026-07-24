@@ -12,8 +12,8 @@ from opendbc.sunnypilot.car.chrysler.values_ext import ChryslerFlagsSP
 
 
 class CarController(CarControllerBase, MadsCarController, CarControllerExt, IntelligentCruiseButtonManagementInterface):
-  def __init__(self, dbc_names, CP, CP_SP):
-    CarControllerBase.__init__(self, dbc_names, CP, CP_SP)
+  def __init__(self, dbc_names, CP, CP_SP, CP_IC):
+    CarControllerBase.__init__(self, dbc_names, CP, CP_SP, CP_IC)
     MadsCarController.__init__(self)
     CarControllerExt.__init__(self, CP, CP_SP)
     IntelligentCruiseButtonManagementInterface.__init__(self, CP, CP_SP)
@@ -27,7 +27,7 @@ class CarController(CarControllerBase, MadsCarController, CarControllerExt, Inte
     self.packer = CANPacker(dbc_names[Bus.pt])
     self.params = CarControllerParams(CP)
 
-  def update(self, CC, CC_SP, CS, now_nanos):
+  def update(self, CC, CC_SP, CC_IC, CS, now_nanos):
     MadsCarController.update(self, CC, CC_SP, CS)
     can_sends = []
 

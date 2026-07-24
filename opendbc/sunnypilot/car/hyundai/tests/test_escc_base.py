@@ -17,6 +17,9 @@ class TestEscc(unittest.TestCase):
     params.flags = HyundaiFlagsSP.ENHANCED_SCC
     return params
 
+  def _make_car_params_ic(self):
+    return structs.CarParamsIC()
+
   def _make_escc(self):
     return EnhancedSmartCruiseControl(self._make_car_params(), self._make_car_params_sp())
 
@@ -37,7 +40,7 @@ class TestEscc(unittest.TestCase):
     car_params = self._make_car_params()
     car_params_sp = self._make_car_params_sp()
     escc = EnhancedSmartCruiseControl(car_params, car_params_sp)
-    car_state = CarState(car_params, car_params_sp)
+    car_state = CarState(car_params, car_params_sp, self._make_car_params_ic())
     car_state.escc_cmd_act = 1
     car_state.escc_aeb_warning = 1
     car_state.escc_aeb_dec_cmd_act = 1
@@ -49,7 +52,7 @@ class TestEscc(unittest.TestCase):
     car_params = self._make_car_params()
     car_params_sp = self._make_car_params_sp()
     escc = EnhancedSmartCruiseControl(car_params, car_params_sp)
-    car_state = CarState(car_params, car_params_sp)
+    car_state = CarState(car_params, car_params_sp, self._make_car_params_ic())
     car_state.escc_cmd_act = 1
     car_state.escc_aeb_warning = 1
     car_state.escc_aeb_dec_cmd_act = 1

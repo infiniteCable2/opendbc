@@ -13,8 +13,8 @@ ButtonType = structs.CarState.ButtonEvent.Type
 
 
 class CarState(CarStateBase, MadsCarState):
-  def __init__(self, CP, CP_SP):
-    super().__init__(CP, CP_SP)
+  def __init__(self, CP, CP_SP, CP_IC):
+    super().__init__(CP, CP_SP, CP_IC)
     MadsCarState.__init__(self, CP, CP_SP)
     self.frame = 0
     self.eps_init_complete = False
@@ -59,7 +59,7 @@ class CarState(CarStateBase, MadsCarState):
 
     return button_events
 
-  def update(self, can_parsers) -> tuple[structs.CarState, structs.CarStateSP]:
+  def update(self, can_parsers) -> tuple[structs.CarState, structs.CarStateSP, structs.CarStateIC]:
     pt_cp = can_parsers[Bus.pt]
     cam_cp = can_parsers[Bus.cam]
     ext_cp = pt_cp if self.CP.networkLocation == NetworkLocation.fwdCamera else cam_cp
@@ -76,6 +76,7 @@ class CarState(CarStateBase, MadsCarState):
 
     ret = structs.CarState()
     ret_sp = structs.CarStateSP()
+    ret_ic = structs.CarStateIC()
 
     if self.CP.transmissionType == TransmissionType.direct:
       ret.gearShifter = self.parse_gear_shifter(self.CCP.shifter_values.get(pt_cp.vl["Motor_EV_01"]["MO_Waehlpos"], None))
@@ -159,11 +160,12 @@ class CarState(CarStateBase, MadsCarState):
     ret.lowSpeedAlert = self.update_low_speed_alert(ret.vEgo)
 
     self.frame += 1
-    return ret, ret_sp
+    return ret, ret_sp, ret_ic
 
-  def update_pq(self, pt_cp, cam_cp, alt_cp, ext_cp) -> tuple[structs.CarState, structs.CarStateSP]:
+  def update_pq(self, pt_cp, cam_cp, alt_cp, ext_cp) -> tuple[structs.CarState, structs.CarStateSP, structs.CarStateIC]:
     ret = structs.CarState()
     ret_sp = structs.CarStateSP()
+    ret_ic = structs.CarStateIC()
 
     # vEgo obtained from Bremse_1 vehicle speed rather than Bremse_3 wheel speeds because Bremse_3 isn't present on NSF
     ret.vEgoRaw = pt_cp.vl["Bremse_1"]["BR1_Rad_kmh"] * CV.KPH_TO_MS
@@ -179,7 +181,7 @@ class CarState(CarStateBase, MadsCarState):
     ret.steeringTorque = pt_cp.vl["Lenkhilfe_3"]["LH3_LM"] * (1, -1)[int(pt_cp.vl["Lenkhilfe_3"]["LH3_LMSign"])]
     ret.steeringPressed = abs(ret.steeringTorque) > self.CCP.STEER_DRIVER_ALLOWANCE
     hca_status = self.CCP.hca_status_values.get(pt_cp.vl["Lenkhilfe_2"]["LH2_Sta_HCA"])
-    ret.steerFaultTemporary, ret.steerFaultPermanent, ret.steerFaultWarning = self.update_hca_state(hca_status)
+    ret.steerFaultTemporary, ret.steerFaultPermanent, ret_ic.steerFaultWarning = self.update_hca_state(hca_status)
 
     # Update gas, brakes, and gearshift.
     ret.gasPressed = pt_cp.vl["Motor_3"]["MO3_Pedalwert"] > 0
@@ -253,11 +255,12 @@ class CarState(CarStateBase, MadsCarState):
     ret.lowSpeedAlert = self.update_low_speed_alert(ret.vEgo)
 
     self.frame += 1
-    return ret, ret_sp
+    return ret, ret_sp, ret_ic
 
-  def update_meb(self, pt_cp, cam_cp, alt_cp, ext_cp) -> tuple[structs.CarState, structs.CarStateSP]:
+  def update_meb(self, pt_cp, cam_cp, alt_cp, ext_cp) -> tuple[structs.CarState, structs.CarStateSP, structs.CarStateIC]:
     ret = structs.CarState()
     ret_sp = structs.CarStateSP()
+    ret_ic = structs.CarStateIC()
     
     # Update vehicle speed and acceleration from ABS wheel speeds.
     self.parse_wheel_speeds(ret,
@@ -279,8 +282,8 @@ class CarState(CarStateBase, MadsCarState):
     ret.steeringRateDeg  = pt_cp.vl["LWI_01"]["LWI_Lenkradw_Geschw"] * (1, -1)[int(pt_cp.vl["LWI_01"]["LWI_VZ_Lenkradw_Geschw"])]
     ret.steeringTorque   = pt_cp.vl["LH_EPS_03"]["EPS_Lenkmoment"] * (1, -1)[int(pt_cp.vl["LH_EPS_03"]["EPS_VZ_Lenkmoment"])]
     ret.steeringPressed  = abs(ret.steeringTorque) > self.CCP.STEER_DRIVER_ALLOWANCE
-    ret.steeringSlightlyPressed = abs(ret.steeringTorque) > self.CCP.STEER_DRIVER_SLIGHT_PRESS
-    ret.steeringCurvature = -pt_cp.vl["QFK_01"]["Curvature"] * (1, -1)[int(pt_cp.vl["QFK_01"]["Curvature_VZ"])]
+    ret_ic.steeringSlightlyPressed = abs(ret.steeringTorque) > self.CCP.STEER_DRIVER_SLIGHT_PRESS
+    ret_ic.steeringCurvature = -pt_cp.vl["QFK_01"]["Curvature"] * (1, -1)[int(pt_cp.vl["QFK_01"]["Curvature_VZ"])]
     
     ret.yawRate = -pt_cp.vl["ESC_50"]["Yaw_Rate"] * (1, -1)[int(pt_cp.vl["ESC_50"]["Yaw_Rate_Sign"])] * CV.DEG_TO_RAD
     
@@ -293,7 +296,7 @@ class CarState(CarStateBase, MadsCarState):
     
     hca_status = self.CCP.hca_status_values.get(pt_cp.vl["QFK_01"]["LatCon_HCA_Status"])
     hca_status_fluctuation = self.update_hca_status_watchdog(hca_status) if not (self.CP.flags & VolkswagenFlags.STOCK_HCA_PRESENT) else False
-    ret.steerFaultTemporary, ret.steerFaultPermanent, ret.steerFaultWarning = self.update_hca_state(
+    ret.steerFaultTemporary, ret.steerFaultPermanent, ret_ic.steerFaultWarning = self.update_hca_state(
       hca_status, drive_mode=drive_mode, hca_watchdog_fail=hca_status_fluctuation
     )
 
@@ -355,7 +358,7 @@ class CarState(CarStateBase, MadsCarState):
     accFaulted = pt_cp.vl["Motor_51"]["TSK_Status"] in (6, 7)
     ret.accFaulted = self.update_acc_fault(accFaulted, parking_brake=ret.parkingBrake, drive_mode=drive_mode)
 
-    ret.radarDisableFailed = True if RADAR_DISABLE_STATE["error"] == True and self.CP.flags & VolkswagenFlags.DISABLE_RADAR else False
+    ret_ic.radarDisableFailed = True if RADAR_DISABLE_STATE["error"] == True and self.CP.flags & VolkswagenFlags.DISABLE_RADAR else False
 
     if self.CP.flags & VolkswagenFlags.MQB_EVO:
       self.esp_hold_confirmation = bool(pt_cp.vl["ESP_21"]["ESP_Haltebestaetigung"])
@@ -384,11 +387,11 @@ class CarState(CarStateBase, MadsCarState):
 
     self.speed_limit_mgr.enable_predicative_speed_limit(self.enable_predicative_speed_limit, self.enable_pred_react_to_speed_limits, self.enable_pred_react_to_curves)
     self.speed_limit_mgr.update(ret.vEgo, psd_04_values, psd_05_values, psd_06_values, vze_04_values, raining, diagnose_01_values)
-    ret.cruiseState.speedLimit = self.speed_limit_mgr.get_speed_limit()
-    ret.cruiseState.speedLimitPredicative = self.speed_limit_mgr.get_speed_limit_predicative()
+    ret_ic.cruiseSpeedLimit = self.speed_limit_mgr.get_speed_limit()
+    ret_ic.cruiseSpeedLimitPredicative = self.speed_limit_mgr.get_speed_limit_predicative()
     self.speed_limit_predicative_type = self.speed_limit_mgr.get_speed_limit_predicative_type()
 
-    ret_sp.speedLimit = ret.cruiseState.speedLimit
+    ret_sp.speedLimit = ret_ic.cruiseSpeedLimit
     
     # Update button states for turn signals and ACC controls, capture all ACC button state/config for passthrough
     # turn signal effect
@@ -418,23 +421,24 @@ class CarState(CarStateBase, MadsCarState):
       ret.fuelGauge = pt_cp.vl["Motor_16"]["MO_Energieinhalt_BMS"]
       
       # EV battery details
-      ret.batteryDetails.charge = pt_cp.vl["Motor_16"]["MO_Energieinhalt_BMS"] # battery charge WattHours
+      ret_ic.batteryDetails.charge = pt_cp.vl["Motor_16"]["MO_Energieinhalt_BMS"] # battery charge WattHours
       if self.CP.networkLocation == NetworkLocation.gateway:
-        ret.batteryDetails.heaterActive = bool(alt_cp.vl["MEB_HVEM_03"]["PTC_ON"]) # battery heater active
-        ret.batteryDetails.voltage      = alt_cp.vl["MEB_HVEM_01"]["Battery_Voltage"] # battery voltage
-        ret.batteryDetails.capacity     = alt_cp.vl["BMS_04"]["BMS_Kapazitaet_02"] * ret.batteryDetails.voltage # EV battery capacity WattHours
-        ret.batteryDetails.soc          = ret.batteryDetails.charge / ret.batteryDetails.capacity * 100 if ret.batteryDetails.capacity > 0 else 0 # battery SoC in percent
-        ret.batteryDetails.power        = alt_cp.vl["MEB_HVEM_01"]["Engine_Power"] # engine power output
-        ret.batteryDetails.temperature  = alt_cp.vl["DCDC_03"]["DC_Temperatur"] # dcdc converter temperature
+        ret_ic.batteryDetails.heaterActive = bool(alt_cp.vl["MEB_HVEM_03"]["PTC_ON"]) # battery heater active
+        ret_ic.batteryDetails.voltage      = alt_cp.vl["MEB_HVEM_01"]["Battery_Voltage"] # battery voltage
+        ret_ic.batteryDetails.capacity     = alt_cp.vl["BMS_04"]["BMS_Kapazitaet_02"] * ret_ic.batteryDetails.voltage # EV battery capacity WattHours
+        ret_ic.batteryDetails.soc          = ret_ic.batteryDetails.charge / ret_ic.batteryDetails.capacity * 100 if ret_ic.batteryDetails.capacity > 0 else 0 # battery SoC in percent
+        ret_ic.batteryDetails.power        = alt_cp.vl["MEB_HVEM_01"]["Engine_Power"] # engine power output
+        ret_ic.batteryDetails.temperature  = alt_cp.vl["DCDC_03"]["DC_Temperatur"] # dcdc converter temperature
       
     MadsCarState.update_mads(self, ret, pt_cp, hca_status)
 
     self.frame += 1
-    return ret, ret_sp
-    
-  def update_mlb(self, pt_cp, cam_cp, ext_cp, alt_cp) -> structs.CarState:
+    return ret, ret_sp, ret_ic
+
+  def update_mlb(self, pt_cp, cam_cp, ext_cp, alt_cp) -> tuple[structs.CarState, structs.CarStateSP, structs.CarStateIC]:
     ret = structs.CarState()
     ret_sp = structs.CarStateSP()
+    ret_ic = structs.CarStateIC()
 
     self.parse_wheel_speeds(ret,
       pt_cp.vl["ESP_03"]["ESP_VL_Radgeschw"],
@@ -485,7 +489,7 @@ class CarState(CarStateBase, MadsCarState):
     ret.standstill = ret.vEgoRaw == 0
 
     self.frame += 1
-    return ret, ret_sp
+    return ret, ret_sp, ret_ic
 
   def update_low_speed_alert(self, v_ego: float) -> bool:
     # Low speed steer alert hysteresis logic
@@ -502,7 +506,7 @@ class CarState(CarStateBase, MadsCarState):
     ret.steeringPressed = abs(ret.steeringTorque) > self.CCP.STEER_DRIVER_ALLOWANCE
 
     hca_status = self.CCP.hca_status_values.get(pt_cp.vl["LH_EPS_03"]["EPS_HCA_Status"])
-    ret.steerFaultTemporary, ret.steerFaultPermanent, ret.steerFaultWarning = self.update_hca_state(hca_status, drive_mode)
+    ret.steerFaultTemporary, ret.steerFaultPermanent, ret_ic.steerFaultWarning = self.update_hca_state(hca_status, drive_mode)
     return
     
   def update_hca_status_watchdog(self, hca_status):
