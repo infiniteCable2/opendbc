@@ -206,7 +206,7 @@ def create_acc_accel_control(packer, bus, CP, CCP, acc_type, acc_enabled, upper_
   actually_stopping = stopping and not esp_hold
 
   if acc_enabled:
-    if long_override:  # the car expects a non-inactive accel while overriding
+    if override:  # the car expects a non-inactive accel while overriding
       acceleration = CCP.ACCEL_OVERRIDE  # original ACC still sends active accel in this case (seamless experience)
     elif full_stop:
       acceleration = CCP.ACCEL_INACTIVE  # inactive accel, newer gen >2024 error of not neutral value
@@ -256,7 +256,7 @@ def create_acc_accel_control(packer, bus, CP, CCP, acc_type, acc_enabled, upper_
 
 
 def get_acc_hud_status(main_switch_on, acc_faulted, long_active, override):
-    
+
   if acc_faulted:
     acc_hud_control = ACC_HUD_ERROR # error state
   elif long_active:

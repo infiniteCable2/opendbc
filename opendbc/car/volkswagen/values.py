@@ -123,7 +123,7 @@ class CarControllerParams:
       
       self.CURVATURE_MAX = 0.195          # Max curvature for steering command, m^-1
       self.CURVATURE_LIMITS = CurvatureSteeringLimits(self.CURVATURE_MAX)
-      
+
       # Longitudinal constants
       self.ACCEL_INACTIVE = 3.01  # m/s^2
       self.ACCEL_OVERRIDE = 0.00  # m/s^2
@@ -277,6 +277,7 @@ class VolkswagenMLBPlatformConfig(PlatformConfig):
   dbc_dict: DbcDict = field(default_factory=lambda: {Bus.pt: 'vw_mlb'})
   chassis_codes: set[str] = field(default_factory=set)
   wmis: set[WMI] = field(default_factory=set)
+  model_years: set[str] = field(default_factory=set)
 
   def init(self):
     self.flags |= VolkswagenFlags.MLB

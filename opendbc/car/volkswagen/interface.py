@@ -210,13 +210,6 @@ class CarInterface(CarInterfaceBase):
     ret.stopAccel = -0.55
     ret.autoResumeSng = ret.minEnableSpeed == -1
 
-    if ret.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
-      ret.vEgoStarting = 0.5 # minimum ~0.5 m/s acc starting state is neccessary to not fault the car
-      ret.vEgoStopping = 0.1
-    else:
-      ret.vEgoStarting = 0.1
-      ret.vEgoStopping = 0.5
-
     if CAN.pt >= 4:
       safety_configs.insert(0, get_safety_config(structs.CarParams.SafetyModel.noOutput))
     ret.safetyConfigs = safety_configs
