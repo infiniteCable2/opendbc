@@ -188,7 +188,8 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         
         # AEB fallback: when stock AEB is active, always send inactive accel to allow stock system takeover
         long_active = CC.enabled and not CS.out.stockAeb
-        starting = actuators.longControlState == LongCtrlState.starting and CS.out.vEgo <= self.CP.vEgoStarting # openpilot sets starting state after overriding, ensure being in range
+        # only send ACC_HMS_RELEASE when in cruise standstill and want to resume
+        starting = actuators.longControlState == LongCtrlState.pid and CS.esp_hold_confirmation
         accel = float(np.clip(actuators.accel, self.CCP.ACCEL_MIN, self.CCP.ACCEL_MAX) if long_active else 0)
 
         long_override = CC.cruiseControl.override or CS.out.gasPressed
@@ -206,9 +207,9 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         acc_control = self.CCS.acc_control_value(CS.out.cruiseState.available, CS.out.accFaulted, long_active, long_override)
         acc_hold_type = self.CCS.acc_hold_type(CS.out.cruiseState.available, CS.out.accFaulted, long_active, starting, stopping,
                                                CS.esp_hold_confirmation, long_override, long_override_begin, long_disabling)
-        can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, self.CAN.pt, self.CP, CS.acc_type, long_active,
-                                                           self.long_jerk_control.get_jerk_up() if CC_IC.longComfortMode else 4.0,
-                                                           self.long_jerk_control.get_jerk_down() if CC_IC.longComfortMode else 4.0,
+        can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, self.CAN.pt, self.CP, self.CCP, CS.acc_type, long_active,
+                                                           self.long_jerk_control.get_jerk_up() if CC_IC.longComfortMode else self.CCP.JERK_LIMIT,
+                                                           self.long_jerk_control.get_jerk_down() if CC_IC.longComfortMode else self.CCP.JERK_LIMIT,
                                                            self.long_limit_control.get_upper_limit() if CC_IC.longComfortMode else 0.,
                                                            self.long_limit_control.get_lower_limit() if CC_IC.longComfortMode else 0.,
                                                            accel, acc_control, acc_hold_type, stopping, starting, CS.esp_hold_confirmation,
@@ -220,7 +221,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         
         acc_control = self.CCS.acc_control_value(CS.out.cruiseState.available, CS.out.accFaulted, CC.longActive)
         can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, self.CAN.pt, CS.acc_type, CC.longActive, accel,
-                                                             acc_control, stopping, starting, CS.esp_hold_confirmation))
+                                                           acc_control, stopping, starting, CS.esp_hold_confirmation))
       self.accel_last = accel
 
     #if self.aeb_available:

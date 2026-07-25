@@ -121,9 +121,13 @@ class CarControllerParams:
       self.STEERING_POWER_MIN      = 4     # HCA_03 minimum steering power, percentage
       self.STEERING_POWER_STEP     = 2     # HCA_03 steering power counter steps
       
-      self.CURVATURE_LIMITS: CurvatureSteeringLimits = CurvatureSteeringLimits(
-        0.195,  # Max curvature for steering command, m^-1
-      )
+      self.CURVATURE_MAX = 0.195          # Max curvature for steering command, m^-1
+      self.CURVATURE_LIMITS = CurvatureSteeringLimits(self.CURVATURE_MAX)
+      
+      # Longitudinal constants
+      self.ACCEL_INACTIVE = 3.01  # m/s^2
+      self.ACCEL_OVERRIDE = 0.00  # m/s^2
+      self.JERK_LIMIT = 4.0  # m/s^3
 
       if CP.flags & VolkswagenFlags.ALT_GEAR:
         self.shifter_values = can_define.dv["Gateway_73"]["GE_Fahrstufe"]

@@ -146,49 +146,47 @@ def create_capacitive_wheel_touch(packer, bus, lat_active, klr_stock_values):
   return packer.make_can_msg("KLR_01", bus, values)
 
 
-def acc_control_value(main_switch_on, acc_faulted, long_active, override):
-
-  if acc_faulted:
-    acc_control = ACC_CTRL_ERROR # error state
-  elif long_active:
-    if override:
-      acc_control = ACC_CTRL_OVERRIDE # overriding
+def get_acc_control(CS, CC, long_override):
+  if CS.accFaulted:
+    acc_control = ACC_CTRL_ERROR  # error state
+  elif CC.enabled:
+    if long_override:
+      acc_control = ACC_CTRL_OVERRIDE  # overriding
     else:
-      acc_control = ACC_CTRL_ACTIVE # active long control state
-  elif main_switch_on:
-    acc_control = ACC_CTRL_ENABLED # long control ready
+      acc_control = ACC_CTRL_ACTIVE  # active long control state
+  elif CS.cruiseState.available:
+    acc_control = ACC_CTRL_ENABLED  # long control ready
   else:
-    acc_control = ACC_CTRL_DISABLED # long control deactivated state
+    acc_control = ACC_CTRL_DISABLED  # long control deactivated state
 
   return acc_control
 
 
-def acc_hold_type(main_switch_on, acc_faulted, long_active, starting, stopping, esp_hold, override, override_begin, long_disabling):
+def get_acc_hold_type(CS, CC, starting, stopping, esp_hold, long_override, long_override_begin, long_disabling):
   # warning: car is reacting to hold mechanic even with long control off
-
-  if acc_faulted:
-    acc_hold_type = ACC_HMS_NO_REQUEST # no hold request
-  elif not long_active:
+  if CS.accFaulted:
+    acc_hold_type = ACC_HMS_NO_REQUEST  # no hold request
+  elif not CC.enabled:
     if long_disabling:
-      acc_hold_type = ACC_HMS_RAMP_RELEASE # ramp release of requests right after disabling long control (prevents car error with EPB at low speed)
+      acc_hold_type = ACC_HMS_RAMP_RELEASE  # ramp release of requests right after disabling long control (prevents car error with EPB at low speed)
     else:
-      acc_hold_type = ACC_HMS_NO_REQUEST # no hold request
-  elif override:
-    if override_begin:
-      acc_hold_type = ACC_HMS_RAMP_RELEASE # ramp release of requests at the beginning of override (prevents car error with EPB at low speed)
+      acc_hold_type = ACC_HMS_NO_REQUEST  # no hold request
+  elif long_override:
+    if long_override_begin:
+      acc_hold_type = ACC_HMS_RAMP_RELEASE  # ramp release of requests at the beginning of override (prevents car error with EPB at low speed)
     else:
-      acc_hold_type = ACC_HMS_NO_REQUEST # overriding / no request
+      acc_hold_type = ACC_HMS_NO_REQUEST  # overriding / no request
   elif starting:
-    acc_hold_type = ACC_HMS_RELEASE # release request and startup
-  elif stopping or esp_hold:
-    acc_hold_type = ACC_HMS_HOLD # hold or hold request
+    acc_hold_type = ACC_HMS_RELEASE  # release request and startup
+  elif stopping:
+    acc_hold_type = ACC_HMS_HOLD  # hold while stopping/stopped
   else:
-    acc_hold_type = ACC_HMS_NO_REQUEST # no hold request
+    acc_hold_type = ACC_HMS_NO_REQUEST  # no hold request
 
   return acc_hold_type
 
 
-def create_acc_accel_control(packer, bus, CP, acc_type, acc_enabled, upper_jerk, lower_jerk, upper_control_limit, lower_control_limit,
+def create_acc_accel_control(packer, bus, CP, CCP, acc_type, acc_enabled, upper_jerk, lower_jerk, upper_control_limit, lower_control_limit,
                              accel, acc_control, acc_hold_type, stopping, starting, esp_hold, speed, override, travel_assist_available):
   # active longitudinal control disables one pedal driving (regen mode) while using overriding mechnism
   # error mitigation when stopping or stopped: (newer gen cars can be very sensitive)
@@ -202,19 +200,19 @@ def create_acc_accel_control(packer, bus, CP, acc_type, acc_enabled, upper_jerk,
   # ACC_Anhalteweg: when stopping: MEB: values <> 0 the car can execute a hard brake probably if target is too close, MQBEvo: value 0 results in hard brake
   terminal_rollout = 0.5 if CP.flags & VolkswagenFlags.MQB_EVO else 0
 
-  full_stop          = stopping and esp_hold
+  full_stop = stopping and esp_hold
   full_stop_no_start = esp_hold and not starting
-  actually_stopping  = stopping and not esp_hold
+  actually_stopping = stopping and not esp_hold
 
   if acc_enabled:
-    if override: # the car expects a non inactive accel while overriding
-      acceleration = ACCEL_OVERRIDE # original ACC still sends active accel in this case (seamless experience)
+    if long_override:  # the car expects a non-inactive accel while overriding
+      acceleration = CCP.ACCEL_OVERRIDE  # original ACC still sends active accel in this case (seamless experience)
     elif full_stop:
-      acceleration = ACCEL_INACTIVE # inactive accel, newer gen >2024 error of not neutral value
+      acceleration = CCP.ACCEL_INACTIVE  # inactive accel, newer gen >2024 error of not neutral value
     else:
       acceleration = accel
   else:
-    acceleration = ACCEL_INACTIVE # inactive accel
+    acceleration = CCP.ACCEL_INACTIVE  # inactive accel
 
   values = {
     "ACC_Typ":                    acc_type,
@@ -225,7 +223,7 @@ def create_acc_accel_control(packer, bus, CP, acc_type, acc_enabled, upper_jerk,
     "ACC_zul_Regelabw_oben":      upper_control_limit if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) and not full_stop_no_start else 0,
     "ACC_neg_Sollbeschl_Grad_02": lower_jerk if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) and not full_stop_no_start else 0,
     "ACC_pos_Sollbeschl_Grad_02": upper_jerk if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) and not full_stop_no_start else 0,
-    "ACC_Anfahren":               starting,
+    "ACC_Anfahren":               0,  # always zero, stock uses ACC_Anforderung_HMS
     "ACC_Anhalten":               1 if actually_stopping else 0,
     "ACC_Anhalteweg":             terminal_rollout if actually_stopping else 20.46,
     "ACC_Anforderung_HMS":        acc_hold_type,
@@ -256,19 +254,18 @@ def create_acc_accel_control(packer, bus, CP, acc_type, acc_enabled, upper_jerk,
   return commands
 
 
-def acc_hud_status_value(main_switch_on, acc_faulted, long_active, override):
-
-  if acc_faulted:
-    acc_hud_control = ACC_HUD_ERROR # error state
-  elif long_active:
-    if override:
-      acc_hud_control = ACC_HUD_OVERRIDE # overriding
+def get_acc_hud_status(CS, CC, long_override):
+  if CS.accFaulted:
+    acc_hud_control = ACC_HUD_ERROR  # error state
+  elif CC.enabled:
+    if long_override:
+      acc_hud_control = ACC_HUD_OVERRIDE  # overriding
     else:
-      acc_hud_control = ACC_HUD_ACTIVE # active
-  elif main_switch_on:
-    acc_hud_control = ACC_HUD_ENABLED # inactive
+      acc_hud_control = ACC_HUD_ACTIVE  # active
+  elif CS.cruiseState.available:
+    acc_hud_control = ACC_HUD_ENABLED  # inactive
   else:
-    acc_hud_control = ACC_HUD_DISABLED # deactivated
+    acc_hud_control = ACC_HUD_DISABLED  # deactivated
 
   return acc_hud_control
 

@@ -12,7 +12,7 @@ from opendbc.car.volkswagen.values import DBC, VolkswagenFlags
 DREL_FRONT_EDGE_MARGIN = 1.5 # in m
 
 RADAR_ADDR = 0x24F
-NO_OBJECT = 0
+NO_OBJECT_ID = 0
 DISTANCE_STATUS_VALID = 0
 RADAR_UNAVAILABLE_THRESH = 5
 LANE_TYPES = ("Same_Lane", "Left_Lane", "Right_Lane")
@@ -100,7 +100,7 @@ class RadarInterface(RadarInterfaceBase):
     active_objects: dict[int, tuple[float, float, float]] = {}
     for obj_id_sig, long_sig, lat_sig, vel_sig in SIGNAL_SETS:
       obj_id = get(obj_id_sig)
-      if obj_id == NO_OBJECT:
+      if obj_id == NO_OBJECT_ID:
         continue
 
       if obj_id in active_objects:
