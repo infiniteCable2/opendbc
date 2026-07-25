@@ -146,42 +146,43 @@ def create_capacitive_wheel_touch(packer, bus, lat_active, klr_stock_values):
   return packer.make_can_msg("KLR_01", bus, values)
 
 
-def get_acc_control(CS, CC, long_override):
-  if CS.accFaulted:
-    acc_control = ACC_CTRL_ERROR  # error state
-  elif CC.enabled:
-    if long_override:
-      acc_control = ACC_CTRL_OVERRIDE  # overriding
+def get_acc_control(main_switch_on, acc_faulted, long_active, override):
+  if acc_faulted:
+    acc_control = ACC_CTRL_ERROR # error state
+  elif long_active:
+    if override:
+      acc_control = ACC_CTRL_OVERRIDE # overriding
     else:
-      acc_control = ACC_CTRL_ACTIVE  # active long control state
-  elif CS.cruiseState.available:
-    acc_control = ACC_CTRL_ENABLED  # long control ready
+      acc_control = ACC_CTRL_ACTIVE # active long control state
+  elif main_switch_on:
+    acc_control = ACC_CTRL_ENABLED # long control ready
   else:
-    acc_control = ACC_CTRL_DISABLED  # long control deactivated state
+    acc_control = ACC_CTRL_DISABLED # long control deactivated state
 
   return acc_control
 
 
-def get_acc_hold_type(CS, CC, starting, stopping, esp_hold, long_override, long_override_begin, long_disabling):
+def get_acc_hold_type(main_switch_on, acc_faulted, long_active, starting, stopping, esp_hold, override, override_begin, long_disabling):
   # warning: car is reacting to hold mechanic even with long control off
-  if CS.accFaulted:
-    acc_hold_type = ACC_HMS_NO_REQUEST  # no hold request
-  elif not CC.enabled:
+
+  if acc_faulted:
+    acc_hold_type = ACC_HMS_NO_REQUEST # no hold request
+  elif not long_active:
     if long_disabling:
-      acc_hold_type = ACC_HMS_RAMP_RELEASE  # ramp release of requests right after disabling long control (prevents car error with EPB at low speed)
+      acc_hold_type = ACC_HMS_RAMP_RELEASE # ramp release of requests right after disabling long control (prevents car error with EPB at low speed)
     else:
-      acc_hold_type = ACC_HMS_NO_REQUEST  # no hold request
-  elif long_override:
-    if long_override_begin:
-      acc_hold_type = ACC_HMS_RAMP_RELEASE  # ramp release of requests at the beginning of override (prevents car error with EPB at low speed)
+      acc_hold_type = ACC_HMS_NO_REQUEST # no hold request
+  elif override:
+    if override_begin:
+      acc_hold_type = ACC_HMS_RAMP_RELEASE # ramp release of requests at the beginning of override (prevents car error with EPB at low speed)
     else:
-      acc_hold_type = ACC_HMS_NO_REQUEST  # overriding / no request
+      acc_hold_type = ACC_HMS_NO_REQUEST # overriding / no request
   elif starting:
-    acc_hold_type = ACC_HMS_RELEASE  # release request and startup
-  elif stopping:
-    acc_hold_type = ACC_HMS_HOLD  # hold while stopping/stopped
+    acc_hold_type = ACC_HMS_RELEASE # release request and startup
+  elif stopping or esp_hold:
+    acc_hold_type = ACC_HMS_HOLD # hold or hold request
   else:
-    acc_hold_type = ACC_HMS_NO_REQUEST  # no hold request
+    acc_hold_type = ACC_HMS_NO_REQUEST # no hold request
 
   return acc_hold_type
 
@@ -254,23 +255,24 @@ def create_acc_accel_control(packer, bus, CP, CCP, acc_type, acc_enabled, upper_
   return commands
 
 
-def get_acc_hud_status(CS, CC, long_override):
-  if CS.accFaulted:
-    acc_hud_control = ACC_HUD_ERROR  # error state
-  elif CC.enabled:
-    if long_override:
-      acc_hud_control = ACC_HUD_OVERRIDE  # overriding
+def get_acc_hud_status(main_switch_on, acc_faulted, long_active, override):
+    
+  if acc_faulted:
+    acc_hud_control = ACC_HUD_ERROR # error state
+  elif long_active:
+    if override:
+      acc_hud_control = ACC_HUD_OVERRIDE # overriding
     else:
-      acc_hud_control = ACC_HUD_ACTIVE  # active
-  elif CS.cruiseState.available:
-    acc_hud_control = ACC_HUD_ENABLED  # inactive
+      acc_hud_control = ACC_HUD_ACTIVE # active
+  elif main_switch_on:
+    acc_hud_control = ACC_HUD_ENABLED # inactive
   else:
-    acc_hud_control = ACC_HUD_DISABLED  # deactivated
+    acc_hud_control = ACC_HUD_DISABLED # deactivated
 
   return acc_hud_control
 
 
-def acc_hud_event(acc_hud_control, esp_hold, speed_limit_predicative, speed_limit_predicative_type, speed_limit):
+def get_acc_hud_event(acc_hud_control, esp_hold, speed_limit_predicative, speed_limit_predicative_type, speed_limit):
   acc_event = 0
   
   if esp_hold and acc_hud_control == ACC_HUD_ACTIVE:
