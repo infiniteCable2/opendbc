@@ -428,6 +428,14 @@ class CAR(Platforms):
     chassis_codes={"2K"},
     wmis={WMI.VOLKSWAGEN_COMMERCIAL_BUS_VAN},
   )
+  VOLKSWAGEN_CADDY_MK5 = VolkswagenMQBevoPlatformConfig(
+    [
+      VWCarDocs("Volkswagen Caddy Maxi 2021-26"),
+    ],
+    VolkswagenCarSpecs(mass=1769, wheelbase=2.970),
+    chassis_codes={"SK"},
+    wmis={WMI.VOLKSWAGEN_COMMERCIAL_BUS_VAN},
+  )
   VOLKSWAGEN_CRAFTER_MK2 = VolkswagenMQBPlatformConfig(
     [
       VWCarDocs("Volkswagen Crafter 2017-24", video="https://youtu.be/4100gLeabmo"),
