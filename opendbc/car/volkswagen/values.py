@@ -128,6 +128,8 @@ class CarControllerParams:
       self.ACCEL_INACTIVE = 3.01  # m/s^2
       self.ACCEL_OVERRIDE = 0.00  # m/s^2
       self.JERK_LIMIT = 4.0  # m/s^3
+      self.STARTING_ACCEL = 0.85  # m/s^2, minimum acceleration needed for a reliable brake release
+      self.STARTING_VEGO = 0.5  # m/s, keep the start request active until the car is moving
 
       if CP.flags & VolkswagenFlags.ALT_GEAR:
         self.shifter_values = can_define.dv["Gateway_73"]["GE_Fahrstufe"]

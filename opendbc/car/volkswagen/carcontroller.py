@@ -63,6 +63,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     self.long_limit_control = LongControlLimit(dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO) else None
     self.long_override_counter = 0
     self.long_disabled_counter = 0
+    self.meb_starting = False
     self.gra_acc_counter_last = None
     self.hca_mitigation = HCAMitigation(self.CCP)
     self.klr_counter_last = None
@@ -177,6 +178,9 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         can_sends.append(mebcan.create_blinker_control(self.packer_pt, self.CAN.pt, CS.ea_hud_stock_values, CS.ea_control_stock_values, left_blinker, right_blinker, self.hide_ea_error))
     
     # **** Acceleration Controls ******************************************** #
+
+    if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO) and CS.out_ic.radarDisableFailed:
+      self.meb_starting = False
     
     if self.frame % self.CCP.ACC_CONTROL_STEP == 0 and self.CP.openpilotLongitudinalControl and not CS.out_ic.radarDisableFailed:
       stopping = actuators.longControlState == LongCtrlState.stopping
@@ -188,11 +192,20 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         
         # AEB fallback: when stock AEB is active, always send inactive accel to allow stock system takeover
         long_active = CC.enabled and not CS.out.stockAeb
-        # only send ACC_HMS_RELEASE when in cruise standstill and want to resume
-        starting = actuators.longControlState == LongCtrlState.pid and CS.esp_hold_confirmation
-        accel = float(np.clip(actuators.accel, self.CCP.ACCEL_MIN, self.CCP.ACCEL_MAX) if long_active else 0)
-
         long_override = CC.cruiseControl.override or CS.out.gasPressed
+
+        # Replace the deprecated openpilot starting state for MEB/MQB Evo. Latch the start request while releasing the hold
+        # and keep a fixed launch acceleration until the car is moving fast enough for a safe handover to the PID.
+        starting_request = actuators.longControlState == LongCtrlState.pid and CS.esp_hold_confirmation
+        if not long_active or CS.out.accFaulted or long_override or stopping or CS.out.vEgo > self.CCP.STARTING_VEGO:
+          self.meb_starting = False
+        elif starting_request:
+          self.meb_starting = True
+        starting = self.meb_starting
+
+        accel_request = self.CCP.STARTING_ACCEL if starting else actuators.accel
+        accel = float(np.clip(accel_request, self.CCP.ACCEL_MIN, self.CCP.ACCEL_MAX) if long_active else 0)
+
         self.long_override_counter = min(self.long_override_counter + 1, 5) if long_override else 0
         long_override_begin = long_override and self.long_override_counter < 5
 
