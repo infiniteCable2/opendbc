@@ -1,10 +1,13 @@
 import math
 import unittest
 from types import SimpleNamespace
+from unittest import mock
 
+from opendbc.car import DT_CTRL
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.volkswagen.speed_limit_manager import (
-  NOT_SET, PSD_TYPE_CURV_SPEED, PSD_TYPE_SPEED_LIMIT, SpeedLimitManager,
+  ACCELERATION_PREDICATIVE, CURVE_PROFILE_STEP_M, JERK_PREDICATIVE, NOT_SET, PSD_05_FIELDS,
+  PSD_TYPE_CURV_SPEED, PSD_TYPE_SPEED_LIMIT, SpeedLimitManager,
 )
 from opendbc.car.volkswagen.values import VolkswagenFlags
 
@@ -32,12 +35,20 @@ def segment(segment_id, parent_id=0, length=100, likely=True, street_category=3,
   }
 
 
-def position(segment_id, remaining, unique=True):
+def position(segment_id, remaining, unique=True, longitudinal_error=None):
+  if longitudinal_error is None:
+    longitudinal_error = 1 if unique else 6
   return {
     "PSD_Pos_Segment_ID": segment_id,
     "PSD_Pos_Segmentlaenge": remaining,
+    "PSD_Pos_Inhibitzeit": 200,
     "PSD_Pos_Standort_Eindeutig": int(unique),
+    "PSD_Pos_Fehler_Laengsrichtung": longitudinal_error,
   }
+
+
+def empty_position_frame():
+  return {name: 0 for name in PSD_05_FIELDS}
 
 
 def speed_attribute(segment_id, raw_speed, offset=0):
@@ -164,6 +175,29 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.assertIn(alternative_key, self.manager.predicative_segments[self.manager._current_key].children)
     self.assertEqual(self.manager._route, (self.manager._current_key, likely_key))
 
+  def test_offroute_branch_mutation_keeps_selected_event_profile(self):
+    self.add_current_limit()
+    self.update(100, segment(3, parent_id=2, likely=True, curvature_begin=75, curvature_end=75), position(2, 80))
+    self.manager._ensure_route_cache()
+    events = self.manager._events
+    self.assertTrue(events)
+
+    self.update(100, segment(4, parent_id=2, likely=False), position(2, 79))
+
+    self.assertIs(self.manager._events, events)
+    self.assertEqual(self.manager._route[-1], self.manager._active_by_id[3])
+
+  def test_selected_route_event_change_rebuilds_profile(self):
+    self.add_current_limit()
+    self.update(100, segment(3, parent_id=2), position(2, 80), speed_attribute(3, 11))
+    events = self.manager._events
+
+    self.update(100, psd_05=position(2, 79), psd_06=speed_attribute(3, 10))
+
+    self.assertIsNot(self.manager._events, events)
+    selected_speed = next(event.speed for event in self.manager._events if event.segment_key == self.manager._active_by_id[3])
+    self.assertEqual(selected_speed, 45)
+
   def test_curve_event_lives_for_exact_segment_not_timeout(self):
     self.add_current_limit()
     self.update(100, segment(3, parent_id=2, curvature_begin=75, curvature_end=75), position(2, 30))
@@ -181,7 +215,19 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.update(curve_target, segment(4, parent_id=3), position(3, 10))
     self.update(curve_target, psd_05=position(4, 100))
     self.manager.get_speed_limit()
-    self.assertEqual(self.manager.get_speed_limit_predicative(), NOT_SET)
+    self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, curve_target)
+
+    released_steps = []
+    for _ in range(1000):
+      self.update(curve_target, psd_05=position(4, 100))
+      self.manager.get_speed_limit()
+      target = self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH
+      if target == NOT_SET:
+        break
+      released_steps.append(round(target, 6))
+    self.assertTrue(released_steps)
+    self.assertTrue(all(speed % 5 == 0 for speed in released_steps))
+    self.assertTrue(all(a <= b for a, b in zip(released_steps, released_steps[1:], strict=False)))
 
   def test_speed_offset_uses_psd05_remaining_distance(self):
     self.add_current_limit(remaining=100)
@@ -217,14 +263,44 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.manager.get_speed_limit()
     self.assertGreater(self.manager.get_speed_limit_predicative(), 0)
 
-  def test_prediction_fails_closed_for_ambiguous_position(self):
+  def test_prediction_freezes_committed_cap_for_ambiguous_position(self):
+    self.add_current_limit()
+    self.update(100, segment(3, parent_id=2), position(2, 30), speed_attribute(3, 11))
+    self.manager.get_speed_limit()
+    target = self.manager.get_speed_limit_predicative()
+    committed = self.manager._committed_event_identity
+    self.assertGreater(target, 0)
+
+    self.update(100, psd_05=position(2, 30, unique=False))
+    self.manager.get_speed_limit()
+    self.assertEqual(self.manager.get_speed_limit_predicative(), target)
+    self.assertEqual(self.manager._committed_event_identity, committed)
+
+  def test_full_zero_psd05_record_is_a_semantic_noop(self):
+    self.add_current_limit()
+    self.update(100, segment(3, parent_id=2), position(2, 30), speed_attribute(3, 11))
+    self.manager.get_speed_limit()
+    target = self.manager.get_speed_limit_predicative()
+    current_key = self.manager._current_key
+    committed = self.manager._committed_event_identity
+
+    self.update(100, psd_05=empty_position_frame())
+    self.manager.get_speed_limit()
+    self.assertTrue(self.manager._last_psd_05_frame_empty)
+    self.assertTrue(self.manager._current_valid)
+    self.assertEqual(self.manager._current_key, current_key)
+    self.assertEqual(self.manager._committed_event_identity, committed)
+    self.assertEqual(self.manager.get_speed_limit_predicative(), target)
+
+  def test_explicit_offroad_position_invalidates_prediction(self):
     self.add_current_limit()
     self.update(100, segment(3, parent_id=2), position(2, 30), speed_attribute(3, 11))
     self.manager.get_speed_limit()
     self.assertGreater(self.manager.get_speed_limit_predicative(), 0)
 
-    self.update(100, psd_05=position(2, 30, unique=False))
+    self.update(100, psd_05=position(0, 0, longitudinal_error=7))
     self.manager.get_speed_limit()
+    self.assertFalse(self.manager._current_valid)
     self.assertEqual(self.manager.get_speed_limit_predicative(), NOT_SET)
 
   def test_feature_switch_rebuilds_events_and_clears_commit(self):
@@ -249,6 +325,102 @@ class TestSpeedLimitManager(unittest.TestCase):
     speed_kph = self.manager._calculate_curve_speed(curvature)
     self.assertLessEqual((speed_kph * CV.KPH_TO_MS) ** 2 * curvature, 3.1)
     self.assertTrue(math.isfinite(speed_kph))
+
+  def test_curve_corridor_is_piecewise_and_keeps_five_kph_steps(self):
+    self.add_current_limit()
+    self.update(100, segment(3, parent_id=2, length=100, curvature_begin=255, curvature_end=75), position(2, 100))
+    self.manager._ensure_route_cache()
+    curve_events = [event for event in self.manager._events if event.segment_key == self.manager._active_by_id[3] and
+                    event.event_type == PSD_TYPE_CURV_SPEED]
+
+    self.assertLessEqual(max(event.end_offset - event.offset for event in curve_events), CURVE_PROFILE_STEP_M)
+    self.assertGreater(len({event.speed for event in curve_events}), 1)
+    self.assertTrue(all(event.speed % 5 == 0 for event in curve_events))
+    self.assertTrue(all(a.speed >= b.speed for a, b in zip(curve_events, curve_events[1:], strict=False)))
+
+  def test_event_cursor_only_scans_the_braking_horizon(self):
+    self.add_current_limit()
+    self.update(100, segment(3, parent_id=2, length=1000, curvature_begin=75, curvature_end=75), position(2, 30))
+    self.manager._ensure_route_cache()
+    event_count = len(self.manager._events)
+    self.assertGreater(event_count, 150)
+
+    with mock.patch.object(self.manager, "_indexed_event_distance", wraps=self.manager._indexed_event_distance) as distance:
+      self.update(50, psd_05=position(2, 29))
+
+    self.assertLess(distance.call_count, 30)
+    self.assertLess(distance.call_count, event_count)
+
+  def test_event_cursor_resets_after_position_regression(self):
+    self.update(100, segment(2, length=100, curvature_begin=75, curvature_end=75), position(2, 80))
+    self.update(100, psd_05=position(2, 80), psd_06=speed_attribute(2, 16))
+    cursor_before_regression = self.manager._event_cursor
+    self.assertGreater(cursor_before_regression, 0)
+
+    self.update(100, psd_05=position(2, 95))
+    self.assertLess(self.manager._event_cursor, cursor_before_regression)
+    event = self.manager._events[self.manager._event_cursor]
+    self.assertGreaterEqual(self.manager._event_end_position(self.manager._event_cursor), 5)
+    self.assertEqual(event.event_type, PSD_TYPE_CURV_SPEED)
+
+  def test_committed_event_survives_outside_current_braking_window(self):
+    self.add_current_limit(remaining=100)
+    self.update(130, segment(3, parent_id=2, length=500), position(2, 100), speed_attribute(3, 11, offset=400))
+    self.manager.get_speed_limit()
+    committed = self.manager._committed_event_identity
+    self.assertIsNotNone(committed)
+    self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, 50)
+
+    with mock.patch.object(self.manager, "_indexed_event_distance", wraps=self.manager._indexed_event_distance) as distance:
+      self.update(50, psd_05=position(2, 100))
+
+    self.manager.get_speed_limit()
+    self.assertEqual(self.manager._committed_event_identity, committed)
+    self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, 50)
+    committed_index = self.manager._committed_event_index
+    self.assertIsNotNone(committed_index)
+    self.assertGreater(self.manager._event_start_positions[committed_index], 100 ** 2 * CV.KPH_TO_MS ** 2 / 2)
+    self.assertLessEqual(distance.call_count, 2)
+
+  def test_curve_release_respects_longitudinal_acceleration_and_jerk(self):
+    self.add_current_limit()
+    self.update(100, segment(3, parent_id=2, curvature_begin=75, curvature_end=75), position(2, 30))
+    self.manager.get_speed_limit()
+    curve_target = self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH
+    self.update(curve_target, psd_05=position(3, 10))
+    self.manager.get_speed_limit()
+    self.update(curve_target, segment(4, parent_id=3), position(4, 100))
+    self.manager.get_speed_limit()
+
+    previous_speed = self.manager._curve_release_speed_ms
+    previous_accel = self.manager._curve_release_accel
+    for _ in range(100):
+      self.update(curve_target, psd_05=position(4, 100))
+      self.manager.get_speed_limit()
+      speed = self.manager._curve_release_speed_ms
+      accel = self.manager._curve_release_accel
+      self.assertLessEqual(accel, ACCELERATION_PREDICATIVE + 1e-9)
+      self.assertLessEqual(accel - previous_accel, JERK_PREDICATIVE * DT_CTRL + 1e-9)
+      self.assertLessEqual(speed - previous_speed, accel * DT_CTRL + 1e-9)
+      previous_speed = speed
+      previous_accel = accel
+
+  def test_false_large_vze_drop_is_rejected_stickily(self):
+    self.add_current_limit(limit_raw=11)
+    self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 50)
+
+    self.update(50, psd_05=position(2, 80), traffic_sign=vze(10))
+    self.assertTrue(self.manager.v_limit_vze_sanity_error)
+    self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 50)
+
+    self.manager.v_limit_output_last = NOT_SET
+    self.update(50, psd_05=position(2, 70), traffic_sign=vze(10))
+    self.assertTrue(self.manager.v_limit_vze_sanity_error)
+    self.assertEqual(self.manager.v_limit_vze, NOT_SET)
+
+    self.update(50, psd_05=position(2, 60), traffic_sign=vze(50))
+    self.assertFalse(self.manager.v_limit_vze_sanity_error)
+    self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 50)
 
 
 if __name__ == "__main__":
