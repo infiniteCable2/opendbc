@@ -665,15 +665,15 @@ BO_ 768 ACC_19: 48 XXX
  SG_ SET_ME_0X6A : 273|8@1+ (1,0) [0|7] "" XXX
  SG_ Lead_Position : 281|2@1+ (1,0) [0|1] "" XXX
  SG_ Lead_Type : 287|3@1+ (1,0) [0|3] "" XXX
- SG_ Lead_Distance : 290|10@1+ (0.173,0) [0|7] "Unit_Meter" XXX
- SG_ Lead_Distance_Right : 300|10@1+ (0.173,0) [0|15] "Unit_Meter" XXX
- SG_ Lead_Distance_Left : 310|10@1+ (0.173,0) [0|3] "Unit_Meter" XXX
+ SG_ Lead_Distance : 290|10@1+ (0.17,0) [0|150] "Unit_Meter" XXX
+ SG_ Lead_Distance_Right : 300|10@1+ (0.17,0) [0|150] "Unit_Meter" XXX
+ SG_ Lead_Distance_Left : 310|10@1+ (0.17,0) [0|150] "Unit_Meter" XXX
  SG_ ACC_Events : 332|4@0+ (1,0) [0|3] "Unit_Meter" XXX
- SG_ Zeitluecke_1 : 334|9@1+ (0.171,0) [0|100] "Unit_Meter" XXX
- SG_ Zeitluecke_2 : 344|9@1+ (0.171,0) [0|100] "Unit_Meter" XXX
- SG_ Zeitluecke_3 : 354|9@1+ (0.171,0) [0|100] "Unit_Meter" XXX
- SG_ Zeitluecke_4 : 364|9@1+ (0.171,0) [0|100] "Unit_Meter" XXX
- SG_ Zeitluecke_5 : 374|9@1+ (0.171,0) [0|100] "Unit_Meter" XXX
+ SG_ Zeitluecke_1 : 334|9@1+ (0.14,0) [0|70] "Unit_Meter" XXX
+ SG_ Zeitluecke_2 : 344|9@1+ (0.14,0) [0|70] "Unit_Meter" XXX
+ SG_ Zeitluecke_3 : 354|9@1+ (0.14,0) [0|70] "Unit_Meter" XXX
+ SG_ Zeitluecke_4 : 364|9@1+ (0.14,0) [0|70] "Unit_Meter" XXX
+ SG_ Zeitluecke_5 : 374|9@1+ (0.14,0) [0|70] "Unit_Meter" XXX
 
 BO_ 771 HCA_03: 24 XXX
  SG_ RequestStatus : 12|4@1+ (1,0) [0|15] "" XXX
