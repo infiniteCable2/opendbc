@@ -112,7 +112,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         else:
           if self.steering_power_last > 0: # keep HCA alive until steering power has reduced to zero
             hca_enabled = True
-            apply_curvature = np.clip(CS.out_ic.steeringCurvature, -self.CCP.CURVATURE_LIMITS.CURVATURE_MAX, self.CCP.CURVATURE_LIMITS.CURVATURE_MAX) # synchronize with current curvature
+            apply_curvature = float(np.clip(CS.out_ic.steeringCurvature, -self.CCP.CURVATURE_LIMITS.CURVATURE_MAX, self.CCP.CURVATURE_LIMITS.CURVATURE_MAX)) # synchronize with current curvature
             steering_power = max(self.steering_power_last - self.CCP.STEERING_POWER_STEP, 0)
           else:
             hca_enabled = False
@@ -335,7 +335,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     new_actuators = actuators.as_builder()
     new_actuators.torque = self.apply_torque_last / self.CCP.STEER_MAX
     new_actuators.torqueOutputCan = self.apply_torque_last
-    new_actuators.curvature = float(self.apply_curvature_last)
+    new_actuators.curvature = self.apply_curvature_last
     new_actuators.accel = self.accel_last
     new_actuators.speed = actuators.speed
 
