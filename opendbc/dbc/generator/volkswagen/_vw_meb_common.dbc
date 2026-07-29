@@ -605,9 +605,9 @@ BO_ 768 ACC_19: 48 XXX
  SG_ SET_ME_0X6A : 273|8@1+ (1,0) [0|7] "" XXX
  SG_ Lead_Position : 281|2@1+ (1,0) [0|1] "" XXX
  SG_ Lead_Type : 287|3@1+ (1,0) [0|3] "" XXX
- SG_ Lead_Distance : 290|10@1+ (0.2,0) [0|7] "Unit_Meter" XXX
- SG_ Lead_Distance_Right : 300|10@1+ (0.2,0) [0|15] "Unit_Meter" XXX
- SG_ Lead_Distance_Left : 310|10@1+ (0.2,0) [0|3] "Unit_Meter" XXX
+ SG_ Lead_Distance : 290|10@1+ (0.173,0) [0|7] "Unit_Meter" XXX
+ SG_ Lead_Distance_Right : 300|10@1+ (0.173,0) [0|15] "Unit_Meter" XXX
+ SG_ Lead_Distance_Left : 310|10@1+ (0.173,0) [0|3] "Unit_Meter" XXX
  SG_ ACC_Events : 332|4@0+ (1,0) [0|3] "Unit_Meter" XXX
  SG_ Zeitluecke_1 : 334|9@1+ (0.171,0) [0|100] "Unit_Meter" XXX
  SG_ Zeitluecke_2 : 344|9@1+ (0.171,0) [0|100] "Unit_Meter" XXX
@@ -2308,18 +2308,6 @@ VAL_ 319 PreCrash_BFS_KSV_verfahren 0 "keine_Anforderung" 1 "in_pos_x-Richtung_v
 VAL_ 319 PreCrash_Fo_KSV_verfahren 0 "keine_Anforderung" 1 "in_pos_x-Richtung_verfahren" 2 "in_neg_x-Richung_verfahren" 3 "in_pos_z-Richtung_verfahren" 4 "in_neg_z-Richtung_verfahren" 5 "in_pos_x-Richtung_und_neg_z-Richtung_verfahren" 6 "in_pos_x_Richtung_und_pos_z-Richtung_verfahren" 7 "in_neg_x-Richtung_und_neg_z-Richtung_verfahren" 8 "in_neg_x-Richtung_und_pos_z-Richtung_verfahren";
 VAL_ 319 SC_PreCrash_Warnung 0 "keine_Anzeige" 1 "latente_Vorwarnung" 2 "Vorwarnung" 3 "Akutwarnung" 4 "Eingriff" 5 "Fahreruebernahmeaufforderung" 6 "Abbiegewarnung" 7 "Basiseingriff" 8 "Heckeingriff";
 VAL_ 319 SC_PreCrash_Texte 0 "keine_Anzeige" 1 "Systemstoerung" 2 "keine_Sensorsicht" 3 "Demomodus" 4 "System_aus" 5 "Anhaengerbetrieb" 6 "ESC_aus" 7 "zurzeit_eingeschraenkt" 8 "zurzeit_eingeschraenkt_ESP_Aus" 9 "Initialisierung";
-VAL_ 333 ACC_limitierte_Anfahrdyn 0 "keine_Limitierung" 1 "Limitierung_Anfahrdynamik_angefordert";
-VAL_ 333 ACC_nachtr_Stopp_Anf 0 "nicht_angefordert" 1 "angefordert";
-VAL_ 333 ACC_StartStopp_Info 0 "Motorlauf_langfristig_nicht_notwendig_Stoppfreigabe" 1 "Motoranlauf_nicht_zwingend_notwendig_Stoppverbot_keine_Startanforderung" 2 "Motoranlauf_zwingend_notwendig_Startanforderung" 3 "Systemfehler";
-VAL_ 333 ACC_Sollbeschleunigung_02 2046 "Neutralwert" 2047 "Fehler";
-VAL_ 333 ACC_Anfahren 0 "keine_Anforderung_Anfahren" 1 "Anforderung_Anfahren";
-VAL_ 333 ACC_Anhalten 0 "kein_Anhalten_gewuenscht" 1 "Anhalten_gewuenscht";
-VAL_ 333 ACC_Typ 0 "Basis_ACC" 1 "ACC_mit_FollowToStop" 2 "ACC_mit_StopAndGo" 3 "ACC_nicht_codiert";
-VAL_ 333 ACC_Status_ACC 0 "ACC_OFF_Hauptschalter_aus" 1 "ACC_INIT" 2 "ACC_STANDBY" 3 "ACC_AKTIV_regelt" 4 "ACC_OVERRIDE" 5 "ACC_Abschaltreaktion" 6 "reversibler_Fehler_im_ACC_System" 7 "irreversibler_Fehler_im_ACC_System";
-VAL_ 333 ACC_Minimale_Bremsung 0 "Anforderung_Minimale_Bremsung_nicht_aktiv" 1 "Anforderung_Minimale_Bremsung_aktiv";
-VAL_ 333 ACC_Anhalteweg 2046 "Neutralwert" 2047 "Fehler";
-VAL_ 333 ACC_Anforderung_HMS 0 "keine_Anforderung" 1 "halten" 2 "parken" 3 "halten_Standby" 4 "anfahren" 5 "Loesen_ueber_Rampe";
-VAL_ 333 Accel_Boost 3 "Driving" 0 "Stop" 2 "Driving" 1 "Driving";
 VAL_ 339 MO_HVEM_Eskalation 0 "keine_Eskalation_HVEM" 1 "Eskalation_HVEM";
 VAL_ 339 MO_ErwGrenzen_Anf 0 "normal" 1 "erweitert";
 VAL_ 339 MO_Fehler_Notentladung_Anf 0 "Init";
@@ -3475,8 +3463,4 @@ VAL_ 316495015 VZE_Gong 0 "Gong_deaktiv" 1 "Gong_aktiv";
 VAL_ 441800114 Temperature_Status_Charge 0 "init" 1 "temp under optimal" 2 "temp optimal" 3 "temp over optimal" 7 "fault";
 VAL_ 258 Motion_State 1 "Forwards" 2 "Reversing" 3 "Stopped";
 VAL_ 258 EPB_Status 0 "offen" 1 "geschlossen_Parken" 2 "teilgespannt_Halten" 3 "im_Lauf_oeffnen" 4 "im_Lauf_schliessen" 5 "tbd" 6 "Init" 7 "unbekannt";
-VAL_ 267 TSK_Status 0 "init" 1 "disabled" 2 "enabled" 3 "regulating" 4 "accel_pedal_override" 5 "brake_only" 6 "temp_fault" 7 "perm_fault";
 VAL_ 317 LatCon_HCA_Status 0 "disabled" 1 "initializing" 2 "ready" 3 "fault" 4 "active" 5 "preempted" 6 "fault" 7 "rejected";
-VAL_ 619 Travel_Assist_Status 4 "enabled" 0 "disabled" 2 "ready" 3 "pre_ready";
-VAL_ 619 Travel_Assist_Request 4 "enable" 3 "disable" 0 "no_request" 1 "error";
-VAL_ 619 Travel_Assist_Available 0 "not_available" 1 "available";
