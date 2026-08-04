@@ -218,7 +218,10 @@ def create_acc_accel_control(packer, bus, CP, CCP, acc_type, acc_enabled, upper_
   values = {
     "ACC_Typ":                    acc_type,
     "ACC_Status_ACC":             acc_control,
-    "ACC_StartStopp_Info":        acc_enabled,
+    # 2 = engine start mandatory (start request), 1 = auto stop prohibited, 0 = auto stop allowed.
+    # acc_enabled is a bool, so this could never reach 2 and openpilot was unable to ask for a
+    # restart once the engine had auto-stopped, leaving the car unable to pull away.
+    "ACC_StartStopp_Info":        2 if (acc_enabled and starting) else (1 if acc_enabled else 0),
     "ACC_Sollbeschleunigung_02":  acceleration,
     "ACC_zul_Regelabw_unten":     lower_control_limit if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) and not full_stop_no_start else 0,
     "ACC_zul_Regelabw_oben":      upper_control_limit if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) and not full_stop_no_start else 0,
