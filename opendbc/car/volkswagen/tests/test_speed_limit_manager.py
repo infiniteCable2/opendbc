@@ -212,22 +212,18 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.manager.get_speed_limit()
     self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, curve_target)
 
-    self.update(curve_target, segment(4, parent_id=3), position(3, 10))
-    self.update(curve_target, psd_05=position(4, 100))
+    # While still in the curve segment, the cap persists.
+    self.update(curve_target, psd_05=position(3, 10))
     self.manager.get_speed_limit()
     self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, curve_target)
 
-    released_steps = []
-    for _ in range(1000):
-      self.update(curve_target, psd_05=position(4, 100))
-      self.manager.get_speed_limit()
-      target = self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH
-      if target == NOT_SET:
-        break
-      released_steps.append(round(target, 6))
-    self.assertTrue(released_steps)
-    self.assertTrue(all(speed % 5 == 0 for speed in released_steps))
-    self.assertTrue(all(a <= b for a, b in zip(released_steps, released_steps[1:], strict=False)))
+    # Leaving the curve segment onto a straight segment releases the cap
+    # immediately instead of ramping it out over time.
+    self.update(curve_target, segment(4, parent_id=3), position(3, 0))
+    self.update(curve_target, psd_05=position(4, 100))
+    self.manager.get_speed_limit()
+    self.assertEqual(self.manager._curve_release_speed_ms, 0.0)
+    self.assertEqual(self.manager.get_speed_limit_predicative(), NOT_SET)
 
   def test_speed_offset_uses_psd05_remaining_distance(self):
     self.add_current_limit(remaining=100)
@@ -383,22 +379,27 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.assertLessEqual(distance.call_count, 2)
 
   def test_curve_release_respects_longitudinal_acceleration_and_jerk(self):
-    self.add_current_limit()
-    self.update(100, segment(3, parent_id=2, curvature_begin=75, curvature_end=75), position(2, 30))
+    # A long curve segment: the cap releases within the curve as the curvature
+    # decreases along the segment, while the curve event is still active.
+    self.update(100, segment(2, length=200, street_category=3), position(2, 200))
+    self.update(100, psd_05=position(2, 200), psd_06=speed_attribute(2, 16))
+    self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 100)
+
+    # Segment starts with strong curvature and tapers to straight at the end.
+    self.update(100, segment(3, parent_id=2, length=400, street_category=3,
+                             curvature_begin=50, curvature_end=255), position(2, 30))
     self.manager.get_speed_limit()
-    curve_target = self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH
-    self.update(curve_target, psd_05=position(3, 10))
-    self.manager.get_speed_limit()
-    self.update(curve_target, segment(4, parent_id=3), position(4, 100))
-    self.manager.get_speed_limit()
+    self.assertGreater(self.manager.get_speed_limit_predicative(), 0)
 
     previous_speed = self.manager._curve_release_speed_ms
     previous_accel = self.manager._curve_release_accel
     for _ in range(100):
-      self.update(curve_target, psd_05=position(4, 100))
+      self.update(80, psd_05=position(3, 350))
       self.manager.get_speed_limit()
       speed = self.manager._curve_release_speed_ms
       accel = self.manager._curve_release_accel
+      if speed == 0.0 and previous_speed > 0.0:
+        break
       self.assertLessEqual(accel, ACCELERATION_PREDICATIVE + 1e-9)
       self.assertLessEqual(accel - previous_accel, JERK_PREDICATIVE * DT_CTRL + 1e-9)
       self.assertLessEqual(speed - previous_speed, accel * DT_CTRL + 1e-9)
@@ -491,6 +492,36 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.manager.get_speed_limit()
     self.assertGreater(self.manager.get_speed_limit_predicative(), 0)
     self.assertEqual(self.manager.get_speed_limit_predicative_type(), PSD_TYPE_SPEED_LIMIT)
+
+  def test_curve_cap_releases_immediately_when_curvature_ends_on_highway_entry(self):
+    # Highway on-ramp with a curve, then a straight highway segment.
+    self.update(100, segment(2, length=120, street_category=5), position(2, 120))
+    self.update(100, psd_05=position(2, 120), psd_06=speed_attribute(2, 23))
+    self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 130)
+
+    # On-ramp segment with curvature.
+    self.update(100, segment(3, parent_id=2, length=80, street_category=5, ramp=1,
+                             curvature_begin=75, curvature_end=75), position(2, 30))
+    self.manager.get_speed_limit()
+    curve_target = self.manager._calculate_curve_speed(self.manager._get_segment_curvature_psd(75, 0))
+    self.assertLess(curve_target, 130)
+    self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, curve_target)
+    self.assertEqual(self.manager.get_speed_limit_predicative_type(), PSD_TYPE_CURV_SPEED)
+    self.assertGreater(self.manager._curve_release_speed_ms, 0.0)
+
+    # Enter the curve segment and drive through it.
+    self.update(curve_target, psd_05=position(3, 80))
+    self.manager.get_speed_limit()
+    self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, curve_target)
+
+    # Move onto the straight highway segment. The curve event is no longer in
+    # the route, so the cap must release immediately instead of ramping out.
+    self.update(curve_target, segment(4, parent_id=3, length=200, street_category=5),
+                position(3, 0))
+    self.update(curve_target, psd_05=position(4, 200))
+    self.manager.get_speed_limit()
+    self.assertEqual(self.manager._curve_release_speed_ms, 0.0)
+    self.assertEqual(self.manager.get_speed_limit_predicative(), NOT_SET)
 
 
 if __name__ == "__main__":

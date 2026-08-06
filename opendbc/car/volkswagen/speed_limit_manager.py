@@ -953,6 +953,8 @@ class SpeedLimitManager:
       else:
         self._clear_committed_event()
 
+    if curve_event is None:
+      self._reset_curve_release()
     curve_speed = self._limit_curve_release(curve_event[0].speed if curve_event is not None else NOT_SET)
     selected = []
     if curve_speed != NOT_SET:
