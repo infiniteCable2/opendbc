@@ -6,7 +6,7 @@ from unittest import mock
 from opendbc.car import DT_CTRL
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.volkswagen.speed_limit_manager import (
-  ACCELERATION_PREDICATIVE, CURVE_PROFILE_STEP_M, JERK_PREDICATIVE, NOT_SET, PSD_05_FIELDS,
+  ACCELERATION_PREDICATIVE, CURVE_PROFILE_STEP_M, DECELERATION_PREDICATIVE, JERK_PREDICATIVE, NOT_SET, PSD_05_FIELDS,
   PSD_TYPE_CURV_SPEED, PSD_TYPE_SPEED_LIMIT, SpeedLimitManager,
 )
 from opendbc.car.volkswagen.values import VolkswagenFlags
@@ -365,7 +365,7 @@ class TestSpeedLimitManager(unittest.TestCase):
 
   def test_committed_event_survives_outside_current_braking_window(self):
     self.add_current_limit(remaining=100)
-    self.update(130, segment(3, parent_id=2, length=500), position(2, 100), speed_attribute(3, 11, offset=400))
+    self.update(130, segment(3, parent_id=2, length=700), position(2, 100), speed_attribute(3, 11, offset=600))
     self.manager.get_speed_limit()
     committed = self.manager._committed_event_identity
     self.assertIsNotNone(committed)
@@ -379,7 +379,7 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, 50)
     committed_index = self.manager._committed_event_index
     self.assertIsNotNone(committed_index)
-    self.assertGreater(self.manager._event_start_positions[committed_index], 100 ** 2 * CV.KPH_TO_MS ** 2 / 2)
+    self.assertGreater(self.manager._event_start_positions[committed_index], 100 ** 2 * CV.KPH_TO_MS ** 2 / (2 * DECELERATION_PREDICATIVE))
     self.assertLessEqual(distance.call_count, 2)
 
   def test_curve_release_respects_longitudinal_acceleration_and_jerk(self):
@@ -421,6 +421,76 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.update(50, psd_05=position(2, 60), traffic_sign=vze(50))
     self.assertFalse(self.manager.v_limit_vze_sanity_error)
     self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 50)
+
+  def test_committed_speed_segment_keeps_psd_trusted_when_vze_lags(self):
+    self.add_current_limit()
+    self.update(100, segment(3, parent_id=2, length=200), position(2, 30), speed_attribute(3, 11))
+    self.manager.get_speed_limit()
+    self.assertGreater(self.manager.get_speed_limit_predicative(), 0)
+    self.assertEqual(self.manager._pending_speed_segment_key, self.manager._active_by_id[3])
+
+    # Enter the target segment while VZE still reports the old (higher) limit.
+    self.update(50, psd_05=position(3, 200), traffic_sign=vze(100))
+    self.manager.get_speed_limit()
+    self.assertTrue(self.manager._committed_speed_segment_active)
+    self.assertEqual(self.manager._protected_speed_segment_key, self.manager._active_by_id[3])
+    # PSD is trusted over the lagging VZE: output is the new PSD limit, not 100.
+    self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 50)
+
+  def test_committed_speed_segment_releases_on_segment_exit_without_vze_confirmation(self):
+    self.add_current_limit()
+    self.update(100, segment(3, parent_id=2, length=200), position(2, 30), speed_attribute(3, 11))
+    self.manager.get_speed_limit()
+
+    # Enter target segment; VZE still lags at the old limit.
+    self.update(50, psd_05=position(3, 200), traffic_sign=vze(100))
+    self.manager.get_speed_limit()
+    self.assertTrue(self.manager._committed_speed_segment_active)
+    self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 50)
+
+    # Move on to a follow-on segment; VZE still has not confirmed the 50 limit.
+    self.update(50, segment(4, parent_id=3, length=200), position(3, 10))
+    self.update(50, psd_05=position(4, 200), traffic_sign=vze(100))
+    self.manager.get_speed_limit()
+    self.assertFalse(self.manager._committed_speed_segment_active)
+    # With the binding released, the still-lagging VZE is no longer suppressed
+    # by the protected segment, so the PSD/VZE priority applies again.
+    self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 100)
+
+  def test_committed_speed_segment_releases_when_vze_confirms_mid_segment(self):
+    self.add_current_limit()
+    self.update(100, segment(3, parent_id=2, length=200), position(2, 30), speed_attribute(3, 11))
+    self.manager.get_speed_limit()
+
+    self.update(50, psd_05=position(3, 200), traffic_sign=vze(100))
+    self.manager.get_speed_limit()
+    self.assertTrue(self.manager._committed_speed_segment_active)
+    self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 50)
+
+    # VZE catches up and confirms the PSD limit while still in the segment.
+    self.update(50, psd_05=position(3, 120), traffic_sign=vze(50))
+    self.manager.get_speed_limit()
+    self.assertFalse(self.manager._committed_speed_segment_active)
+    self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 50)
+
+  def test_committed_speed_segment_does_not_break_predicative_for_following_lower_event(self):
+    self.add_current_limit()
+    self.update(100, segment(3, parent_id=2, length=200), position(2, 30), speed_attribute(3, 11))
+    self.manager.get_speed_limit()
+    self.assertGreater(self.manager.get_speed_limit_predicative(), 0)
+
+    # Enter the target segment; VZE still lags at the old (higher) limit.
+    self.update(50, psd_05=position(3, 200), traffic_sign=vze(100))
+    self.manager.get_speed_limit()
+    self.assertTrue(self.manager._committed_speed_segment_active)
+    self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 50)
+
+    # A follow-on segment carries an even lower limit; the predicative path
+    # must still pick it up despite the active speed-segment protection.
+    self.update(50, segment(4, parent_id=3, length=200), position(3, 30), speed_attribute(4, 8))
+    self.manager.get_speed_limit()
+    self.assertGreater(self.manager.get_speed_limit_predicative(), 0)
+    self.assertEqual(self.manager.get_speed_limit_predicative_type(), PSD_TYPE_SPEED_LIMIT)
 
 
 if __name__ == "__main__":

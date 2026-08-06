@@ -15,7 +15,7 @@ STREET_TYPE_URBAN = 1
 STREET_TYPE_NONURBAN = 2
 STREET_TYPE_HIGHWAY = 3
 SPEED_LIMIT_UNLIMITED_VZE_KPH = 520
-DECELERATION_PREDICATIVE = 1.0
+DECELERATION_PREDICATIVE = 0.7
 ACCELERATION_PREDICATIVE = 1.0
 JERK_PREDICATIVE = 0.5
 CURVE_PROFILE_STEP_M = 5.0
@@ -144,6 +144,11 @@ class SpeedLimitManager:
     self._committed_event_distance = math.inf
     self._committed_event_speed = NOT_SET
     self._committed_event_type = NOT_SET
+    self._pending_speed_segment_key: SegmentKey | None = None
+    self._pending_speed_segment_speed: float = NOT_SET
+    self._protected_speed_segment_key: SegmentKey | None = None
+    self._protected_speed_segment_speed: float = NOT_SET
+    self._committed_speed_segment_active = False
     self._curve_release_speed_ms = 0.0
     self._curve_release_accel = 0.0
 
@@ -154,6 +159,13 @@ class SpeedLimitManager:
     self._committed_event_speed = NOT_SET
     self._committed_event_type = NOT_SET
 
+  def _clear_speed_segment_protection(self):
+    self._pending_speed_segment_key = None
+    self._pending_speed_segment_speed = NOT_SET
+    self._protected_speed_segment_key = None
+    self._protected_speed_segment_speed = NOT_SET
+    self._committed_speed_segment_active = False
+
   def _reset_curve_release(self):
     self._curve_release_speed_ms = 0.0
     self._curve_release_accel = 0.0
@@ -162,6 +174,7 @@ class SpeedLimitManager:
     self.v_limit_psd_next = NOT_SET
     self.v_limit_psd_next_type = NOT_SET
     self._clear_committed_event()
+    self._clear_speed_segment_protection()
     self._reset_curve_release()
 
   def enable_predicative_speed_limit(self, predicative=False, reaction_to_speed_limits=False, reaction_to_curves=False):
@@ -203,6 +216,7 @@ class SpeedLimitManager:
     if vze and self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
       self._receive_speed_limit_vze_meb(vze)
 
+    self._update_speed_segment_protection()
     self._update_map_mismatch()
     self._get_speed_limit_psd()
     self._update_legal_limit()
@@ -222,8 +236,12 @@ class SpeedLimitManager:
     return self.v_limit_psd_next_type if self.v_limit_psd_next != NOT_SET else NOT_SET
 
   def get_speed_limit(self):
+    vze = self.v_limit_vze if not self.v_limit_vze_sanity_error else NOT_SET
+    if self._speed_segment_is_protected() and vze != NOT_SET:
+      if not math.isclose(vze, self._protected_speed_segment_speed, abs_tol=1.0):
+        vze = NOT_SET
     candidates = (
-      self.v_limit_vze if not self.v_limit_vze_sanity_error else NOT_SET,
+      vze,
       self.v_limit_psd,
       self.v_limit_psd_legal,
     )
@@ -592,6 +610,11 @@ class SpeedLimitManager:
         self._map_mismatch_keys.discard(self._current_key)
     self.current_predicative_segment["Speed"] = self._active_map_limit
 
+  def _speed_segment_is_protected(self):
+    return (self._committed_speed_segment_active and self._protected_speed_segment_key is not None and
+            self._current_key is not None and self._protected_speed_segment_key == self._current_key and
+            self._protected_speed_segment_speed != NOT_SET)
+
   def _update_map_mismatch(self):
     if not self._current_valid or self._current_key is None or self.v_limit_vze == NOT_SET:
       return
@@ -602,6 +625,8 @@ class SpeedLimitManager:
       return
     if math.isclose(self.v_limit_vze, map_reference, abs_tol=1.0):
       self._map_mismatch_keys.discard(self._current_key)
+    elif self._speed_segment_is_protected():
+      pass
     else:
       self._map_mismatch_keys.add(self._current_key)
 
@@ -611,6 +636,60 @@ class SpeedLimitManager:
       self.v_limit_psd = NOT_SET
     else:
       self.v_limit_psd = self._active_map_limit
+
+  def _update_speed_segment_protection(self):
+    """Bind a committed predictive speed-limit event to its target segment.
+
+    While the car occupies the segment that was predictively braked to, the
+    PSD map limit is trusted over a lagging VZE. The binding is topological:
+    it activates on segment entry and releases on segment exit, with no
+    wall-clock timeout. VZE can reclaim authority mid-segment by confirming
+    the PSD limit; otherwise the binding persists until the segment ends.
+    """
+    if not self.predicative or not self.predicative_speed_limit:
+      self._clear_speed_segment_protection()
+      return
+
+    if self._pending_speed_segment_key is not None:
+      pending_key = self._pending_speed_segment_key
+      pending_speed = self._pending_speed_segment_speed
+      if not self._current_valid or self._current_key is None:
+        self._clear_speed_segment_protection()
+        return
+      if self._current_key == pending_key:
+        self._protected_speed_segment_key = pending_key
+        self._protected_speed_segment_speed = pending_speed
+        self._committed_speed_segment_active = True
+        self._pending_speed_segment_key = None
+        self._pending_speed_segment_speed = NOT_SET
+      elif self._route and pending_key in self._route_index:
+        # Still approaching the target segment; keep the pending binding.
+        return
+      else:
+        # Route has changed and the target segment is no longer reachable.
+        self._clear_speed_segment_protection()
+        return
+
+    if self._committed_speed_segment_active:
+      current_key = self._current_key if self._current_valid else None
+      if current_key is None or current_key != self._protected_speed_segment_key:
+        # Left the protected segment without VZE confirmation: release.
+        self._clear_speed_segment_protection()
+        return
+      # VZE has caught up and confirmed the PSD limit: release the binding.
+      if self.v_limit_vze != NOT_SET and math.isclose(
+          self.v_limit_vze, self._protected_speed_segment_speed, abs_tol=1.0):
+        self._clear_speed_segment_protection()
+        return
+      seg = self.predicative_segments.get(current_key)
+      if seg is not None and self._protected_speed_segment_speed != NOT_SET and math.isclose(
+          seg.speed, self._protected_speed_segment_speed, abs_tol=1.0):
+        # PSD still carries the protected limit; keep VZE suppressed.
+        return
+      if seg is not None and self._active_map_limit == self._protected_speed_segment_speed:
+        return
+      # PSD no longer reports the protected limit; release VZE suppression.
+      self._clear_speed_segment_protection()
 
   def _select_child(self, seg):
     children = [key for key in seg.children if key in self.predicative_segments]
@@ -891,6 +970,9 @@ class SpeedLimitManager:
       self._committed_event_distance = distance
       self._committed_event_speed = speed
       self._committed_event_type = event_type
+      if event.event_type == PSD_TYPE_SPEED_LIMIT and distance > 0 and self._pending_speed_segment_key is None:
+        self._pending_speed_segment_key = event.segment_key
+        self._pending_speed_segment_speed = event.speed
     self.v_limit_psd_next = speed
     self.v_limit_psd_next_type = event_type
 
