@@ -7,7 +7,7 @@ from opendbc.car import DT_CTRL
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.volkswagen.speed_limit_manager import (
   ACCELERATION_PREDICATIVE, CURVE_PROFILE_STEP_M, DECELERATION_PREDICATIVE, JERK_PREDICATIVE, NOT_SET, PSD_05_FIELDS,
-  PSD_TYPE_CURV_SPEED, PSD_TYPE_SPEED_LIMIT, SPEED_SEGMENT_PROTECTION_DISTANCE_M, SpeedLimitManager,
+  PSD_TYPE_CURV_SPEED, PSD_TYPE_SPEED_LIMIT, SPEED_SEGMENT_PROTECTION_TIME_S, SpeedLimitManager,
 )
 from opendbc.car.volkswagen.values import VolkswagenFlags
 
@@ -452,9 +452,10 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.assertTrue(self.manager._speed_protection_active)
     self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 50)
 
-    # Drive beyond SPEED_SEGMENT_PROTECTION_DISTANCE_M while VZE still lags.
+    # Drive beyond the speed-derived protection distance while VZE still lags.
     # The grace period ends, VZE authority is restored.
-    remaining = 200 - SPEED_SEGMENT_PROTECTION_DISTANCE_M - 1
+    protection_distance = 50 * CV.KPH_TO_MS * SPEED_SEGMENT_PROTECTION_TIME_S
+    remaining = 200 - protection_distance - 1
     self.update(50, psd_05=position(3, max(0, remaining)), traffic_sign=vze(100))
     self.manager.get_speed_limit()
     self.assertFalse(self.manager._speed_protection_active)

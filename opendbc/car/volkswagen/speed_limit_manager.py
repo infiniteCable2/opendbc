@@ -20,7 +20,7 @@ ACCELERATION_PREDICATIVE = 1.0
 JERK_PREDICATIVE = 0.5
 CURVE_PROFILE_STEP_M = 5.0
 VZE_SANITY_MIN_RATIO = 0.30
-SPEED_SEGMENT_PROTECTION_DISTANCE_M = 50.0
+SPEED_SEGMENT_PROTECTION_TIME_S = 3.0
 PSD_TYPE_SPEED_LIMIT = 1
 PSD_TYPE_CURV_SPEED = 2
 PSD_UNIT_KPH = 0
@@ -149,9 +149,8 @@ class SpeedLimitManager:
     self._speed_protection_speed = NOT_SET
     self._speed_protection_progress_start = 0.0
     self._speed_protection_pending_speed = NOT_SET
-    self._speed_protection_released = False
     self._speed_protection_vze_at_start = NOT_SET
-    self._speed_protection_activated = False
+    self._speed_protection_consumed = False
     self._curve_release_speed_ms = 0.0
     self._curve_release_accel = 0.0
 
@@ -170,8 +169,7 @@ class SpeedLimitManager:
     self._speed_protection_vze_at_start = NOT_SET
 
   def _release_speed_protection(self):
-    self._speed_protection_released = True
-    self._speed_protection_activated = False
+    self._speed_protection_consumed = True
     self._clear_speed_protection()
 
   def _reset_curve_release(self):
@@ -183,6 +181,7 @@ class SpeedLimitManager:
     self.v_limit_psd_next_type = NOT_SET
     self._clear_committed_event()
     self._clear_speed_protection()
+    self._speed_protection_consumed = False
     self._reset_curve_release()
 
   def enable_predicative_speed_limit(self, predicative=False, reaction_to_speed_limits=False, reaction_to_curves=False):
@@ -204,7 +203,6 @@ class SpeedLimitManager:
 
   def update(self, current_speed_ms, psd_04, psd_05, psd_06, vze, raining, time_car):
     self._sequence += 1
-    self._speed_protection_released = False
 
     if psd_06:
       self._receive_speed_unit_psd(psd_06)
@@ -656,22 +654,19 @@ class SpeedLimitManager:
     After a predictive brake to a PSD speed limit, PSD is trusted over a
     lagging VZE for up to SPEED_SEGMENT_PROTECTION_DISTANCE_M of travel
     starting at the brake target position. The grace period ends as soon as
-    VZE reports a different limit (it takes priority again) or PSD changes
-    to a different limit. No wall-clock timeout, no segment binding.
+    VZE reports a new value (it takes priority again) or PSD changes to a
+    different limit. No wall-clock timeout, no segment binding.
     """
     if not self.predicative or not self.predicative_speed_limit:
       self._clear_speed_protection()
       return
 
     # Activate a pending protection from the previous cycle's committed event.
-    if (not self._speed_protection_active and not self._speed_protection_activated and
-        self._speed_protection_pending_speed != NOT_SET):
+    if not self._speed_protection_active and self._speed_protection_pending_speed != NOT_SET:
       self._speed_protection_active = True
       self._speed_protection_speed = self._speed_protection_pending_speed
       self._speed_protection_progress_start = current_progress
       self._speed_protection_pending_speed = NOT_SET
-      self._speed_protection_released = False
-      self._speed_protection_activated = True
       self._speed_protection_vze_at_start = self.v_limit_vze
       return
 
@@ -679,7 +674,7 @@ class SpeedLimitManager:
       return
 
     if not self._current_valid or self._current_key is None:
-      self._clear_speed_protection()
+      self._release_speed_protection()
       return
 
     # VZE changed to a new value since the grace period started: VZE takes
@@ -696,9 +691,11 @@ class SpeedLimitManager:
       self._release_speed_protection()
       return
 
-    # Grace period exhausted by distance.
-    if current_progress - self._speed_protection_progress_start >= SPEED_SEGMENT_PROTECTION_DISTANCE_M:
-      self._clear_speed_protection()
+    # Grace period exhausted by distance (derived from the target speed and
+    # SPEED_SEGMENT_PROTECTION_TIME_S).
+    protection_distance = self._speed_protection_speed * CV.KPH_TO_MS * SPEED_SEGMENT_PROTECTION_TIME_S
+    if current_progress - self._speed_protection_progress_start >= protection_distance:
+      self._release_speed_protection()
 
   def _select_child(self, seg):
     children = [key for key in seg.children if key in self.predicative_segments]
@@ -952,8 +949,7 @@ class SpeedLimitManager:
     if committed is not None:
       event, distance, active_curve, index = committed
       if (event.event_type == PSD_TYPE_SPEED_LIMIT and not active_curve and distance <= 0 and
-          self._speed_protection_pending_speed == NOT_SET and not self._speed_protection_released and
-          not self._speed_protection_activated):
+          self._speed_protection_pending_speed == NOT_SET and not self._speed_protection_consumed):
         self._speed_protection_pending_speed = self._committed_event_speed
       if active_curve or distance >= 0:
         distance = min(max(0.0, distance), self._committed_event_distance)
@@ -986,8 +982,7 @@ class SpeedLimitManager:
       self._committed_event_speed = speed
       self._committed_event_type = event_type
       if event.event_type == PSD_TYPE_SPEED_LIMIT and distance > 0:
-        self._speed_protection_activated = False
-        self._speed_protection_released = False
+        self._speed_protection_consumed = False
     self.v_limit_psd_next = speed
     self.v_limit_psd_next_type = event_type
 
