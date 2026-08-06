@@ -150,6 +150,8 @@ class SpeedLimitManager:
     self._speed_protection_progress_start = 0.0
     self._speed_protection_pending_speed = NOT_SET
     self._speed_protection_released = False
+    self._speed_protection_vze_at_start = NOT_SET
+    self._speed_protection_activated = False
     self._curve_release_speed_ms = 0.0
     self._curve_release_accel = 0.0
 
@@ -165,9 +167,11 @@ class SpeedLimitManager:
     self._speed_protection_speed = NOT_SET
     self._speed_protection_progress_start = 0.0
     self._speed_protection_pending_speed = NOT_SET
+    self._speed_protection_vze_at_start = NOT_SET
 
   def _release_speed_protection(self):
     self._speed_protection_released = True
+    self._speed_protection_activated = False
     self._clear_speed_protection()
 
   def _reset_curve_release(self):
@@ -660,12 +664,15 @@ class SpeedLimitManager:
       return
 
     # Activate a pending protection from the previous cycle's committed event.
-    if not self._speed_protection_active and self._speed_protection_pending_speed != NOT_SET:
+    if (not self._speed_protection_active and not self._speed_protection_activated and
+        self._speed_protection_pending_speed != NOT_SET):
       self._speed_protection_active = True
       self._speed_protection_speed = self._speed_protection_pending_speed
       self._speed_protection_progress_start = current_progress
       self._speed_protection_pending_speed = NOT_SET
       self._speed_protection_released = False
+      self._speed_protection_activated = True
+      self._speed_protection_vze_at_start = self.v_limit_vze
       return
 
     if not self._speed_protection_active:
@@ -675,9 +682,11 @@ class SpeedLimitManager:
       self._clear_speed_protection()
       return
 
-    # VZE has caught up or changed: it takes priority, end the grace period.
-    if self.v_limit_vze != NOT_SET and not math.isclose(
-        self.v_limit_vze, self._speed_protection_speed, abs_tol=1.0):
+    # VZE changed to a new value since the grace period started: VZE takes
+    # priority, end the grace period. A lagging VZE that still holds the old
+    # limit does NOT end the protection.
+    if self.v_limit_vze != NOT_SET and self._speed_protection_vze_at_start != NOT_SET and not math.isclose(
+        self.v_limit_vze, self._speed_protection_vze_at_start, abs_tol=1.0):
       self._release_speed_protection()
       return
 
@@ -942,7 +951,9 @@ class SpeedLimitManager:
 
     if committed is not None:
       event, distance, active_curve, index = committed
-      if event.event_type == PSD_TYPE_SPEED_LIMIT and not active_curve and distance <= 0 and self._speed_protection_pending_speed == NOT_SET and not self._speed_protection_released:
+      if (event.event_type == PSD_TYPE_SPEED_LIMIT and not active_curve and distance <= 0 and
+          self._speed_protection_pending_speed == NOT_SET and not self._speed_protection_released and
+          not self._speed_protection_activated):
         self._speed_protection_pending_speed = self._committed_event_speed
       if active_curve or distance >= 0:
         distance = min(max(0.0, distance), self._committed_event_distance)
@@ -974,6 +985,9 @@ class SpeedLimitManager:
       self._committed_event_distance = distance
       self._committed_event_speed = speed
       self._committed_event_type = event_type
+      if event.event_type == PSD_TYPE_SPEED_LIMIT and distance > 0:
+        self._speed_protection_activated = False
+        self._speed_protection_released = False
     self.v_limit_psd_next = speed
     self.v_limit_psd_next_type = event_type
 

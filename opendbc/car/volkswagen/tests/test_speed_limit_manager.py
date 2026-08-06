@@ -472,8 +472,32 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.assertTrue(self.manager._speed_protection_active)
     self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 50)
 
-    # VZE changes to confirm the PSD limit: protection stays (VZE matches).
+    # VZE changes to confirm the PSD limit: VZE has changed (from 100 to 50),
+    # so the protection ends. But since VZE now matches PSD, the output stays 50.
     self.update(50, psd_05=position(3, 180), traffic_sign=vze(50))
+    self.manager.get_speed_limit()
+    self.assertFalse(self.manager._speed_protection_active)
+    self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 50)
+
+  def test_speed_protection_persists_while_vze_lags_at_old_limit(self):
+    self.add_current_limit()
+    self.update(100, segment(3, parent_id=2, length=200), position(2, 30), speed_attribute(3, 11))
+    self.manager.get_speed_limit()
+
+    self.update(50, psd_05=position(3, 200), traffic_sign=vze(100))
+    self.manager.get_speed_limit()
+    self.update(50, psd_05=position(3, 200), traffic_sign=vze(100))
+    self.manager.get_speed_limit()
+    self.assertTrue(self.manager._speed_protection_active)
+    self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 50)
+
+    # VZE keeps reporting the old limit (100) — protection stays.
+    self.update(50, psd_05=position(3, 180), traffic_sign=vze(100))
+    self.manager.get_speed_limit()
+    self.assertTrue(self.manager._speed_protection_active)
+    self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 50)
+
+    self.update(50, psd_05=position(3, 170), traffic_sign=vze(100))
     self.manager.get_speed_limit()
     self.assertTrue(self.manager._speed_protection_active)
     self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 50)
@@ -575,14 +599,14 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 50)
     self.assertTrue(self.manager._speed_protection_active)
 
-    # VZE briefly confirms 50: protection stays (VZE matches the protected limit).
+    # VZE briefly confirms 50: VZE has changed (from 130 to 50), protection ends.
+    # Output stays 50 because VZE now matches PSD.
     self.update(50, psd_05=position(3, 180), traffic_sign=vze(50))
     self.manager.get_speed_limit()
-    self.assertTrue(self.manager._speed_protection_active)
+    self.assertFalse(self.manager._speed_protection_active)
     self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 50)
 
-    # VZE fluctuates back to the old limit: protection ends immediately,
-    # VZE takes priority again.
+    # VZE fluctuates back to the old limit: VZE takes priority again.
     self.update(50, psd_05=position(3, 160), traffic_sign=vze(130))
     self.manager.get_speed_limit()
     self.assertFalse(self.manager._speed_protection_active)
