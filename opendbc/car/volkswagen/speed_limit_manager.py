@@ -145,9 +145,9 @@ class SpeedLimitManager:
     self._speed_protection_active = False
     self._speed_protection_speed = NOT_SET
     self._speed_protection_progress_start = 0.0
-    self._speed_protection_pending_speed = NOT_SET
     self._speed_protection_vze_at_start = NOT_SET
     self._speed_protection_consumed = False
+    self._speed_protection_is_curve = False
 
   def _clear_committed_event(self):
     self._committed_event_index = None
@@ -160,8 +160,16 @@ class SpeedLimitManager:
     self._speed_protection_active = False
     self._speed_protection_speed = NOT_SET
     self._speed_protection_progress_start = 0.0
-    self._speed_protection_pending_speed = NOT_SET
     self._speed_protection_vze_at_start = NOT_SET
+    self._speed_protection_is_curve = False
+
+  def _activate_speed_protection(self, speed, current_progress, is_curve):
+    self._speed_protection_active = True
+    self._speed_protection_speed = speed
+    self._speed_protection_progress_start = current_progress
+    self._speed_protection_vze_at_start = self.v_limit_vze
+    self._speed_protection_consumed = False
+    self._speed_protection_is_curve = is_curve
 
   def _release_speed_protection(self):
     self._speed_protection_consumed = True
@@ -213,6 +221,11 @@ class SpeedLimitManager:
     if vze and self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
       self._receive_speed_limit_vze_meb(vze)
 
+    if self.predicative:
+      self._get_speed_limit_psd_next(current_speed_ms)
+    else:
+      self._reset_predicative()
+
     current_progress = 0.0
     if self._current_valid and self._current_key is not None:
       seg = self.predicative_segments.get(self._current_key)
@@ -224,15 +237,12 @@ class SpeedLimitManager:
     self._get_speed_limit_psd()
     self._update_legal_limit()
 
-    if self.predicative:
-      self._get_speed_limit_psd_next(current_speed_ms)
-    else:
-      self._reset_predicative()
-
   def get_speed_limit_predicative(self):
     active_limit = self.v_limit_output_last
     v_limit_output = self.v_limit_psd_next if (self.predicative and self.v_limit_psd_next != NOT_SET and
                                                 active_limit != NOT_SET and self.v_limit_psd_next < active_limit) else NOT_SET
+    if v_limit_output == NOT_SET and self._speed_protection_is_active():
+      v_limit_output = self._speed_protection_speed if active_limit == NOT_SET or self._speed_protection_speed < active_limit else NOT_SET
     return v_limit_output * CV.KPH_TO_MS
 
   def get_speed_limit_predicative_type(self):
@@ -240,9 +250,6 @@ class SpeedLimitManager:
 
   def get_speed_limit(self):
     vze = self.v_limit_vze if not self.v_limit_vze_sanity_error else NOT_SET
-    if self._speed_protection_is_active() and vze != NOT_SET:
-      if not math.isclose(vze, self._speed_protection_speed, abs_tol=1.0):
-        vze = NOT_SET
     candidates = (
       vze,
       self.v_limit_psd,
@@ -626,8 +633,6 @@ class SpeedLimitManager:
       return
     if math.isclose(self.v_limit_vze, map_reference, abs_tol=1.0):
       self._map_mismatch_keys.discard(self._current_key)
-    elif self._speed_protection_is_active():
-      self._map_mismatch_keys.discard(self._current_key)
     else:
       self._map_mismatch_keys.add(self._current_key)
 
@@ -642,22 +647,13 @@ class SpeedLimitManager:
     """Distance-based grace period after a predictive speed-limit brake.
 
     After a predictive brake to a PSD speed limit, PSD is trusted over a
-    lagging VZE for up to SPEED_SEGMENT_PROTECTION_DISTANCE_M of travel
-    starting at the brake target position. The grace period ends as soon as
-    VZE reports a new value (it takes priority again) or PSD changes to a
-    different limit. No wall-clock timeout, no segment binding.
+    lagging VZE for up to SPEED_SEGMENT_PROTECTION_TIME_S of travel at the
+    target speed, starting at the brake target position. The grace period
+    ends as soon as VZE reports a new value (it takes priority again) or PSD
+    changes to a different limit. No wall-clock timeout, no segment binding.
     """
     if not self.predicative or not self.predicative_speed_limit:
       self._clear_speed_protection()
-      return
-
-    # Activate a pending protection from the previous cycle's committed event.
-    if not self._speed_protection_active and self._speed_protection_pending_speed != NOT_SET:
-      self._speed_protection_active = True
-      self._speed_protection_speed = self._speed_protection_pending_speed
-      self._speed_protection_progress_start = current_progress
-      self._speed_protection_pending_speed = NOT_SET
-      self._speed_protection_vze_at_start = self.v_limit_vze
       return
 
     if not self._speed_protection_active:
@@ -669,15 +665,17 @@ class SpeedLimitManager:
 
     # VZE changed to a new value since the grace period started: VZE takes
     # priority, end the grace period. A lagging VZE that still holds the old
-    # limit does NOT end the protection.
-    if self.v_limit_vze != NOT_SET and self._speed_protection_vze_at_start != NOT_SET and not math.isclose(
+    # value (or was NOT_SET at start) does NOT end the protection.
+    if self.v_limit_vze != NOT_SET and not math.isclose(
         self.v_limit_vze, self._speed_protection_vze_at_start, abs_tol=1.0):
       self._release_speed_protection()
       return
 
-    # PSD changed to a different limit: end the grace period.
-    if self._active_map_limit != NOT_SET and not math.isclose(
-        self._active_map_limit, self._speed_protection_speed, abs_tol=1.0):
+    # PSD speed limit changed to a different limit: end the grace period.
+    # Only applies to speed-limit protection; curve caps come from geometry
+    # and are not affected by the PSD speed limit of the current segment.
+    if (not self._speed_protection_is_curve and self._active_map_limit != NOT_SET and
+        not math.isclose(self._active_map_limit, self._speed_protection_speed, abs_tol=1.0)):
       self._release_speed_protection()
       return
 
@@ -747,11 +745,7 @@ class SpeedLimitManager:
     self._route_graph_revision = self._graph_revision
 
   def _speed_limit_curve_allowed(self, seg, speed_curve):
-    # Highway geometry remains disabled except for explicitly marked ramps.
-    # The selected future ramp is allowed before the car enters it so braking
-    # can actually be predictive.
-    street_type_allowed = seg.street_type == STREET_TYPE_NONURBAN or (seg.street_type == STREET_TYPE_HIGHWAY and seg.on_ramp_exit)
-    return street_type_allowed and speed_curve > 0
+    return speed_curve > 0
 
   def _curve_events_for_segment(self, seg):
     # VW/ADASIS curvature is linear between the segment boundary values.
@@ -891,9 +885,9 @@ class SpeedLimitManager:
 
     if committed is not None:
       event, distance, active_curve, index = committed
-      if (event.event_type == PSD_TYPE_SPEED_LIMIT and not active_curve and distance <= 0 and
-          self._speed_protection_pending_speed == NOT_SET and not self._speed_protection_consumed):
-        self._speed_protection_pending_speed = self._committed_event_speed
+      if (event.event_type in (PSD_TYPE_SPEED_LIMIT, PSD_TYPE_CURV_SPEED) and distance <= 0 and
+          not self._speed_protection_consumed and not self._speed_protection_active):
+        self._activate_speed_protection(event.speed, current_progress, event.event_type == PSD_TYPE_CURV_SPEED)
       if active_curve or distance >= 0:
         distance = min(max(0.0, distance), self._committed_event_distance)
         candidate = (event, distance, index)
@@ -922,7 +916,7 @@ class SpeedLimitManager:
       self._committed_event_distance = distance
       self._committed_event_speed = speed
       self._committed_event_type = event_type
-      if event.event_type == PSD_TYPE_SPEED_LIMIT and distance > 0:
+      if distance > 0:
         self._speed_protection_consumed = False
     self.v_limit_psd_next = speed
     self.v_limit_psd_next_type = event_type
