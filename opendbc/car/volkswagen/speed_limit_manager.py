@@ -3,7 +3,6 @@ import math
 import time
 from dataclasses import dataclass, field
 
-from opendbc.car import DT_CTRL
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.lateral import ISO_LATERAL_ACCEL
 from opendbc.car.volkswagen.values import VolkswagenFlags
@@ -16,8 +15,6 @@ STREET_TYPE_NONURBAN = 2
 STREET_TYPE_HIGHWAY = 3
 SPEED_LIMIT_UNLIMITED_VZE_KPH = 520
 DECELERATION_PREDICATIVE = 0.8
-ACCELERATION_PREDICATIVE = 1.0
-JERK_PREDICATIVE = 0.5
 CURVE_PROFILE_STEP_M = 5.0
 VZE_SANITY_MIN_RATIO = 0.30
 SPEED_SEGMENT_PROTECTION_TIME_S = 3.0
@@ -151,8 +148,6 @@ class SpeedLimitManager:
     self._speed_protection_pending_speed = NOT_SET
     self._speed_protection_vze_at_start = NOT_SET
     self._speed_protection_consumed = False
-    self._curve_release_speed_ms = 0.0
-    self._curve_release_accel = 0.0
 
   def _clear_committed_event(self):
     self._committed_event_index = None
@@ -172,17 +167,12 @@ class SpeedLimitManager:
     self._speed_protection_consumed = True
     self._clear_speed_protection()
 
-  def _reset_curve_release(self):
-    self._curve_release_speed_ms = 0.0
-    self._curve_release_accel = 0.0
-
   def _reset_predicative(self):
     self.v_limit_psd_next = NOT_SET
     self.v_limit_psd_next_type = NOT_SET
     self._clear_committed_event()
     self._clear_speed_protection()
     self._speed_protection_consumed = False
-    self._reset_curve_release()
 
   def enable_predicative_speed_limit(self, predicative=False, reaction_to_speed_limits=False, reaction_to_curves=False):
     if self.predicative == predicative and self.predicative_speed_limit == reaction_to_speed_limits and self.predicative_curve == reaction_to_curves:
@@ -843,53 +833,6 @@ class SpeedLimitManager:
                     start <= current_progress <= self._event_end_position(index))
     return start - current_progress, active_curve
 
-  def _quantize_curve_speed_ms(self, speed_ms):
-    if speed_ms <= 0:
-      return NOT_SET
-    if self.v_limit_speed_unit_psd == PSD_UNIT_MPH:
-      speed_mph = speed_ms * CV.MS_TO_MPH
-      return int(speed_mph // 5 * 5) * CV.MPH_TO_KPH
-    return int((speed_ms * CV.MS_TO_KPH) // 5 * 5)
-
-  def _limit_curve_release(self, desired_speed_kph):
-    """Apply longitudinal acceleration and jerk only while releasing a curve cap."""
-    desired_speed_ms = desired_speed_kph * CV.KPH_TO_MS if desired_speed_kph != NOT_SET else 0.0
-    if self._curve_release_speed_ms <= 0:
-      if desired_speed_ms <= 0:
-        return NOT_SET
-      self._curve_release_speed_ms = desired_speed_ms
-      self._curve_release_accel = 0.0
-      return desired_speed_kph
-
-    if desired_speed_ms > 0 and desired_speed_ms <= self._curve_release_speed_ms:
-      self._curve_release_speed_ms = desired_speed_ms
-      self._curve_release_accel = 0.0
-      return desired_speed_kph
-
-    release_target_kph = desired_speed_kph if desired_speed_ms > 0 else self.v_limit_output_last
-    if release_target_kph == NOT_SET:
-      # No trusted higher source exists. Retain the lower cap rather than
-      # authorizing acceleration merely because geometry became unavailable.
-      return self._quantize_curve_speed_ms(self._curve_release_speed_ms)
-
-    release_target_ms = release_target_kph * CV.KPH_TO_MS
-    if release_target_ms <= self._curve_release_speed_ms:
-      if desired_speed_ms <= 0:
-        self._reset_curve_release()
-        return NOT_SET
-      self._curve_release_speed_ms = release_target_ms
-      self._curve_release_accel = 0.0
-      return desired_speed_kph
-
-    self._curve_release_accel = min(ACCELERATION_PREDICATIVE,
-                                        self._curve_release_accel + JERK_PREDICATIVE * DT_CTRL)
-    self._curve_release_speed_ms = min(release_target_ms,
-                                       self._curve_release_speed_ms + self._curve_release_accel * DT_CTRL)
-    if self._curve_release_speed_ms >= release_target_ms - 1e-6 and desired_speed_ms <= 0:
-      self._reset_curve_release()
-      return NOT_SET
-    return min(release_target_kph, self._quantize_curve_speed_ms(self._curve_release_speed_ms))
-
   def _get_speed_limit_psd_next(self, current_speed_ms):
     if self._position_ambiguous:
       # Freeze the previously exposed lower target. No cursor progress and no
@@ -962,9 +905,7 @@ class SpeedLimitManager:
       else:
         self._clear_committed_event()
 
-    if curve_event is None:
-      self._reset_curve_release()
-    curve_speed = self._limit_curve_release(curve_event[0].speed if curve_event is not None else NOT_SET)
+    curve_speed = curve_event[0].speed if curve_event is not None else NOT_SET
     selected = []
     if curve_speed != NOT_SET:
       selected.append((curve_speed, PSD_TYPE_CURV_SPEED, curve_event))

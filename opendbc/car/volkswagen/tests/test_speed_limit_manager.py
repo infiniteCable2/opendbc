@@ -6,7 +6,7 @@ from unittest import mock
 from opendbc.car import DT_CTRL
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.volkswagen.speed_limit_manager import (
-  ACCELERATION_PREDICATIVE, CURVE_PROFILE_STEP_M, DECELERATION_PREDICATIVE, JERK_PREDICATIVE, NOT_SET, PSD_05_FIELDS,
+  CURVE_PROFILE_STEP_M, DECELERATION_PREDICATIVE, NOT_SET, PSD_05_FIELDS,
   PSD_TYPE_CURV_SPEED, PSD_TYPE_SPEED_LIMIT, SPEED_SEGMENT_PROTECTION_TIME_S, SpeedLimitManager,
 )
 from opendbc.car.volkswagen.values import VolkswagenFlags
@@ -222,7 +222,6 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.update(curve_target, segment(4, parent_id=3), position(3, 0))
     self.update(curve_target, psd_05=position(4, 100))
     self.manager.get_speed_limit()
-    self.assertEqual(self.manager._curve_release_speed_ms, 0.0)
     self.assertEqual(self.manager.get_speed_limit_predicative(), NOT_SET)
 
   def test_speed_offset_uses_psd05_remaining_distance(self):
@@ -378,33 +377,26 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.assertGreater(self.manager._event_start_positions[committed_index], 100 ** 2 * CV.KPH_TO_MS ** 2 / (2 * DECELERATION_PREDICATIVE))
     self.assertLessEqual(distance.call_count, 2)
 
-  def test_curve_release_respects_longitudinal_acceleration_and_jerk(self):
-    # A long curve segment: the cap releases within the curve as the curvature
-    # decreases along the segment, while the curve event is still active.
+  def test_curve_cap_is_passed_through_directly_without_ramp(self):
+    # A curve segment that tapers from strong curvature to straight: the cap
+    # must follow the piecewise profile directly, without jerk/accel ramping.
     self.update(100, segment(2, length=200, street_category=3), position(2, 200))
     self.update(100, psd_05=position(2, 200), psd_06=speed_attribute(2, 16))
     self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 100)
 
-    # Segment starts with strong curvature and tapers to straight at the end.
     self.update(100, segment(3, parent_id=2, length=400, street_category=3,
                              curvature_begin=50, curvature_end=255), position(2, 30))
     self.manager.get_speed_limit()
     self.assertGreater(self.manager.get_speed_limit_predicative(), 0)
 
-    previous_speed = self.manager._curve_release_speed_ms
-    previous_accel = self.manager._curve_release_accel
-    for _ in range(100):
-      self.update(80, psd_05=position(3, 350))
+    # Drive through the curve; the cap should follow the profile directly.
+    for remaining in [350, 300, 250, 200, 150, 100, 50, 1]:
+      self.update(80, psd_05=position(3, remaining))
       self.manager.get_speed_limit()
-      speed = self.manager._curve_release_speed_ms
-      accel = self.manager._curve_release_accel
-      if speed == 0.0 and previous_speed > 0.0:
-        break
-      self.assertLessEqual(accel, ACCELERATION_PREDICATIVE + 1e-9)
-      self.assertLessEqual(accel - previous_accel, JERK_PREDICATIVE * DT_CTRL + 1e-9)
-      self.assertLessEqual(speed - previous_speed, accel * DT_CTRL + 1e-9)
-      previous_speed = speed
-      previous_accel = accel
+      target = self.manager.get_speed_limit_predicative()
+      if target != NOT_SET:
+        # No ramp: each step must be a clean 5-kph quantum from the profile.
+        self.assertAlmostEqual(target * CV.MS_TO_KPH % 5, 0, delta=0.1)
 
   def test_false_large_vze_drop_is_rejected_stickily(self):
     self.add_current_limit(limit_raw=11)
@@ -562,7 +554,6 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.assertLess(curve_target, 130)
     self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, curve_target)
     self.assertEqual(self.manager.get_speed_limit_predicative_type(), PSD_TYPE_CURV_SPEED)
-    self.assertGreater(self.manager._curve_release_speed_ms, 0.0)
 
     # Enter the curve segment and drive through it.
     self.update(curve_target, psd_05=position(3, 80))
@@ -575,7 +566,6 @@ class TestSpeedLimitManager(unittest.TestCase):
                 position(3, 0))
     self.update(curve_target, psd_05=position(4, 200))
     self.manager.get_speed_limit()
-    self.assertEqual(self.manager._curve_release_speed_ms, 0.0)
     self.assertEqual(self.manager.get_speed_limit_predicative(), NOT_SET)
 
   def test_vze_fluctuation_after_psd_confirmation_cannot_push_output_back_up(self):
