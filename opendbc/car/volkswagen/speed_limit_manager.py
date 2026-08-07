@@ -246,7 +246,11 @@ class SpeedLimitManager:
     return v_limit_output * CV.KPH_TO_MS
 
   def get_speed_limit_predicative_type(self):
-    return self.v_limit_psd_next_type if self.v_limit_psd_next != NOT_SET else NOT_SET
+    if self.v_limit_psd_next != NOT_SET:
+      return self.v_limit_psd_next_type
+    if self._speed_protection_is_active():
+      return PSD_TYPE_CURV_SPEED if self._speed_protection_is_curve else PSD_TYPE_SPEED_LIMIT
+    return NOT_SET
 
   def get_speed_limit(self):
     vze = self.v_limit_vze if not self.v_limit_vze_sanity_error else NOT_SET

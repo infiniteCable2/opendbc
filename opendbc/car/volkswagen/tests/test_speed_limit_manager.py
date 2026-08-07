@@ -801,6 +801,48 @@ class TestSpeedLimitManager(unittest.TestCase):
     # Predicative output is held at 50.
     self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, 50)
 
+  def test_predicative_type_stays_speed_limit_during_protection(self):
+    # While the speed-limit protection holds the predicative output, the type
+    # must remain PSD_TYPE_SPEED_LIMIT — not fluctuate to a curve type that
+    # might appear in v_limit_psd_next_type from a transient committed event.
+    self.add_current_limit()
+    self.update(100, segment(3, parent_id=2, length=500), position(2, 30), speed_attribute(3, 11))
+    self.manager.get_speed_limit()
+    self.assertEqual(self.manager.get_speed_limit_predicative_type(), PSD_TYPE_SPEED_LIMIT)
+
+    self.update(50, psd_05=position(3, 500), traffic_sign=vze(100))
+    self.manager.get_speed_limit()
+    self.assertTrue(self.manager._speed_protection_active)
+    # Type must be PSD_TYPE_SPEED_LIMIT, matching the protection source.
+    self.assertEqual(self.manager.get_speed_limit_predicative_type(), PSD_TYPE_SPEED_LIMIT)
+
+    # Drive further; protection still holds (VZE lags at 100).
+    self.update(50, psd_05=position(3, 490), traffic_sign=vze(100))
+    self.manager.get_speed_limit()
+    self.assertTrue(self.manager._speed_protection_active)
+    self.assertEqual(self.manager.get_speed_limit_predicative_type(), PSD_TYPE_SPEED_LIMIT)
+
+  def test_predicative_type_stays_curve_during_curve_protection(self):
+    self.update(100, segment(2, length=200, street_category=5), position(2, 200))
+    self.update(100, psd_05=position(2, 200), psd_06=speed_attribute(2, 23))
+    self.update(100, segment(3, parent_id=2, length=500, street_category=3,
+                             curvature_begin=50, curvature_end=50), position(2, 30))
+    self.manager.get_speed_limit()
+    curve_target = self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH
+
+    self.update(curve_target, psd_05=position(3, 500), traffic_sign=vze(130))
+    self.manager.get_speed_limit()
+    self.assertTrue(self.manager._speed_protection_active)
+    self.assertTrue(self.manager._speed_protection_is_curve)
+    # Type must be PSD_TYPE_CURV_SPEED, matching the protection source.
+    self.assertEqual(self.manager.get_speed_limit_predicative_type(), PSD_TYPE_CURV_SPEED)
+
+    # Drive further; protection still holds.
+    self.update(curve_target, psd_05=position(3, 490), traffic_sign=vze(130))
+    self.manager.get_speed_limit()
+    self.assertTrue(self.manager._speed_protection_active)
+    self.assertEqual(self.manager.get_speed_limit_predicative_type(), PSD_TYPE_CURV_SPEED)
+
 
 if __name__ == "__main__":
   unittest.main()
