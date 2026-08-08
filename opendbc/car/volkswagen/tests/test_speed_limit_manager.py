@@ -3,10 +3,9 @@ import unittest
 from types import SimpleNamespace
 from unittest import mock
 
-from opendbc.car import DT_CTRL
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.volkswagen.speed_limit_manager import (
-  CURVE_PROFILE_STEP_M, DECELERATION_PREDICATIVE, NOT_SET, PSD_05_FIELDS,
+  CURVE_PROFILE_STEP_M, DECELERATION_PREDICATIVE, MAX_PSD_SEGMENTS, NOT_SET, PSD_05_FIELDS,
   PSD_TYPE_CURV_SPEED, PSD_TYPE_SPEED_LIMIT, SPEED_SEGMENT_PROTECTION_TIME_S, SpeedLimitManager,
 )
 from opendbc.car.volkswagen.values import VolkswagenFlags
@@ -175,6 +174,17 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.assertIn(alternative_key, self.manager.predicative_segments[self.manager._current_key].children)
     self.assertEqual(self.manager._route, (self.manager._current_key, likely_key))
 
+  def test_position_distance_follows_actual_nonlikely_branch(self):
+    self.update(100, segment(2, length=100), position(2, 10))
+    self.update(100, segment(3, parent_id=2, likely=False, length=100), position(2, 10))
+    self.update(100, segment(4, parent_id=2, likely=True, length=100), position(2, 10))
+    distance_before = self.manager._position_distance
+
+    # PSD-05 proves that the alternative branch was taken: 10 m to the end of
+    # segment 2 plus 10 m progress into segment 3.
+    self.update(100, psd_05=position(3, 90))
+    self.assertAlmostEqual(self.manager._position_distance - distance_before, 20)
+
   def test_offroute_branch_mutation_keeps_selected_event_profile(self):
     self.add_current_limit()
     self.update(100, segment(3, parent_id=2, likely=True, curvature_begin=75, curvature_end=75), position(2, 80))
@@ -197,6 +207,29 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.assertIsNot(self.manager._events, events)
     selected_speed = next(event.speed for event in self.manager._events if event.segment_key == self.manager._active_by_id[3])
     self.assertEqual(selected_speed, 45)
+
+  def test_current_segment_geometry_refinement_keeps_incarnation_and_children(self):
+    self.update(100, segment(2, length=100), position(2, 80))
+    current_key = self.manager._current_key
+    self.update(100, segment(3, parent_id=2, length=100), position(2, 80))
+    child_key = self.manager._active_by_id[3]
+    self.assertIn(child_key, self.manager.predicative_segments[current_key].children)
+
+    # VW may refine geometry while building a segment. Matching identity and
+    # parent prove continuity, so this must update the node in place.
+    self.update(100, segment(2, length=120, curvature_begin=220, curvature_end=210), position(2, 80))
+    self.assertEqual(self.manager._current_key, current_key)
+    self.assertEqual(self.manager._active_by_id[2], current_key)
+    self.assertEqual(self.manager.predicative_segments[current_key].length, 120)
+    self.assertIn(child_key, self.manager.predicative_segments[current_key].children)
+
+  def test_reachable_graph_is_hard_bounded(self):
+    self.update(100, segment(2, length=10), position(2, 10))
+    parent = 2
+    for segment_id in range(3, MAX_PSD_SEGMENTS + 40):
+      self.update(100, segment(segment_id, parent_id=parent, length=10), position(2, 10))
+      parent = segment_id
+    self.assertLessEqual(len(self.manager.predicative_segments), MAX_PSD_SEGMENTS)
 
   def test_curve_event_lives_for_exact_segment_not_timeout(self):
     self.add_current_limit()
@@ -297,6 +330,13 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.manager.get_speed_limit()
     self.assertFalse(self.manager._current_valid)
     self.assertEqual(self.manager.get_speed_limit_predicative(), NOT_SET)
+    self.assertEqual(self.manager.predicative_segments, {})
+    self.assertEqual(self.manager._active_map_limit, NOT_SET)
+
+    # The rolling numeric ID alone must not resurrect route-qualified data.
+    self.update(100, psd_05=position(2, 100))
+    self.assertIsNone(self.manager._current_key)
+    self.assertEqual(self.manager.get_speed_limit(), NOT_SET)
 
   def test_feature_switch_rebuilds_events_and_clears_commit(self):
     self.add_current_limit()
@@ -552,10 +592,10 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.manager.get_speed_limit()
     self.assertEqual(self.manager.get_speed_limit_predicative(), NOT_SET)
 
-  def test_vze_fluctuation_after_psd_confirmation_cannot_push_output_back_up(self):
+  def test_vze_priority_resumes_after_psd_confirmation(self):
     # PSD detects a 50 zone early; we brake to it. VZE lags at first, then
-    # briefly confirms 50, then fluctuates back to the old limit before
-    # settling. The output must stay at 50 throughout, never jumping back up.
+    # confirms 50. That confirmation ends protection; any later VZE value is
+    # intentionally authoritative again.
     self.update(100, segment(2, length=200, street_category=5), position(2, 200))
     self.update(100, psd_05=position(2, 200), psd_06=speed_attribute(2, 23))
     self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 130)
@@ -579,12 +619,12 @@ class TestSpeedLimitManager(unittest.TestCase):
 
     # VZE fluctuates back to the old limit: protection already ended, VZE takes priority.
     self.update(50, psd_05=position(3, 160), traffic_sign=vze(130))
-    self.manager.get_speed_limit()
+    self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 130)
     self.assertFalse(self.manager._speed_protection_active)
 
-  def test_curve_protection_shields_cap_from_lagging_vze(self):
-    # A curve is detected predictively; while braking towards it, VZE still
-    # reports a higher limit. The curve cap must be protected from VZE.
+  def test_curve_cap_does_not_activate_speed_protection(self):
+    # Curve caps are governed only by the live geometry corridor. Entering a
+    # curve must not arm the grace period reserved for PSD speed limits.
     self.update(100, segment(2, length=200, street_category=5), position(2, 200))
     self.update(100, psd_05=position(2, 200), psd_06=speed_attribute(2, 23))
     self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 130)
@@ -599,11 +639,69 @@ class TestSpeedLimitManager(unittest.TestCase):
     # Arrive at the curve segment; VZE still reports the old limit.
     self.update(curve_target, psd_05=position(3, 200), traffic_sign=vze(130))
     self.manager.get_speed_limit()
-    self.assertTrue(self.manager._speed_protection_active)
-    # Predicative output is held at the curve cap; normal output reflects VZE.
+    self.assertFalse(self.manager._speed_protection_active)
+    # The live curve event itself still supplies the cap while it is active.
     self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, curve_target)
+    self.assertEqual(self.manager.get_speed_limit_predicative_type(), PSD_TYPE_CURV_SPEED)
 
-  def test_curve_protection_releases_when_vze_changes(self):
+  def test_speed_protection_distance_crosses_short_segments(self):
+    self.add_current_limit()
+    self.update(100, segment(3, parent_id=2, length=20), position(2, 10), speed_attribute(3, 11))
+    self.manager.get_speed_limit()
+    self.update(50, psd_05=position(3, 20), traffic_sign=vze(100))
+    self.manager.get_speed_limit()
+    self.assertTrue(self.manager._speed_protection_active)
+
+    parent = 3
+    for segment_id in (4, 5, 6):
+      self.update(50, segment(segment_id, parent_id=parent, length=20), position(parent, 0), traffic_sign=vze(100))
+      self.update(50, psd_05=position(segment_id, 0), traffic_sign=vze(100))
+      parent = segment_id
+
+    protection_distance = 50 * CV.KPH_TO_MS * SPEED_SEGMENT_PROTECTION_TIME_S
+    self.assertGreater(self.manager._position_distance - self.manager._speed_protection_distance_start,
+                       protection_distance)
+    self.assertFalse(self.manager._speed_protection_active)
+
+  def test_speed_protection_survives_standstill_at_target(self):
+    self.add_current_limit()
+    self.update(100, segment(3, parent_id=2, length=200), position(2, 30), speed_attribute(3, 11))
+    self.manager.get_speed_limit()
+    target = self.manager.get_speed_limit_predicative()
+    committed = self.manager._committed_event_identity
+
+    self.update(0, psd_05=position(3, 200), traffic_sign=vze(100))
+    self.manager.get_speed_limit()
+    self.assertEqual(self.manager.get_speed_limit_predicative(), target)
+    self.assertEqual(self.manager._committed_event_identity, committed)
+
+    self.update(10, psd_05=position(3, 195), traffic_sign=vze(100))
+    self.manager.get_speed_limit()
+    self.assertTrue(self.manager._speed_protection_active)
+    self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, 50)
+
+  def test_late_first_vze_establishes_lagging_protection_baseline(self):
+    self.add_current_limit()
+    self.update(100, segment(3, parent_id=2, length=200), position(2, 30), speed_attribute(3, 11))
+    self.manager.get_speed_limit()
+
+    # Enter without VZE. The map target is current, while the protection stays
+    # armed in case an old sign arrives a little later.
+    self.update(50, psd_05=position(3, 200))
+    self.manager.get_speed_limit()
+    self.assertTrue(self.manager._speed_protection_active)
+
+    self.update(50, psd_05=position(3, 190), traffic_sign=vze(100))
+    self.manager.get_speed_limit()
+    self.assertTrue(self.manager._speed_protection_active)
+    self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, 50)
+
+    # A subsequent change is a real VZE transition and ends protection.
+    self.update(50, psd_05=position(3, 180), traffic_sign=vze(50))
+    self.manager.get_speed_limit()
+    self.assertFalse(self.manager._speed_protection_active)
+
+  def test_curve_cap_is_not_controlled_by_vze_protection(self):
     self.update(100, segment(2, length=200, street_category=5), position(2, 200))
     self.update(100, psd_05=position(2, 200), psd_06=speed_attribute(2, 23))
     self.update(100, segment(3, parent_id=2, length=200, street_category=3,
@@ -613,12 +711,13 @@ class TestSpeedLimitManager(unittest.TestCase):
 
     self.update(curve_target, psd_05=position(3, 200), traffic_sign=vze(130))
     self.manager.get_speed_limit()
-    self.assertTrue(self.manager._speed_protection_active)
+    self.assertFalse(self.manager._speed_protection_active)
 
-    # VZE changes to a different value: protection ends.
+    # A VZE change does not release or retain the cap; geometry alone does.
     self.update(curve_target, psd_05=position(3, 180), traffic_sign=vze(100))
     self.manager.get_speed_limit()
     self.assertFalse(self.manager._speed_protection_active)
+    self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, curve_target)
 
   def test_curve_events_generated_for_urban_segments(self):
     # Curves are now enabled for all street types, including urban.
@@ -646,7 +745,7 @@ class TestSpeedLimitManager(unittest.TestCase):
     # Predicative output is held at 50.
     self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, 50)
 
-  def test_curve_protection_not_ended_by_psd_speed_limit_change(self):
+  def test_curve_cap_does_not_leave_protection_on_followon_segment(self):
     self.update(100, segment(2, length=200, street_category=5), position(2, 200))
     self.update(100, psd_05=position(2, 200), psd_06=speed_attribute(2, 23))
     self.update(100, segment(3, parent_id=2, length=500, street_category=3,
@@ -657,19 +756,19 @@ class TestSpeedLimitManager(unittest.TestCase):
     # Arrive at the curve segment; VZE still reports the old limit.
     self.update(curve_target, psd_05=position(3, 500), traffic_sign=vze(130))
     self.manager.get_speed_limit()
-    self.assertTrue(self.manager._speed_protection_active)
-    self.assertTrue(self.manager._speed_protection_is_curve)
+    self.assertFalse(self.manager._speed_protection_active)
 
-    # A follow-on segment carries a different PSD speed limit. The curve
-    # protection must NOT end because the curve cap comes from geometry.
+    # A straight follow-on segment carries a different PSD speed limit. There
+    # is no curve protection to leak the first curve-cell cap across entry.
     self.update(curve_target, segment(4, parent_id=3, length=500, street_category=3),
                 position(3, 480), speed_attribute(4, 16))
     self.update(curve_target, psd_05=position(4, 500), traffic_sign=vze(130))
     self.manager.get_speed_limit()
-    self.assertTrue(self.manager._speed_protection_active)
-    self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, curve_target)
+    self.assertFalse(self.manager._speed_protection_active)
+    self.assertEqual(self.manager.get_speed_limit_predicative(), NOT_SET)
+    self.assertEqual(self.manager.get_speed_limit_predicative_type(), NOT_SET)
 
-  def test_curve_protection_predicative_type_is_curve(self):
+  def test_live_curve_event_predicative_type_is_curve(self):
     self.update(100, segment(2, length=200, street_category=5), position(2, 200))
     self.update(100, psd_05=position(2, 200), psd_06=speed_attribute(2, 23))
     self.update(100, segment(3, parent_id=2, length=200, street_category=3,
@@ -679,7 +778,7 @@ class TestSpeedLimitManager(unittest.TestCase):
 
     self.update(curve_target, psd_05=position(3, 200), traffic_sign=vze(130))
     self.manager.get_speed_limit()
-    self.assertTrue(self.manager._speed_protection_active)
+    self.assertFalse(self.manager._speed_protection_active)
     self.assertEqual(self.manager.get_speed_limit_predicative_type(), PSD_TYPE_CURV_SPEED)
 
   def test_protection_reactivates_after_new_event(self):
@@ -711,7 +810,7 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.assertTrue(self.manager._speed_protection_active)
     self.assertEqual(self.manager._speed_protection_speed, 35)
 
-  def test_curve_protection_releases_after_distance_exceeded(self):
+  def test_curve_cap_does_not_use_distance_protection(self):
     self.update(100, segment(2, length=200, street_category=5), position(2, 200))
     self.update(100, psd_05=position(2, 200), psd_06=speed_attribute(2, 23))
     self.update(100, segment(3, parent_id=2, length=500, street_category=3,
@@ -721,14 +820,16 @@ class TestSpeedLimitManager(unittest.TestCase):
 
     self.update(curve_target, psd_05=position(3, 500), traffic_sign=vze(130))
     self.manager.get_speed_limit()
-    self.assertTrue(self.manager._speed_protection_active)
+    self.assertFalse(self.manager._speed_protection_active)
 
-    # Drive beyond the curve-speed-derived protection distance.
+    # Driving farther than the speed-protection distance does not participate
+    # in curve state; the still-active geometry continues to supply the cap.
     protection_distance = curve_target * CV.KPH_TO_MS * SPEED_SEGMENT_PROTECTION_TIME_S
     remaining = 500 - protection_distance - 1
     self.update(curve_target, psd_05=position(3, max(0, remaining)), traffic_sign=vze(130))
     self.manager.get_speed_limit()
     self.assertFalse(self.manager._speed_protection_active)
+    self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, curve_target)
 
   def test_consumed_prevents_reactivation_until_new_committed_event(self):
     self.add_current_limit()
@@ -796,7 +897,6 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.update(50, psd_05=position(4, 500), traffic_sign=vze(100))
     self.manager.get_speed_limit()
     self.assertTrue(self.manager._speed_protection_active)
-    self.assertFalse(self.manager._speed_protection_is_curve)
     self.assertEqual(self.manager._speed_protection_speed, 50)
     # Predicative output is held at 50.
     self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, 50)
@@ -822,7 +922,22 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.assertTrue(self.manager._speed_protection_active)
     self.assertEqual(self.manager.get_speed_limit_predicative_type(), PSD_TYPE_SPEED_LIMIT)
 
-  def test_predicative_type_stays_curve_during_curve_protection(self):
+    # A higher internal curve target must not replace the lower protected
+    # speed-limit value or make its public type flicker.
+    self.manager.v_limit_psd_next = 80
+    self.manager.v_limit_psd_next_type = PSD_TYPE_CURV_SPEED
+    self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, 50)
+    self.assertEqual(self.manager.get_speed_limit_predicative_type(), PSD_TYPE_SPEED_LIMIT)
+
+  def test_predicative_type_is_not_exposed_without_predicative_value(self):
+    self.manager.v_limit_output_last = 50
+    self.manager.v_limit_psd_next = 80
+    self.manager.v_limit_psd_next_type = PSD_TYPE_CURV_SPEED
+
+    self.assertEqual(self.manager.get_speed_limit_predicative(), NOT_SET)
+    self.assertEqual(self.manager.get_speed_limit_predicative_type(), NOT_SET)
+
+  def test_predicative_type_clears_with_curve_output_after_release(self):
     self.update(100, segment(2, length=200, street_category=5), position(2, 200))
     self.update(100, psd_05=position(2, 200), psd_06=speed_attribute(2, 23))
     self.update(100, segment(3, parent_id=2, length=500, street_category=3,
@@ -832,16 +947,17 @@ class TestSpeedLimitManager(unittest.TestCase):
 
     self.update(curve_target, psd_05=position(3, 500), traffic_sign=vze(130))
     self.manager.get_speed_limit()
-    self.assertTrue(self.manager._speed_protection_active)
-    self.assertTrue(self.manager._speed_protection_is_curve)
-    # Type must be PSD_TYPE_CURV_SPEED, matching the protection source.
+    self.assertFalse(self.manager._speed_protection_active)
     self.assertEqual(self.manager.get_speed_limit_predicative_type(), PSD_TYPE_CURV_SPEED)
 
-    # Drive further; protection still holds.
-    self.update(curve_target, psd_05=position(3, 490), traffic_sign=vze(130))
+    # Enter a straight successor. Value and type must clear in the same cycle;
+    # no curve-only type pulse may remain on the public output.
+    self.update(curve_target, segment(4, parent_id=3, length=200, street_category=3), position(3, 0))
+    self.update(curve_target, psd_05=position(4, 200), traffic_sign=vze(130))
     self.manager.get_speed_limit()
-    self.assertTrue(self.manager._speed_protection_active)
-    self.assertEqual(self.manager.get_speed_limit_predicative_type(), PSD_TYPE_CURV_SPEED)
+    self.assertFalse(self.manager._speed_protection_active)
+    self.assertEqual(self.manager.get_speed_limit_predicative(), NOT_SET)
+    self.assertEqual(self.manager.get_speed_limit_predicative_type(), NOT_SET)
 
 
 if __name__ == "__main__":

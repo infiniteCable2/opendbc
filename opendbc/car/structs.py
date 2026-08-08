@@ -172,6 +172,7 @@ class CarStateIC:
   batteryDetails: 'CarStateIC.BatteryDetails' = field(default_factory=lambda: CarStateIC.BatteryDetails())
   cruiseSpeedLimit: float = auto_field()
   cruiseSpeedLimitPredicative: float = auto_field()
+  cruiseSpeedLimitPredicativeType: int = auto_field()
 
   @auto_dataclass
   class BatteryDetails:

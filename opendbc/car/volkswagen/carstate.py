@@ -390,7 +390,8 @@ class CarState(CarStateBase, MadsCarState):
     self.speed_limit_mgr.update(ret.vEgo, psd_04_values, psd_05_values, psd_06_values, vze_04_values, raining, diagnose_01_values)
     ret_ic.cruiseSpeedLimit = self.speed_limit_mgr.get_speed_limit()
     ret_ic.cruiseSpeedLimitPredicative = self.speed_limit_mgr.get_speed_limit_predicative()
-    self.speed_limit_predicative_type = self.speed_limit_mgr.get_speed_limit_predicative_type()
+    ret_ic.cruiseSpeedLimitPredicativeType = self.speed_limit_mgr.get_speed_limit_predicative_type()
+    self.speed_limit_predicative_type = ret_ic.cruiseSpeedLimitPredicativeType
 
     ret_sp.speedLimit = ret_ic.cruiseSpeedLimit
     

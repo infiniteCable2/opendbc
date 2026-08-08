@@ -144,10 +144,16 @@ class SpeedLimitManager:
     self._committed_event_type = NOT_SET
     self._speed_protection_active = False
     self._speed_protection_speed = NOT_SET
-    self._speed_protection_progress_start = 0.0
+    self._speed_protection_distance_start = 0.0
     self._speed_protection_vze_at_start = NOT_SET
     self._speed_protection_consumed = False
-    self._speed_protection_is_curve = False
+
+    # Monotonic distance derived from valid PSD-05 route progress. Unlike the
+    # segment-local progress value, this survives transitions to short follow-on
+    # segments and therefore provides a stable coordinate for protection state.
+    self._position_distance = 0.0
+    self._position_anchor_key: SegmentKey | None = None
+    self._position_anchor_remaining = 0.0
 
   def _clear_committed_event(self):
     self._committed_event_index = None
@@ -159,17 +165,15 @@ class SpeedLimitManager:
   def _clear_speed_protection(self):
     self._speed_protection_active = False
     self._speed_protection_speed = NOT_SET
-    self._speed_protection_progress_start = 0.0
+    self._speed_protection_distance_start = 0.0
     self._speed_protection_vze_at_start = NOT_SET
-    self._speed_protection_is_curve = False
 
-  def _activate_speed_protection(self, speed, current_progress, is_curve):
+  def _activate_speed_protection(self, speed, distance_start):
     self._speed_protection_active = True
     self._speed_protection_speed = speed
-    self._speed_protection_progress_start = current_progress
+    self._speed_protection_distance_start = distance_start
     self._speed_protection_vze_at_start = self.v_limit_vze
     self._speed_protection_consumed = False
-    self._speed_protection_is_curve = is_curve
 
   def _release_speed_protection(self):
     self._speed_protection_consumed = True
@@ -226,31 +230,31 @@ class SpeedLimitManager:
     else:
       self._reset_predicative()
 
-    current_progress = 0.0
-    if self._current_valid and self._current_key is not None:
-      seg = self.predicative_segments.get(self._current_key)
-      if seg is not None:
-        current_progress = max(0.0, seg.length - self._current_remaining)
-
-    self._update_speed_protection(current_progress)
+    self._update_speed_protection()
     self._update_map_mismatch()
     self._get_speed_limit_psd()
     self._update_legal_limit()
 
-  def get_speed_limit_predicative(self):
+  def _get_predicative_output(self):
     active_limit = self.v_limit_output_last
-    v_limit_output = self.v_limit_psd_next if (self.predicative and self.v_limit_psd_next != NOT_SET and
-                                                active_limit != NOT_SET and self.v_limit_psd_next < active_limit) else NOT_SET
-    if v_limit_output == NOT_SET and self._speed_protection_is_active():
-      v_limit_output = self._speed_protection_speed if active_limit == NOT_SET or self._speed_protection_speed < active_limit else NOT_SET
-    return v_limit_output * CV.KPH_TO_MS
+    output_speed = NOT_SET
+    output_type = NOT_SET
+    if (self.predicative and self.v_limit_psd_next != NOT_SET and active_limit != NOT_SET and
+        self.v_limit_psd_next < active_limit):
+      output_speed = self.v_limit_psd_next
+      output_type = self.v_limit_psd_next_type
+    if (self._speed_protection_is_active() and
+        (active_limit == NOT_SET or self._speed_protection_speed < active_limit)):
+      protected = (self._speed_protection_speed, PSD_TYPE_SPEED_LIMIT)
+      if output_speed == NOT_SET or protected < (output_speed, output_type):
+        output_speed, output_type = protected
+    return output_speed, output_type
+
+  def get_speed_limit_predicative(self):
+    return self._get_predicative_output()[0] * CV.KPH_TO_MS
 
   def get_speed_limit_predicative_type(self):
-    if self.v_limit_psd_next != NOT_SET:
-      return self.v_limit_psd_next_type
-    if self._speed_protection_is_active():
-      return PSD_TYPE_CURV_SPEED if self._speed_protection_is_curve else PSD_TYPE_SPEED_LIMIT
-    return NOT_SET
+    return self._get_predicative_output()[1]
 
   def get_speed_limit(self):
     vze = self.v_limit_vze if not self.v_limit_vze_sanity_error else NOT_SET
@@ -367,7 +371,9 @@ class SpeedLimitManager:
     parent_id = psd_04.get("PSD_Vorgaenger_Segment_ID", NOT_SET)
     expected_parent_key = self._active_by_id.get(parent_id) if parent_id > 1 else None
     parent_incarnation_changed = seg is not None and seg.parent_key != expected_parent_key
-    if seg is None or seg.structural_signature != signature or parent_incarnation_changed:
+    identity_id = psd_04.get("PSD_Idenditaets_ID", NOT_SET)
+    identity_changed = seg is not None and seg.identity_id != identity_id
+    if seg is None or parent_incarnation_changed or identity_changed:
       incarnation = self._incarnation_by_id.get(segment_id, 0) + 1
       self._incarnation_by_id[segment_id] = incarnation
       key = (segment_id, incarnation)
@@ -385,7 +391,7 @@ class SpeedLimitManager:
         on_ramp_exit=psd_04.get("PSD_Rampe", 0) in (1, 2),
         likely=bool(psd_04.get("PSD_wahrscheinlichster_Pfad", 0)),
         straight=bool(psd_04.get("PSD_Geradester_Pfad", 0)),
-        identity_id=psd_04.get("PSD_Idenditaets_ID", NOT_SET),
+        identity_id=identity_id,
         branch_direction=psd_04.get("PSD_Abzweigerichtung", 0),
         branch_angle=float(psd_04.get("PSD_Abzweigewinkel", 0)),
         complete=bool(psd_04.get("PSD_Segment_Komplett", 0)),
@@ -410,12 +416,121 @@ class SpeedLimitManager:
       self._resolve_current_key()
       self._bound_graph()
     else:
-      annotations = (seg.likely, seg.straight, seg.complete)
+      # Geometry and classification may be refined while VW is still building
+      # a segment. Keep the incarnation and its children/speed attributes when
+      # parent and identity prove continuity; creating a second incarnation
+      # here would split the active route between an old current node and new
+      # children attached to the replacement node.
+      previous = (
+        seg.length, seg.curvature_begin, seg.curvature_end, seg.street_type, seg.on_ramp_exit,
+        seg.likely, seg.straight, seg.branch_direction, seg.branch_angle, seg.complete,
+        seg.structural_signature,
+      )
+      previous_street_type = seg.street_type
+      seg.length = max(0.0, float(psd_04.get("PSD_Segmentlaenge", 0)))
+      seg.curvature_begin = self._get_segment_curvature_psd(
+        psd_04.get("PSD_Anfangskruemmung", 255), psd_04.get("PSD_Anfangskruemmung_Vorz", 0))
+      seg.curvature_end = self._get_segment_curvature_psd(
+        psd_04.get("PSD_Endkruemmung", 255), psd_04.get("PSD_Endkruemmung_Vorz", 0))
+      seg.street_type = self._get_street_type(psd_04.get("PSD_Strassenkategorie", 0), psd_04.get("PSD_Bebauung", 0))
+      seg.on_ramp_exit = psd_04.get("PSD_Rampe", 0) in (1, 2)
       seg.likely = bool(psd_04.get("PSD_wahrscheinlichster_Pfad", 0))
       seg.straight = bool(psd_04.get("PSD_Geradester_Pfad", 0))
+      seg.branch_direction = psd_04.get("PSD_Abzweigerichtung", 0)
+      seg.branch_angle = float(psd_04.get("PSD_Abzweigewinkel", 0))
       seg.complete = bool(psd_04.get("PSD_Segment_Komplett", 0))
-      if annotations != (seg.likely, seg.straight, seg.complete):
+      seg.structural_signature = signature
+      seg.speed_offset = min(seg.speed_offset, seg.length) if seg.length > 0 else seg.speed_offset
+      if seg.speed_quality and previous_street_type != seg.street_type:
+        seg.speed = self._convert_raw_speed_psd(seg.speed_raw, seg.street_type)
+        seg.speed_quality = seg.speed != NOT_SET
+      current = (
+        seg.length, seg.curvature_begin, seg.curvature_end, seg.street_type, seg.on_ramp_exit,
+        seg.likely, seg.straight, seg.branch_direction, seg.branch_angle, seg.complete,
+        seg.structural_signature,
+      )
+      if previous != current:
         self._graph_revision += 1
+
+  def _invalidate_position_context(self):
+    """Drop route-qualified state after an explicit PSD off-road position."""
+    self._current_key = None
+    self._current_id = NOT_SET
+    self._current_remaining = 0.0
+    self._current_valid = False
+    self._position_ambiguous = False
+    self._position_distance = 0.0
+    self._position_anchor_key = None
+    self._position_anchor_remaining = 0.0
+    self._active_map_limit = NOT_SET
+    self._map_mismatch_keys.clear()
+    self.predicative_segments.clear()
+    self._segments_by_id.clear()
+    self._active_by_id.clear()
+    self._pending_speed_attributes.clear()
+    self._route = ()
+    self._route_index.clear()
+    self._route_distance_to_start.clear()
+    self._route_event_signature = None
+    self._events = ()
+    self._event_start_positions = ()
+    self._event_cursor = 0
+    self._route_revision += 1
+    self._graph_revision += 1
+    self._route_graph_revision = -1
+    self._last_psd_04_payload = None
+    self._last_psd_06_speed_payload = None
+    self._reset_predicative()
+
+  def _route_distance_between_positions(self, start_key, start_remaining, end_key, end_remaining):
+    if start_key not in self.predicative_segments or end_key not in self.predicative_segments:
+      return None
+    if start_key == end_key:
+      delta = start_remaining - end_remaining
+      return delta if delta >= 0 else None
+
+    # The new PSD-05 position proves which branch was actually taken, so walk
+    # every retained child path rather than relying on the previously predicted
+    # likely branch. The graph is bounded, making this transition-only search
+    # deterministic and cheap.
+    visited = {start_key}
+    stack = [(start_key, max(0.0, start_remaining))]
+    while stack:
+      key, distance = stack.pop()
+      seg = self.predicative_segments[key]
+      for child_key in seg.children:
+        if child_key in visited or child_key not in self.predicative_segments:
+          continue
+        visited.add(child_key)
+        child = self.predicative_segments[child_key]
+        if child_key == end_key:
+          return distance + max(0.0, child.length - end_remaining)
+        stack.append((child_key, distance + child.length))
+    return None
+
+  def _update_position_distance(self, key, remaining):
+    if key is None:
+      self._position_anchor_key = None
+      return
+    if self._position_anchor_key is None:
+      self._position_anchor_key = key
+      self._position_anchor_remaining = remaining
+      return
+
+    delta = self._route_distance_between_positions(
+      self._position_anchor_key, self._position_anchor_remaining, key, remaining)
+    if delta is not None:
+      self._position_distance += delta
+      self._position_anchor_key = key
+      self._position_anchor_remaining = remaining
+    elif key != self._position_anchor_key:
+      # A non-connected jump is a route change, not forward travel. Start a
+      # fresh anchor and discard promises tied to the previous route.
+      self._position_anchor_key = key
+      self._position_anchor_remaining = remaining
+      self._reset_predicative()
+    # A same-segment regression is a map-matching correction. Keep the older
+    # anchor so its distance cannot be counted a second time when PSD catches up.
 
   def _receive_current_segment_psd(self, psd_05):
     # PSD-05 covers all 64 payload bits. A completely zero record carries
@@ -432,9 +547,7 @@ class SpeedLimitManager:
     quality_valid = longitudinal_error is None or longitudinal_error in (1, 2)
 
     if segment_id <= 1 or remaining < 0 or longitudinal_error == 7:
-      self._position_ambiguous = False
-      self._current_valid = False
-      self._reset_predicative()
+      self._invalidate_position_context()
       return
 
     if not unique or not quality_valid:
@@ -445,12 +558,14 @@ class SpeedLimitManager:
 
     self._position_ambiguous = False
     changed = segment_id != self._current_id
+    previous_key = self._current_key
+    current_key = self._select_current_key(segment_id, previous_key) if changed or previous_key is None else previous_key
+    self._update_position_distance(current_key, remaining)
     self._current_id = segment_id
+    self._current_key = current_key
     self._current_remaining = remaining
     self._current_valid = True
     if changed:
-      previous_key = self._current_key
-      self._current_key = self._select_current_key(segment_id, previous_key)
       self._graph_revision += 1
       if self._current_key is not None:
         self._prune_to_current_horizon()
@@ -522,9 +637,32 @@ class SpeedLimitManager:
       return
     protected = self._reachable_from(self._current_key) if self._current_key is not None else set()
     removable = sorted((seg for seg in self.predicative_segments.values() if seg.key not in protected),
-                       key=lambda seg: seg.created_sequence)
-    for seg in removable[:max(0, len(self.predicative_segments) - MAX_PSD_SEGMENTS)]:
+                        key=lambda seg: seg.created_sequence)
+    excess = len(self.predicative_segments) - MAX_PSD_SEGMENTS
+    for seg in removable[:excess]:
       self._remove_segment(seg.key)
+
+    excess = len(self.predicative_segments) - MAX_PSD_SEGMENTS
+    if excess > 0 and self._current_key is not None:
+      # A very large reachable tree previously bypassed the nominal cap. Trim
+      # its farthest descendants first; near-term route data and the current
+      # node remain protected while worst-case event-building cost stays bound.
+      depths = {self._current_key: 0}
+      stack = [self._current_key]
+      while stack:
+        parent_key = stack.pop()
+        parent = self.predicative_segments.get(parent_key)
+        if parent is None:
+          continue
+        for child_key in parent.children:
+          if child_key in self.predicative_segments and child_key not in depths:
+            depths[child_key] = depths[parent_key] + 1
+            stack.append(child_key)
+      farthest = sorted(
+        (self.predicative_segments[key] for key in depths if key != self._current_key),
+        key=lambda seg: (depths[seg.key], seg.created_sequence), reverse=True)
+      for seg in farthest[:excess]:
+        self._remove_segment(seg.key)
     self._graph_revision += 1
 
   def _get_segment_curvature_psd(self, psd_curvature, psd_sign):
@@ -541,6 +679,26 @@ class SpeedLimitManager:
     else:
       curvature = 8 * (magnitude_code - 136) / 100000.0
     return -curvature if psd_sign == 1 else curvature
+
+  # Experimental VW-specific shadow decoder derived from routes
+  # 00000128--9652f00c8d and 0000012b--f87c1b68c6. This regularized LUT is
+  # continuous and monotonic, but it is NOT validated for actuation. Keep it
+  # disabled until every code range has sufficient independent route/GNSS
+  # coverage; the active ADASIS decoder above remains the production path.
+  #
+  # def _get_segment_curvature_psd_vw_shadow(self, psd_curvature, psd_sign):
+  #   if not 0 <= psd_curvature <= 255:
+  #     return 0.0
+  #   magnitude_code = 255 - psd_curvature
+  #   if magnitude_code <= 64:
+  #     curvature = magnitude_code * 3.90625e-6
+  #   elif magnitude_code <= 128:
+  #     curvature = 0.00025 + (magnitude_code - 64) * 6.25e-6
+  #   elif magnitude_code <= 192:
+  #     curvature = 0.00065 + (magnitude_code - 128) * 6.015625e-5
+  #   else:
+  #     curvature = 0.0045 + (magnitude_code - 192) * 1.5079365e-4
+  #   return -curvature if psd_sign == 1 else curvature
 
   def _calculate_curve_speed_continuous(self, curvature):
     if abs(curvature) < 1e-12:
@@ -647,14 +805,15 @@ class SpeedLimitManager:
     else:
       self.v_limit_psd = self._active_map_limit
 
-  def _update_speed_protection(self, current_progress):
+  def _update_speed_protection(self):
     """Distance-based grace period after a predictive speed-limit brake.
 
     After a predictive brake to a PSD speed limit, PSD is trusted over a
     lagging VZE for up to SPEED_SEGMENT_PROTECTION_TIME_S of travel at the
     target speed, starting at the brake target position. The grace period
     ends as soon as VZE reports a new value (it takes priority again) or PSD
-    changes to a different limit. No wall-clock timeout, no segment binding.
+    changes to a different limit. Curve events never arm this state. No
+    wall-clock timeout, no segment binding.
     """
     if not self.predicative or not self.predicative_speed_limit:
       self._clear_speed_protection()
@@ -668,17 +827,22 @@ class SpeedLimitManager:
       return
 
     # VZE changed to a new value since the grace period started: VZE takes
-    # priority, end the grace period. A lagging VZE that still holds the old
-    # value (or was NOT_SET at start) does NOT end the protection.
-    if self.v_limit_vze != NOT_SET and not math.isclose(
-        self.v_limit_vze, self._speed_protection_vze_at_start, abs_tol=1.0):
-      self._release_speed_protection()
-      return
+    # priority, end the grace period. If no VZE existed at activation, the
+    # first non-matching value establishes the lagging baseline instead of
+    # releasing the protection immediately. A first VZE matching the target
+    # confirms the PSD event and can safely release it.
+    if self.v_limit_vze != NOT_SET:
+      if self._speed_protection_vze_at_start == NOT_SET:
+        if math.isclose(self.v_limit_vze, self._speed_protection_speed, abs_tol=1.0):
+          self._release_speed_protection()
+          return
+        self._speed_protection_vze_at_start = self.v_limit_vze
+      elif not math.isclose(self.v_limit_vze, self._speed_protection_vze_at_start, abs_tol=1.0):
+        self._release_speed_protection()
+        return
 
     # PSD speed limit changed to a different limit: end the grace period.
-    # Only applies to speed-limit protection; curve caps come from geometry
-    # and are not affected by the PSD speed limit of the current segment.
-    if (not self._speed_protection_is_curve and self._active_map_limit != NOT_SET and
+    if (self._active_map_limit != NOT_SET and
         not math.isclose(self._active_map_limit, self._speed_protection_speed, abs_tol=1.0)):
       self._release_speed_protection()
       return
@@ -686,7 +850,7 @@ class SpeedLimitManager:
     # Grace period exhausted by distance (derived from the target speed and
     # SPEED_SEGMENT_PROTECTION_TIME_S).
     protection_distance = self._speed_protection_speed * CV.KPH_TO_MS * SPEED_SEGMENT_PROTECTION_TIME_S
-    if current_progress - self._speed_protection_progress_start >= protection_distance:
+    if self._position_distance - self._speed_protection_distance_start >= protection_distance:
       self._release_speed_protection()
 
   def _select_child(self, seg):
@@ -840,11 +1004,18 @@ class SpeedLimitManager:
         self.v_limit_psd_next_type = self._committed_event_type
       return
 
-    self.v_limit_psd_next = NOT_SET
-    self.v_limit_psd_next_type = NOT_SET
-    if not self._current_valid or self._current_key is None or current_speed_ms <= 0:
+    if not self._current_valid or self._current_key is None:
       self._reset_predicative()
       return
+
+    if current_speed_ms <= 0:
+      # No route progress occurs at standstill. Preserve the already selected
+      # event/protection exactly as-is; invalidating it here would allow a
+      # lagging higher VZE to take over when the vehicle starts moving again.
+      return
+
+    self.v_limit_psd_next = NOT_SET
+    self.v_limit_psd_next_type = NOT_SET
 
     self._ensure_route_cache()
     curve_event = None
@@ -889,9 +1060,11 @@ class SpeedLimitManager:
 
     if committed is not None:
       event, distance, active_curve, index = committed
-      if (event.event_type in (PSD_TYPE_SPEED_LIMIT, PSD_TYPE_CURV_SPEED) and distance <= 0 and
+      if (event.event_type == PSD_TYPE_SPEED_LIMIT and distance <= 0 and
           not self._speed_protection_consumed and not self._speed_protection_active):
-        self._activate_speed_protection(event.speed, current_progress, event.event_type == PSD_TYPE_CURV_SPEED)
+        # Anchor at the exact event position. If PSD-05 crossed the target
+        # between updates, include that overshoot in the travelled distance.
+        self._activate_speed_protection(event.speed, self._position_distance + min(0.0, distance))
       if active_curve or distance >= 0:
         distance = min(max(0.0, distance), self._committed_event_distance)
         candidate = (event, distance, index)
@@ -920,7 +1093,7 @@ class SpeedLimitManager:
       self._committed_event_distance = distance
       self._committed_event_speed = speed
       self._committed_event_type = event_type
-      if distance > 0:
+      if event_type == PSD_TYPE_SPEED_LIMIT and distance > 0:
         self._speed_protection_consumed = False
     self.v_limit_psd_next = speed
     self.v_limit_psd_next_type = event_type
