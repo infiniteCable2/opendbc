@@ -11,6 +11,10 @@ from opendbc.car.volkswagen.speed_limit_manager import (
 from opendbc.car.volkswagen.values import VolkswagenFlags
 
 
+CURVATURE_RAW_80_KPH = 36
+CURVATURE_RAW_95_KPH = 47
+
+
 def segment(segment_id, parent_id=0, length=100, likely=True, street_category=3, ramp=0,
             curvature_begin=255, curvature_end=255, identity_id=None):
   return {
@@ -93,21 +97,38 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.update(100, segment(segment_id, **segment_kwargs), position(segment_id, remaining))
     self.update(100, psd_05=position(segment_id, remaining), psd_06=speed_attribute(segment_id, limit_raw))
 
-  def test_adasis_piecewise_curvature_decode(self):
+  def test_vw_calibrated_curvature_decode(self):
     expected = {
       255: 0.0,
-      191: 0.00064,
-      190: 0.00066,
-      127: 0.00192,
-      126: 0.00196,
-      63: 0.00448,
-      62: 0.00456,
-      0: 0.00952,
+      223: 0.0000788754,
+      191: 0.000164893,
+      159: 0.000208068,
+      127: 0.000228006,
+      95: 0.000905258,
+      63: 0.00109188,
+      31: 0.00692438,
+      0: 0.0152047,
     }
     for raw, curvature in expected.items():
       with self.subTest(raw=raw):
         self.assertAlmostEqual(self.manager._get_segment_curvature_psd(raw, 0), curvature)
         self.assertAlmostEqual(self.manager._get_segment_curvature_psd(raw, 1), -curvature)
+
+  def test_vw_calibrated_curvature_interpolates_monotonically(self):
+    expected_midpoints = {
+      239: (0.0 + 0.0000788754) / 2,
+      207: (0.0000788754 + 0.000164893) / 2,
+      111: (0.000228006 + 0.000905258) / 2,
+      47: (0.00109188 + 0.00692438) / 2,
+    }
+    for raw, curvature in expected_midpoints.items():
+      with self.subTest(raw=raw):
+        self.assertAlmostEqual(self.manager._get_segment_curvature_psd(raw, 0), curvature)
+
+    decoded = [self.manager._get_segment_curvature_psd(255 - magnitude, 0) for magnitude in range(256)]
+    self.assertTrue(all(lower <= upper for lower, upper in zip(decoded, decoded[1:], strict=False)))
+    self.assertEqual(self.manager._get_segment_curvature_psd(-1, 0), 0.0)
+    self.assertEqual(self.manager._get_segment_curvature_psd(256, 0), 0.0)
 
   def test_persistent_braking_event_is_passed_without_timeout(self):
     self.add_current_limit()
@@ -187,7 +208,8 @@ class TestSpeedLimitManager(unittest.TestCase):
 
   def test_offroute_branch_mutation_keeps_selected_event_profile(self):
     self.add_current_limit()
-    self.update(100, segment(3, parent_id=2, likely=True, curvature_begin=75, curvature_end=75), position(2, 80))
+    self.update(100, segment(3, parent_id=2, likely=True,
+                             curvature_begin=CURVATURE_RAW_95_KPH, curvature_end=CURVATURE_RAW_95_KPH), position(2, 80))
     self.manager._ensure_route_cache()
     events = self.manager._events
     self.assertTrue(events)
@@ -233,8 +255,9 @@ class TestSpeedLimitManager(unittest.TestCase):
 
   def test_curve_event_lives_for_exact_segment_not_timeout(self):
     self.add_current_limit()
-    self.update(100, segment(3, parent_id=2, curvature_begin=75, curvature_end=75), position(2, 30))
-    curve_target = self.manager._calculate_curve_speed(self.manager._get_segment_curvature_psd(75, 0))
+    self.update(100, segment(3, parent_id=2, curvature_begin=CURVATURE_RAW_95_KPH,
+                             curvature_end=CURVATURE_RAW_95_KPH), position(2, 30))
+    curve_target = self.manager._calculate_curve_speed(self.manager._get_segment_curvature_psd(CURVATURE_RAW_95_KPH, 0))
     self.assertLess(curve_target, 100)
 
     self.manager.get_speed_limit()
@@ -356,14 +379,15 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.assertGreater(self.manager.get_speed_limit_predicative(), 0)
 
   def test_curve_speed_matches_lateral_acceleration_envelope(self):
-    curvature = self.manager._get_segment_curvature_psd(75, 0)
+    curvature = self.manager._get_segment_curvature_psd(CURVATURE_RAW_95_KPH, 0)
     speed_kph = self.manager._calculate_curve_speed(curvature)
     self.assertLessEqual((speed_kph * CV.KPH_TO_MS) ** 2 * curvature, 3.1)
     self.assertTrue(math.isfinite(speed_kph))
 
   def test_curve_corridor_is_piecewise_and_keeps_five_kph_steps(self):
     self.add_current_limit()
-    self.update(100, segment(3, parent_id=2, length=100, curvature_begin=255, curvature_end=75), position(2, 100))
+    self.update(100, segment(3, parent_id=2, length=100, curvature_begin=255,
+                             curvature_end=CURVATURE_RAW_95_KPH), position(2, 100))
     self.manager._ensure_route_cache()
     curve_events = [event for event in self.manager._events if event.segment_key == self.manager._active_by_id[3] and
                     event.event_type == PSD_TYPE_CURV_SPEED]
@@ -375,7 +399,8 @@ class TestSpeedLimitManager(unittest.TestCase):
 
   def test_event_cursor_only_scans_the_braking_horizon(self):
     self.add_current_limit()
-    self.update(100, segment(3, parent_id=2, length=1000, curvature_begin=75, curvature_end=75), position(2, 30))
+    self.update(100, segment(3, parent_id=2, length=1000, curvature_begin=CURVATURE_RAW_95_KPH,
+                             curvature_end=CURVATURE_RAW_95_KPH), position(2, 30))
     self.manager._ensure_route_cache()
     event_count = len(self.manager._events)
     self.assertGreater(event_count, 150)
@@ -387,7 +412,8 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.assertLess(distance.call_count, event_count)
 
   def test_event_cursor_resets_after_position_regression(self):
-    self.update(100, segment(2, length=100, curvature_begin=75, curvature_end=75), position(2, 80))
+    self.update(100, segment(2, length=100, curvature_begin=CURVATURE_RAW_95_KPH,
+                             curvature_end=CURVATURE_RAW_95_KPH), position(2, 80))
     self.update(100, psd_05=position(2, 80), psd_06=speed_attribute(2, 16))
     cursor_before_regression = self.manager._event_cursor
     self.assertGreater(cursor_before_regression, 0)
@@ -425,7 +451,7 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 100)
 
     self.update(100, segment(3, parent_id=2, length=400, street_category=3,
-                             curvature_begin=50, curvature_end=255), position(2, 30))
+                             curvature_begin=CURVATURE_RAW_80_KPH, curvature_end=255), position(2, 30))
     self.manager.get_speed_limit()
     self.assertGreater(self.manager.get_speed_limit_predicative(), 0)
 
@@ -572,9 +598,9 @@ class TestSpeedLimitManager(unittest.TestCase):
 
     # On-ramp segment with curvature.
     self.update(100, segment(3, parent_id=2, length=80, street_category=5, ramp=1,
-                             curvature_begin=75, curvature_end=75), position(2, 30))
+                             curvature_begin=CURVATURE_RAW_95_KPH, curvature_end=CURVATURE_RAW_95_KPH), position(2, 30))
     self.manager.get_speed_limit()
-    curve_target = self.manager._calculate_curve_speed(self.manager._get_segment_curvature_psd(75, 0))
+    curve_target = self.manager._calculate_curve_speed(self.manager._get_segment_curvature_psd(CURVATURE_RAW_95_KPH, 0))
     self.assertLess(curve_target, 130)
     self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, curve_target)
     self.assertEqual(self.manager.get_speed_limit_predicative_type(), PSD_TYPE_CURV_SPEED)
@@ -630,7 +656,7 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.assertAlmostEqual(self.manager.get_speed_limit() * CV.MS_TO_KPH, 130)
 
     self.update(100, segment(3, parent_id=2, length=200, street_category=3,
-                             curvature_begin=50, curvature_end=50), position(2, 30))
+                             curvature_begin=CURVATURE_RAW_80_KPH, curvature_end=CURVATURE_RAW_80_KPH), position(2, 30))
     self.manager.get_speed_limit()
     self.assertGreater(self.manager.get_speed_limit_predicative(), 0)
     self.assertEqual(self.manager.get_speed_limit_predicative_type(), PSD_TYPE_CURV_SPEED)
@@ -705,7 +731,7 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.update(100, segment(2, length=200, street_category=5), position(2, 200))
     self.update(100, psd_05=position(2, 200), psd_06=speed_attribute(2, 23))
     self.update(100, segment(3, parent_id=2, length=200, street_category=3,
-                             curvature_begin=50, curvature_end=50), position(2, 30))
+                             curvature_begin=CURVATURE_RAW_80_KPH, curvature_end=CURVATURE_RAW_80_KPH), position(2, 30))
     self.manager.get_speed_limit()
     curve_target = self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH
 
@@ -724,7 +750,7 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.update(100, segment(2, length=200, street_category=1), position(2, 200))
     self.update(100, psd_05=position(2, 200), psd_06=speed_attribute(2, 16))
     self.update(100, segment(3, parent_id=2, length=200, street_category=1,
-                             curvature_begin=50, curvature_end=50), position(2, 30))
+                             curvature_begin=CURVATURE_RAW_80_KPH, curvature_end=CURVATURE_RAW_80_KPH), position(2, 30))
     self.manager._ensure_route_cache()
     curve_events = [event for event in self.manager._events
                     if event.event_type == PSD_TYPE_CURV_SPEED]
@@ -749,7 +775,7 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.update(100, segment(2, length=200, street_category=5), position(2, 200))
     self.update(100, psd_05=position(2, 200), psd_06=speed_attribute(2, 23))
     self.update(100, segment(3, parent_id=2, length=500, street_category=3,
-                             curvature_begin=50, curvature_end=50), position(2, 30))
+                             curvature_begin=CURVATURE_RAW_80_KPH, curvature_end=CURVATURE_RAW_80_KPH), position(2, 30))
     self.manager.get_speed_limit()
     curve_target = self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH
 
@@ -772,7 +798,7 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.update(100, segment(2, length=200, street_category=5), position(2, 200))
     self.update(100, psd_05=position(2, 200), psd_06=speed_attribute(2, 23))
     self.update(100, segment(3, parent_id=2, length=200, street_category=3,
-                             curvature_begin=50, curvature_end=50), position(2, 30))
+                             curvature_begin=CURVATURE_RAW_80_KPH, curvature_end=CURVATURE_RAW_80_KPH), position(2, 30))
     self.manager.get_speed_limit()
     curve_target = self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH
 
@@ -814,7 +840,7 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.update(100, segment(2, length=200, street_category=5), position(2, 200))
     self.update(100, psd_05=position(2, 200), psd_06=speed_attribute(2, 23))
     self.update(100, segment(3, parent_id=2, length=500, street_category=3,
-                             curvature_begin=50, curvature_end=50), position(2, 30))
+                             curvature_begin=CURVATURE_RAW_80_KPH, curvature_end=CURVATURE_RAW_80_KPH), position(2, 30))
     self.manager.get_speed_limit()
     curve_target = self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH
 
@@ -878,7 +904,7 @@ class TestSpeedLimitManager(unittest.TestCase):
 
     # Curve segment with PSD speed limit 100.
     self.update(100, segment(3, parent_id=2, length=500, street_category=3,
-                             curvature_begin=50, curvature_end=50), position(2, 30),
+                             curvature_begin=CURVATURE_RAW_80_KPH, curvature_end=CURVATURE_RAW_80_KPH), position(2, 30),
                 psd_06=speed_attribute(3, 16))
     self.manager.get_speed_limit()
     self.assertAlmostEqual(self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH, 80)
@@ -886,7 +912,7 @@ class TestSpeedLimitManager(unittest.TestCase):
 
     # Follow-on segment: curve continues, but PSD speed limit drops to 50.
     self.update(80, segment(4, parent_id=3, length=500, street_category=3,
-                            curvature_begin=50, curvature_end=50), position(3, 100),
+                            curvature_begin=CURVATURE_RAW_80_KPH, curvature_end=CURVATURE_RAW_80_KPH), position(3, 100),
                 psd_06=speed_attribute(4, 11))
     self.manager.get_speed_limit()
     # The 50 speed limit wins over the 80 curve cap as the predicative target.
@@ -941,7 +967,7 @@ class TestSpeedLimitManager(unittest.TestCase):
     self.update(100, segment(2, length=200, street_category=5), position(2, 200))
     self.update(100, psd_05=position(2, 200), psd_06=speed_attribute(2, 23))
     self.update(100, segment(3, parent_id=2, length=500, street_category=3,
-                             curvature_begin=50, curvature_end=50), position(2, 30))
+                             curvature_begin=CURVATURE_RAW_80_KPH, curvature_end=CURVATURE_RAW_80_KPH), position(2, 30))
     self.manager.get_speed_limit()
     curve_target = self.manager.get_speed_limit_predicative() * CV.MS_TO_KPH
 

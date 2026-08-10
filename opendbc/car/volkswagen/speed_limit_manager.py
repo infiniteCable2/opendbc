@@ -24,6 +24,23 @@ PSD_UNIT_KPH = 0
 PSD_UNIT_MPH = 1
 MAX_PSD_SEGMENTS = 256
 
+# VW PSD_04 transmits an 8-bit curvature magnitude plus a separate sign. These
+# knots use magnitude_code = 255 - raw and were robustly fitted from routes.
+# wuth ESC yaw rate and GNSS geometry. Interpolate linearly
+# between knots, matching VW's segment-boundary interpolation model.
+PSD_CURVATURE_MAGNITUDE_CODES = (0, 32, 64, 96, 128, 160, 192, 224, 255)
+PSD_CURVATURE_VALUES = (
+  0.0,
+  0.0000788754,
+  0.000164893,
+  0.000208068,
+  0.000228006,
+  0.000905258,
+  0.00109188,
+  0.00692438,
+  0.0152047,
+)
+
 PSD_05_FIELDS = (
   "PSD_Pos_Segment_ID", "PSD_Pos_Segmentlaenge", "PSD_Pos_Inhibitzeit", "PSD_Pos_Standort_Eindeutig",
   "PSD_Pos_Fehler_Laengsrichtung", "PSD_Pos_Fahrspur", "PSD_Attribut_Segment_ID_05", "PSD_Attribut_1_ID",
@@ -666,38 +683,41 @@ class SpeedLimitManager:
     self._graph_revision += 1
 
   def _get_segment_curvature_psd(self, psd_curvature, psd_sign):
-    """Decode the ADASIS v2 piecewise inverse-curvature code to 1/m."""
+    """Decode the empirically calibrated VW PSD curvature to 1/m."""
     if not 0 <= psd_curvature <= 255:
       return 0.0
     magnitude_code = 255 - psd_curvature
-    if magnitude_code <= 64:
-      curvature = magnitude_code / 100000.0
-    elif magnitude_code <= 128:
-      curvature = 2 * (magnitude_code - 32) / 100000.0
-    elif magnitude_code <= 192:
-      curvature = 4 * (magnitude_code - 80) / 100000.0
+    upper_index = bisect.bisect_left(PSD_CURVATURE_MAGNITUDE_CODES, magnitude_code)
+    if upper_index == 0:
+      curvature = PSD_CURVATURE_VALUES[0]
     else:
-      curvature = 8 * (magnitude_code - 136) / 100000.0
+      lower_index = upper_index - 1
+      lower_code = PSD_CURVATURE_MAGNITUDE_CODES[lower_index]
+      upper_code = PSD_CURVATURE_MAGNITUDE_CODES[upper_index]
+      ratio = (magnitude_code - lower_code) / (upper_code - lower_code)
+      lower_curvature = PSD_CURVATURE_VALUES[lower_index]
+      curvature = lower_curvature + (PSD_CURVATURE_VALUES[upper_index] - lower_curvature) * ratio
     return -curvature if psd_sign == 1 else curvature
 
-  # Experimental VW-specific shadow decoder derived from routes
-  # 00000128--9652f00c8d and 0000012b--f87c1b68c6. This regularized LUT is
-  # continuous and monotonic, but it is NOT validated for actuation. Keep it
-  # disabled until every code range has sufficient independent route/GNSS
-  # coverage; the active ADASIS decoder above remains the production path.
+  # Disabled ADASIS v2 reference decoder. ADASIS v2 defines a signed 10-bit
+  # curvature code around 511, while VW PSD_04 exposes only an 8-bit magnitude
+  # and a separate sign. Treating the VW magnitude as the first four ADASIS
+  # blocks overestimated measured Autobahn curvature by about 4.7x and also
+  # produced a materially wrong shape across the recorded code range. Keep the
+  # reference here to document the rejected assumption, not as a fallback.
   #
-  # def _get_segment_curvature_psd_vw_shadow(self, psd_curvature, psd_sign):
+  # def _get_segment_curvature_adasis_v2_reference(self, psd_curvature, psd_sign):
   #   if not 0 <= psd_curvature <= 255:
   #     return 0.0
   #   magnitude_code = 255 - psd_curvature
   #   if magnitude_code <= 64:
-  #     curvature = magnitude_code * 3.90625e-6
+  #     curvature = magnitude_code / 100000.0
   #   elif magnitude_code <= 128:
-  #     curvature = 0.00025 + (magnitude_code - 64) * 6.25e-6
+  #     curvature = 2 * (magnitude_code - 32) / 100000.0
   #   elif magnitude_code <= 192:
-  #     curvature = 0.00065 + (magnitude_code - 128) * 6.015625e-5
+  #     curvature = 4 * (magnitude_code - 80) / 100000.0
   #   else:
-  #     curvature = 0.0045 + (magnitude_code - 192) * 1.5079365e-4
+  #     curvature = 8 * (magnitude_code - 136) / 100000.0
   #   return -curvature if psd_sign == 1 else curvature
 
   def _calculate_curve_speed_continuous(self, curvature):
