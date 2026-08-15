@@ -5,8 +5,6 @@ from opendbc.car.psa.values import DBC, CarControllerParams
 from opendbc.car.interfaces import CarStateBase
 
 GearShifter = structs.CarState.GearShifter
-TransmissionType = structs.CarParams.TransmissionType
-
 
 class CarState(CarStateBase):
   def __init__(self, CP, CP_SP, CP_IC):

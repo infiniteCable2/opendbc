@@ -643,7 +643,7 @@ BO_ 768 ACC_19: 48 XXX
  SG_ ACC_Texte_Primaeranz_02 : 114|6@1+ (1,0) [0|63] "" Vector__XXX
  SG_ ACC_Texte_Zusatzanz_02 : 120|6@1+ (1,0) [0|63] "" Vector__XXX
  SG_ STA_Primaeranz : 126|2@1+ (1,0) [0|3] "" Vector__XXX
- SG_ ACC_Event_Wunschgeschw : 140|10@1+ (0.32,0) [0|15] "" XXX
+ SG_ ACC_Event_Wunschgeschw : 140|10@1+ (0.32,0) [0|327.36] "Unit_KiloMeterPerHour" XXX
  SG_ Heartbeat : 150|9@1+ (1,0) [0|3] "" XXX
  SG_ SET_ME_0XFFFF : 160|16@1+ (1,0) [0|65535] "" XXX
  SG_ ACC_Enabled : 186|1@0+ (1,0) [0|1] "" XXX
@@ -668,7 +668,7 @@ BO_ 768 ACC_19: 48 XXX
  SG_ Lead_Distance : 290|10@1+ (0.17,0) [0|150] "Unit_Meter" XXX
  SG_ Lead_Distance_Right : 300|10@1+ (0.17,0) [0|150] "Unit_Meter" XXX
  SG_ Lead_Distance_Left : 310|10@1+ (0.17,0) [0|150] "Unit_Meter" XXX
- SG_ ACC_Events : 332|4@0+ (1,0) [0|3] "Unit_Meter" XXX
+ SG_ ACC_Events : 332|4@0+ (1,0) [0|15] "" XXX
  SG_ Zeitluecke_1 : 334|9@1+ (0.14,0) [0|70] "Unit_Meter" XXX
  SG_ Zeitluecke_2 : 344|9@1+ (0.14,0) [0|70] "Unit_Meter" XXX
  SG_ Zeitluecke_3 : 354|9@1+ (0.14,0) [0|70] "Unit_Meter" XXX
