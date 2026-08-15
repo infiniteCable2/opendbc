@@ -334,64 +334,43 @@ def create_acc_hud_control(packer, bus, acc_control, set_speed, lead_visible, di
   }
 
   return packer.make_can_msg("ACC_19", bus, values)
-  
-  
+
+
 def create_aeb_control(packer, bus, CP):
   # default inactive values basically present for every plattform (MEB Gen 1/2, MQBevo Gen 1)
 
+  values = {
+    "SET_ME_126":         126,
+    "SET_ME_30":          30,
+    "Timer_SET_ME_254":   254,
+    "Speed_SET_ME_254":   254,
+    "Accel_SET_ME_1023":  1023,
+    "Timer_2_SET_ME_255": 255,
+    "Timer_3_SET_ME_126": 126,
+    "SET_ME_15":          15,
+    "SET_ME_2":           2,
+  }
+
   if CP.flags & VolkswagenFlags.MQB_EVO:
-    # MQB Evo still uses the platform-specific legacy signal labels.
-    values = {
-      "SET_ME_126":         126,
-      "SET_ME_1":           1,
-      "SET_ME_30":          30,
-      "Timer_SET_ME_254":   254,
-      "Speed_SET_ME_254":   254,
-      "Accel_SET_ME_1023":  1023,
-      "Timer_2_SET_ME_255": 255,
-      "Timer_3_SET_ME_126": 126,
-      "SET_ME_15":          15,
-      "SET_ME_2":           2,
-    }
-  else:
-    # MEB labels follow the upstream DBC findings. These values produce the same inactive payload.
-    values = {
-      "AWV_Unavailable":    0,
-      "Unknown_18":         63,
-      "Unknown_27":         30,
-      "SET_ME_254":         254,
-      "AEB_TTC_Countdown":  254,
-      "AEB_Target_Decel":   0,
-      "Unknown_80":         255,
-      "Unknown_93":         126,
-      "Unknown_100":        15,
-      "AWV_Init_Status":    2,
-    }
+    values.update({
+      "SET_ME_1": 1,
+    })
   
   return packer.make_can_msg("AWV_03", bus, values)
 
 
-def create_aeb_hud(packer, bus, CP, disabled):
-  if CP.flags & VolkswagenFlags.MQB_EVO:
-    values = {
-      "AWV_Enabled": not disabled, # displays aeb disabled
-      "AWV_Init":    1, # displays not initialized white icon
-      "SET_ME_1":    1,
-      "SET_ME_511":  511,
-    }
-  else:
-    values = {
-      "Unknown_15": not disabled, # displays aeb disabled
-      "Unknown_17": 1, # displays not initialized white icon
-      "AWV_Status": 1,
-      "SET_ME_511": 511,
-    }
+def create_aeb_hud(packer, bus, disabled):
+  values = {
+    "AWV_Enabled":  not disabled, # displays aeb disabled
+    "AWV_Init":     1, # displays not initialized white icon
+    "SET_ME_1":     1,
+    "SET_ME_511":   511,
+  }
   
   return packer.make_can_msg("MEB_AWV_01", bus, values)
 
 
-def create_radar_objects(packer, bus, CP):
+def create_radar_objects(packer, bus):
   # create empty dummy signal
   values = {}
-  msg_name = "Strukturen_01" if CP.flags & VolkswagenFlags.MQB_EVO else "MEB_Distance_01"
-  return packer.make_can_msg(msg_name, bus, values)
+  return packer.make_can_msg("Strukturen_01", bus, values)

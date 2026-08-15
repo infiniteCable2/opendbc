@@ -261,10 +261,10 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
           can_sends.append(self.CCS.create_aeb_control(self.packer_pt, self.CAN.pt, self.CP)) # AEB Control (1 Hz)
           
         if self.frame % self.CCP.AEB_HUD_STEP == 0:
-          can_sends.append(self.CCS.create_aeb_hud(self.packer_pt, self.CAN.pt, self.CP, self.radar_disabled_warning_timer < 600)) # AEB HUD (5 Hz), show deactivation for several seconds
+          can_sends.append(self.CCS.create_aeb_hud(self.packer_pt, self.CAN.pt, self.radar_disabled_warning_timer < 600)) # AEB HUD (5 Hz), show deactivation for several seconds
 
         if self.frame % 4 == 0:
-          can_sends.append(self.CCS.create_radar_objects(self.packer_pt, self.CAN.pt, self.CP)) # Radar Objects (25 Hz)
+          can_sends.append(self.CCS.create_radar_objects(self.packer_pt, self.CAN.pt)) # Radar Objects (25 Hz)
 
     # **** HUD Controls ***************************************************** #
 
