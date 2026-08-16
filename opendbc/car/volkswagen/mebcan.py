@@ -23,7 +23,7 @@ ACC_HUD_ACTIVE   = 3
 ACC_HUD_ENABLED  = 2
 ACC_HUD_DISABLED = 0
 
-  
+
 def create_steering_control(packer, bus, apply_curvature, lkas_enabled, power=0):
   values = {
     "Curvature": abs(apply_curvature), # in rad/m
@@ -334,11 +334,11 @@ def create_acc_hud_control(packer, bus, acc_control, set_speed, lead_visible, di
   }
 
   return packer.make_can_msg("ACC_19", bus, values)
-  
-  
+
+
 def create_aeb_control(packer, bus, CP):
   # default inactive values basically present for every plattform (MEB Gen 1/2, MQBevo Gen 1)
-  
+
   values = {
     "SET_ME_126":         126,
     "SET_ME_30":          30,

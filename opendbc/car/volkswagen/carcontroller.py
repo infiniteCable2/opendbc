@@ -104,8 +104,8 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
 
           min_power = max(self.steering_power_last - self.CCP.STEERING_POWER_STEP, self.CCP.STEERING_POWER_MIN)
           max_power = min(self.steering_power_last + self.CCP.STEERING_POWER_STEP, self.CCP.STEERING_POWER_MAX)
-          target_power_driver = int(np.interp(CS.out.steeringTorque, [self.CCP.STEER_DRIVER_ALLOWANCE, self.CCP.STEER_DRIVER_MAX],
-                                                                     [self.CCP.STEERING_POWER_MAX, self.CCP.STEERING_POWER_MIN]))
+          target_power_driver = int(np.interp(abs(CS.out.steeringTorque), [self.CCP.STEER_DRIVER_ALLOWANCE, self.CCP.STEER_DRIVER_MAX],
+                                                                          [self.CCP.STEERING_POWER_MAX, self.CCP.STEERING_POWER_MIN]))
           target_power = int(np.interp(CS.out.vEgo, [0., 0.5], [self.CCP.STEERING_POWER_MIN, target_power_driver]))
           steering_power = min(max(target_power, min_power), max_power)
 
@@ -324,7 +324,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
 
     gra_send_ready = CS.gra_stock_values["COUNTER"] != self.gra_acc_counter_last
     if gra_send_ready:
-      bus_send = self.CAN.main if self.CP.flags & VolkswagenFlags.PQ else self.CAN.ext
+      bus_send = self.CAN.pt if self.CP.flags & VolkswagenFlags.PQ else self.CAN.ext
       if self.CP.pcmCruise:
         if CC.cruiseControl.cancel or CC.cruiseControl.resume:
           can_sends.append(self.CCS.create_acc_buttons_control(self.packer_pt, bus_send, CS.gra_stock_values,

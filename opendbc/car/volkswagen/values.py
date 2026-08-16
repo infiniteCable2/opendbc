@@ -794,6 +794,7 @@ VOLKSWAGEN_RX_OFFSET = 0x6a
 VOLKSWAGEN_RX_OFFSET_CANFD = 0x20000
 
 FW_QUERY_CONFIG = FwQueryConfig(
+  fw_version_regex=br"\xf1\x87[\x00-\xff]{17,58}",
   requests=[request for bus, obd_multiplexing in [(1, True), (1, False), (0, False)] for request in [
     Request(
       [VOLKSWAGEN_VERSION_REQUEST_MULTI],

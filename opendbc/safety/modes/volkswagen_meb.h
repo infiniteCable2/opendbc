@@ -20,7 +20,17 @@
 #define MSG_DIAGNOSTIC       0x700U   // TX, for general tester present on bus for radar disable
 #define MSG_AWV_03           0xDBU    // TX, radar AEB control message replacement
 #define MSG_MEB_AWV_01       0x16A954ADU   // TX, radar AEB HUD message replacement
-#define MSG_Strukturen_01    0x24FU   // TX, radar objects message replacement
+#define MSG_MEB_DISTANCE_01  0x24FU   // TX, radar objects message replacement
+
+// ACC_18.ACC_Anforderung_HMS states openpilot may request.
+#define VOLKSWAGEN_MEB_HMS_KEINE_ANFORDERUNG   0U
+#define VOLKSWAGEN_MEB_HMS_HALTEN              1U
+#define VOLKSWAGEN_MEB_HMS_ANFAHREN            4U
+#define VOLKSWAGEN_MEB_HMS_LOESEN_UEBER_RAMPE  5U
+
+// ACC_18.ACC_Status_ACC states which make the drivetrain act on requests.
+#define VOLKSWAGEN_MEB_ACC_AKTIV_REGELT  3U
+#define VOLKSWAGEN_MEB_ACC_OVERRIDE      4U
 
 
 #define VW_MEB_COMMON_RX_CHECKS                                                                     \
@@ -51,7 +61,7 @@
 #define VW_MEB_RADAR_TX_MSGS                        \
   {MSG_AWV_03, 0, 48, .check_relay = true},         \
   {MSG_MEB_AWV_01, 0, 8, .check_relay = true},      \
-  {MSG_Strukturen_01, 0, 64, .check_relay = true},  \
+  {MSG_MEB_DISTANCE_01, 0, 64, .check_relay = true},  \
 
 
 static uint32_t volkswagen_meb_compute_crc(const CANPacket_t *msg) {
@@ -369,6 +379,32 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
     // In normal operation, openpilot sends inactive_accel via carcontroller when AEB is detected.
     // This check is a last-line defense against transient states that that didn't happen.
     if (volkswagen_stock_aeb && (desired_accel != VOLKSWAGEN_MEB_LONG_LIMITS.inactive_accel)) {
+      tx = false;
+    }
+
+    // PARKEN can engage the EPB even while disengaged, and HALTEN can hold the car at standstill.
+    // Only no-request and ramp-release are unconditional because the disengage path sends the latter.
+    uint8_t hold_type = (msg->data[9] >> 5) & 0x07U;
+    bool hold_type_allowed = (hold_type == VOLKSWAGEN_MEB_HMS_KEINE_ANFORDERUNG) ||
+                             (hold_type == VOLKSWAGEN_MEB_HMS_LOESEN_UEBER_RAMPE) ||
+                             (controls_allowed && ((hold_type == VOLKSWAGEN_MEB_HMS_HALTEN) ||
+                                                   (hold_type == VOLKSWAGEN_MEB_HMS_ANFAHREN)));
+    if (!hold_type_allowed) {
+      tx = false;
+    }
+
+    // These bits carry the same drive-off and hold requests as the hold type.
+    bool acc_anfahren = GET_BIT(msg, 56U);
+    bool acc_anhalten = GET_BIT(msg, 57U);
+    if ((acc_anfahren || acc_anhalten) && !controls_allowed) {
+      tx = false;
+    }
+
+    // Claiming that ACC is regulating makes the drivetrain act on the request.
+    uint8_t acc_status = (msg->data[7] >> 4) & 0x07U;
+    bool acc_status_active = (acc_status == VOLKSWAGEN_MEB_ACC_AKTIV_REGELT) ||
+                             (acc_status == VOLKSWAGEN_MEB_ACC_OVERRIDE);
+    if (acc_status_active && !controls_allowed) {
       tx = false;
     }
   }

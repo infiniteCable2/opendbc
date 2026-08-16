@@ -1140,7 +1140,7 @@
     ],
     "package": "All"
   },
-  "Honda Civic 2022-24": {
+  "Honda Civic 2022-26": {
     "platform": "HONDA_CIVIC_2022",
     "make": "Honda",
     "brand": "honda",
@@ -1148,7 +1148,9 @@
     "year": [
       "2022",
       "2023",
-      "2024"
+      "2024",
+      "2025",
+      "2026"
     ],
     "package": "All"
   },
