@@ -30,7 +30,6 @@
 #include "opendbc/safety/modes/body.h"
 #include "opendbc/safety/modes/psa.h"
 #include "opendbc/safety/modes/hyundai_canfd.h"
-#include "opendbc/safety/modes/volkswagen_meb.h"
 
 uint32_t GET_BYTES(const CANPacket_t *msg, int start, int len) {
   uint32_t ret = 0U;
@@ -411,6 +410,7 @@ int set_safety_hooks(uint16_t mode, uint16_t param) {
     {SAFETY_SUBARU, &subaru_hooks},
     {SAFETY_VOLKSWAGEN_MQB, &volkswagen_mqb_hooks},
     {SAFETY_VOLKSWAGEN_MEB, &volkswagen_meb_hooks},
+    {SAFETY_VOLKSWAGEN_MQBEVO, &volkswagen_meb_hooks},
     {SAFETY_NISSAN, &nissan_hooks},
     {SAFETY_NOOUTPUT, &nooutput_hooks},
     {SAFETY_HYUNDAI_LEGACY, &hyundai_legacy_hooks},
@@ -420,8 +420,6 @@ int set_safety_hooks(uint16_t mode, uint16_t param) {
     {SAFETY_RIVIAN, &rivian_hooks},
     {SAFETY_TESLA, &tesla_hooks},
     {SAFETY_HYUNDAI_CANFD, &hyundai_canfd_hooks},
-    {SAFETY_VOLKSWAGEN_MEB, &volkswagen_meb_hooks},
-	{SAFETY_VOLKSWAGEN_MQBEVO, &volkswagen_meb_hooks},
 #ifdef ALLOW_DEBUG
     {SAFETY_MG, &mg_hooks},
     {SAFETY_CHRYSLER_CUSW, &chrysler_cusw_hooks},

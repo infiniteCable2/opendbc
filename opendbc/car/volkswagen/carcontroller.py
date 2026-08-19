@@ -7,7 +7,7 @@ from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.interfaces import CarControllerBase
 from opendbc.car.volkswagen import mebcan, mlbcan, mqbcan, pqcan
 from opendbc.car.volkswagen.values import CanBus, CarControllerParams, VolkswagenFlags
-from opendbc.car.volkswagen.mebutils import LongControlJerk, LongControlLimit, map_speed_to_acc_tempolimit
+from opendbc.car.volkswagen.mebutils import LongControlJerk, LongControlLimit
 
 from opendbc.sunnypilot.car.volkswagen.icbm import IntelligentCruiseButtonManagementInterface
 
@@ -52,6 +52,7 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
       self.CCS = mlbcan
     elif CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
       self.CCS = mebcan
+      self.meb_long_state = mebcan.SunnypilotMebLongStateMachine(self.CP, self.CCP)
     else:
       self.CCS = mqbcan
 
@@ -61,9 +62,6 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     self.accel_last = 0.
     self.long_jerk_control = LongControlJerk(dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO) else None
     self.long_limit_control = LongControlLimit(dt=(DT_CTRL * self.CCP.ACC_CONTROL_STEP)) if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO) else None
-    self.long_override_counter = 0
-    self.long_disabled_counter = 0
-    self.meb_starting = False
     self.gra_acc_counter_last = None
     self.hca_mitigation = HCAMitigation(self.CCP)
     self.klr_counter_last = None
@@ -180,53 +178,31 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
     # **** Acceleration Controls ******************************************** #
 
     if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO) and CS.out_ic.radarDisableFailed:
-      self.meb_starting = False
+      self.meb_long_state.reset()
     
     if self.frame % self.CCP.ACC_CONTROL_STEP == 0 and self.CP.openpilotLongitudinalControl and not CS.out_ic.radarDisableFailed:
       stopping = actuators.longControlState == LongCtrlState.stopping
         
       if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
-        # Logic to prevent car error with EPB:
-        #   * send a few frames of HMS RAMP RELEASE command at the very begin of long override and right at the end of active long control -> clean exit of ACC car controls
-        #   * (1 frame of HMS RAMP RELEASE is enough, but lower the possibility of panda safety blocking it)
-        
-        # AEB fallback: when stock AEB is active, always send inactive accel to allow stock system takeover
-        long_active = CC.enabled and not CS.out.stockAeb
-        long_override = CC.cruiseControl.override or CS.out.gasPressed
-
-        # Replace the deprecated openpilot starting state for MEB/MQB Evo. Latch the start request while releasing the hold
-        # and keep a fixed launch acceleration until the car is moving fast enough for a safe handover to the PID.
-        starting_request = actuators.longControlState == LongCtrlState.pid and CS.esp_hold_confirmation
-        if not long_active or CS.out.accFaulted or long_override or stopping or CS.out.vEgo > self.CCP.STARTING_VEGO:
-          self.meb_starting = False
-        elif starting_request:
-          self.meb_starting = True
-        starting = self.meb_starting
-
-        accel_request = self.CCP.STARTING_ACCEL if starting else actuators.accel
-        accel = float(np.clip(accel_request, self.CCP.ACCEL_MIN, self.CCP.ACCEL_MAX) if long_active else 0)
-
-        self.long_override_counter = min(self.long_override_counter + 1, 5) if long_override else 0
-        long_override_begin = long_override and self.long_override_counter < 5
-
-        self.long_disabled_counter = min(self.long_disabled_counter + 1, 5) if not long_active else 0
-        long_disabling = not long_active and self.long_disabled_counter < 5
+        accel_request = float(np.clip(actuators.accel, self.CCP.ACCEL_MIN, self.CCP.ACCEL_MAX))
+        accel, acc_control, acc_hold_type, braking_to_stop, leaving_standstill, held = self.meb_long_state.update(CS, CC, accel_request)
 
         critical_state = hud_control.visualAlert == VisualAlert.fcw
         if CC_IC.longComfortMode:
-          self.long_jerk_control.update(long_active, long_override, CC_IC.hudLeadDistance, hud_control.leadVisible, accel, critical_state)
-          self.long_limit_control.update(long_active, CS.out.vEgoRaw, hud_control.setSpeed, CC_IC.hudLeadDistance, hud_control.leadVisible, critical_state)
+          self.long_jerk_control.update(self.meb_long_state.acc_enabled, self.meb_long_state.long_override,
+                                        CC_IC.hudLeadDistance, hud_control.leadVisible,
+                                        self.meb_long_state.comfort_accel, critical_state)
+          self.long_limit_control.update(self.meb_long_state.acc_enabled, CS.out.vEgoRaw, hud_control.setSpeed,
+                                         CC_IC.hudLeadDistance, hud_control.leadVisible, critical_state)
 
-        acc_control = self.CCS.get_acc_control(CS.out.cruiseState.available, CS.out.accFaulted, long_active, long_override)
-        acc_hold_type = self.CCS.get_acc_hold_type(CS.out.cruiseState.available, CS.out.accFaulted, long_active, starting, stopping,
-                                                   CS.esp_hold_confirmation, long_override, long_override_begin, long_disabling)
-        can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, self.CAN.pt, self.CP, self.CCP, CS.acc_type, long_active,
+        can_sends.extend(self.CCS.create_acc_accel_control(self.packer_pt, self.CAN.pt, self.CP, CS.acc_type,
+                                                           self.meb_long_state.acc_enabled,
                                                            self.long_jerk_control.get_jerk_up() if CC_IC.longComfortMode else self.CCP.JERK_LIMIT,
                                                            self.long_jerk_control.get_jerk_down() if CC_IC.longComfortMode else self.CCP.JERK_LIMIT,
                                                            self.long_limit_control.get_upper_limit() if CC_IC.longComfortMode else 0.,
                                                            self.long_limit_control.get_lower_limit() if CC_IC.longComfortMode else 0.,
-                                                           accel, acc_control, acc_hold_type, stopping, starting, CS.esp_hold_confirmation,
-                                                           CS.out.vEgoRaw * CV.MS_TO_KPH, long_override, CS.travel_assist_available))
+                                                           accel, acc_control, acc_hold_type, braking_to_stop, leaving_standstill, held,
+                                                           CS.out.vEgoRaw * CV.MS_TO_KPH, CS.travel_assist_available))
 
       else:
         starting = actuators.longControlState == LongCtrlState.pid and (CS.esp_hold_confirmation or CS.out.vEgo < 0.25)
@@ -291,10 +267,8 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         gap = max(8, CS.out.vEgo * CC_IC.hudLeadFollowTime)
         distance = max(8, CC_IC.hudLeadDistance) if CC_IC.hudLeadDistance != 0 else 0
 
-        # AEB fallback: when stock AEB is active, HUD shows inactive state to allow stock system takeover
-        long_active = CC.enabled and not CS.out.stockAeb
-        acc_hud_status = self.CCS.get_acc_hud_status(CS.out.cruiseState.available, CS.out.accFaulted, long_active,
-                                                     CC.cruiseControl.override or CS.out.gasPressed)
+        # Use the same state as ACC_18 so HUD and drivetrain status cannot diverge.
+        acc_hud_status = self.meb_long_state.acc_status
 
         sl_predicative_active = True if CC_IC.cruiseSpeedLimitPredicative and CS.out_ic.cruiseSpeedLimitPredicative != 0 else False
         if CC_IC.cruiseSpeedLimit and CS.out_ic.cruiseSpeedLimit != 0 and self.speed_limit_last != CS.out_ic.cruiseSpeedLimit:
