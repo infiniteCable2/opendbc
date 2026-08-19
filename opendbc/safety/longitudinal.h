@@ -7,9 +7,8 @@ bool get_longitudinal_allowed(void) {
 // Safety checks for longitudinal actuation
 bool longitudinal_accel_checks(int desired_accel, const LongitudinalLimits limits) {
   bool accel_valid = get_longitudinal_allowed() && !safety_max_limit_check(desired_accel, limits.max_accel, limits.min_accel);
-  bool accel_valid_override = controls_allowed && desired_accel == limits.override_accel && limits.allow_override;
   bool accel_inactive = desired_accel == limits.inactive_accel;
-  return !(accel_valid || accel_inactive || accel_valid_override);
+  return !(accel_valid || accel_inactive);
 }
 
 bool longitudinal_speed_checks(int desired_speed, const LongitudinalLimits limits) {

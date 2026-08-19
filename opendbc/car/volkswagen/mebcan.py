@@ -1,7 +1,13 @@
+from types import SimpleNamespace
+
+from opendbc.can import CANDefine
+from opendbc.car import Bus, structs
 from opendbc.car.volkswagen.mebutils import map_speed_to_acc_tempolimit
-from opendbc.car.volkswagen.values import VolkswagenFlags
+from opendbc.car.volkswagen.values import DBC, VolkswagenFlags
 from opendbc.car.volkswagen.speed_limit_manager import PSD_TYPE_CURV_SPEED
 from opendbc.car.common.conversions import Conversions as CV
+
+LongCtrlState = structs.CarControl.Actuators.LongControlState
 
 ACCEL_INACTIVE = 3.01
 ACCEL_OVERRIDE = 0.00
@@ -146,87 +152,191 @@ def create_capacitive_wheel_touch(packer, bus, lat_active, klr_stock_values):
   return packer.make_can_msg("KLR_01", bus, values)
 
 
-def get_acc_control(main_switch_on, acc_faulted, long_active, override):
-  if acc_faulted:
-    acc_control = ACC_CTRL_ERROR # error state
-  elif long_active:
-    if override:
-      acc_control = ACC_CTRL_OVERRIDE # overriding
+class MebLongStateMachine:
+  HOLD_RELEASE_SPEED = 5 * CV.KPH_TO_MS
+
+  def __init__(self, CP, CCP):
+    self.CCP = CCP
+    self.RAMP_FRAMES = 10 // CCP.ACC_CONTROL_STEP  # 100 ms
+
+    self.disengage_ramp_counter = 0  # always ramp when disengaging
+
+    can_define = CANDefine(DBC[CP.carFingerprint][Bus.pt])
+    self.acc_status_vals = {v: k for k, v in can_define.dv['ACC_18']['ACC_Status_ACC'].items()}
+    self.acc_hold_type_vals = {v: k for k, v in can_define.dv['ACC_18']['ACC_Anforderung_HMS'].items()}
+
+    self.prev_acc_hold_type = self.acc_hold_type_vals['KEINE_ANFORDERUNG']  # no request
+    self.acc_status = self.acc_status_vals['ACC_OFF_HAUPTSCHALTER_AUS']  # last acc status, read by HUD msg
+
+  def _get_acc_status(self, CS, CC) -> int:
+    # stateless
+    # NOTE: stock TSK and camera goes to 5 on disengage independently which we don't model, but hasn't been shown to fault without it
+    if CS.out.accFaulted:
+      return self.acc_status_vals['REVERSIBLER_FEHLER_IM_ACC_SYSTEM']
+    elif CC.enabled:
+      return self.acc_status_vals['ACC_OVERRIDE' if CC.cruiseControl.override else 'ACC_AKTIV_REGELT']
+    elif CS.out.cruiseState.available:
+      return self.acc_status_vals['ACC_STANDBY']
     else:
-      acc_control = ACC_CTRL_ACTIVE # active long control state
-  elif main_switch_on:
-    acc_control = ACC_CTRL_ENABLED # long control ready
-  else:
-    acc_control = ACC_CTRL_DISABLED # long control deactivated state
+      return self.acc_status_vals['ACC_OFF_HAUPTSCHALTER_AUS']  # disabled
 
-  return acc_control
+  def _get_hold_type(self, CS, CC) -> int:
+    # warning: car is reacting to hold mechanic even with long control off
+    # HALTEN -> KEINE_ANFORDERUNG causes the car to fault into park, so both branches below put a ramp in
+    # between: disengaging always ramps, and while engaged a release ramps until 5 kph
+    # NOTE: this allows KEINE_ANFORDERUNG -> ANFAHREN, but we haven't observed a fault due to this yet
+    # TODO: camera can send 7 on disengage at a stop which we don't fully understand yet
+    stopping = CC.actuators.longControlState == LongCtrlState.stopping
+    starting = CC.actuators.longControlState == LongCtrlState.pid and CS.esp_hold_confirmation
+    long_active = CC.longActive and not CS.out.accFaulted  # catches it one frame earlier, not sure if needed
 
+    if not long_active:
+      # Stock goes to RAMP for as long as TSK_Status is 5 usually, 100ms seems fine to mimic that behavior.
+      # Stock stays active for gas press, but we go inactive
+      if self.disengage_ramp_counter > 0:
+        acc_hold_type = self.acc_hold_type_vals['LOESEN_UEBER_RAMPE']  # ramp
+        self.disengage_ramp_counter -= 1
+      else:
+        acc_hold_type = self.acc_hold_type_vals['KEINE_ANFORDERUNG']  # no request
 
-def get_acc_hold_type(main_switch_on, acc_faulted, long_active, starting, stopping, esp_hold, override, override_begin, long_disabling):
-  # warning: car is reacting to hold mechanic even with long control off
-
-  if acc_faulted:
-    acc_hold_type = ACC_HMS_NO_REQUEST # no hold request
-  elif not long_active:
-    if long_disabling:
-      acc_hold_type = ACC_HMS_RAMP_RELEASE # ramp release of requests right after disabling long control (prevents car error with EPB at low speed)
     else:
-      acc_hold_type = ACC_HMS_NO_REQUEST # no hold request
-  elif override:
-    if override_begin:
-      acc_hold_type = ACC_HMS_RAMP_RELEASE # ramp release of requests at the beginning of override (prevents car error with EPB at low speed)
+      was_engaged = self.disengage_ramp_counter == self.RAMP_FRAMES
+      self.disengage_ramp_counter = self.RAMP_FRAMES  # prep ramp if we disengage
+
+      if stopping:
+        acc_hold_type = self.acc_hold_type_vals['HALTEN']  # stopping/stopped, allowed at any time
+      elif starting:
+        acc_hold_type = self.acc_hold_type_vals['ANFAHREN']  # resume after reaching full stop
+      else:
+        # After aborting a stop or finishing starting, we need to send RAMP until we hit 5 kph or go long inactive,
+        # only if we didn't just re-engage
+        releasing = was_engaged and self.prev_acc_hold_type in (self.acc_hold_type_vals['HALTEN'],
+                                                                self.acc_hold_type_vals['ANFAHREN'],
+                                                                self.acc_hold_type_vals['LOESEN_UEBER_RAMPE'])
+
+        if releasing and CS.out.vEgo < self.HOLD_RELEASE_SPEED:
+          acc_hold_type = self.acc_hold_type_vals['LOESEN_UEBER_RAMPE']  # ramp
+        else:
+          acc_hold_type = self.acc_hold_type_vals['KEINE_ANFORDERUNG']  # no request
+
+    return acc_hold_type
+
+  def update(self, CS, CC, accel) -> tuple[float, int, int, bool, bool]:
+    acc_status = self._get_acc_status(CS, CC)
+    acc_hold_type = self._get_hold_type(CS, CC)
+
+    # transition to inactive accel and jerks as soon as we enter ESP standstill
+    requesting_hold = acc_hold_type == self.acc_hold_type_vals['HALTEN']
+    held = requesting_hold and CS.esp_hold_confirmation
+    if not CC.enabled or held:
+      accel = self.CCP.ACCEL_INACTIVE
+
+    # hold requested but the car hasn't reached standstill yet
+    braking_to_stop = requesting_hold and not CS.esp_hold_confirmation
+
+    # driving off from a hold
+    leaving_standstill = acc_hold_type == self.acc_hold_type_vals['ANFAHREN']
+
+    self.prev_acc_hold_type = acc_hold_type
+    self.acc_status = acc_status
+    return accel, acc_status, acc_hold_type, braking_to_stop, leaving_standstill
+
+
+class SunnypilotMebLongStateMachine(MebLongStateMachine):
+  """Fork policy layered around the upstream MEB transition state machine."""
+
+  def __init__(self, CP, CCP):
+    super().__init__(CP, CCP)
+    self.long_active = False
+    self.long_override = False
+    self.acc_enabled = False
+    self.starting = False
+    self.comfort_accel = 0.0
+
+  def reset(self):
+    self.disengage_ramp_counter = 0
+    self.prev_acc_hold_type = self.acc_hold_type_vals['KEINE_ANFORDERUNG']
+    self.acc_status = self.acc_status_vals['ACC_OFF_HAUPTSCHALTER_AUS']
+    self.long_active = False
+    self.long_override = False
+    self.acc_enabled = False
+    self.starting = False
+    self.comfort_accel = 0.0
+
+  def update(self, CS, CC, accel) -> tuple[float, int, int, bool, bool, bool]:
+    blocked_by_car = CS.out.accFaulted or CS.out.stockAeb
+    self.long_active = CC.longActive and not blocked_by_car
+
+    # CC.cruiseControl.override is also true for non-gas longitudinal override
+    # states in sunnypilot. Require the measured pedal to avoid treating MADS or
+    # another steady lateral-only state as active longitudinal control.
+    self.long_override = (CC.enabled and not CC.longActive and CC.cruiseControl.override and
+                          CS.out.gasPressed and not CS.out.brakePressed and not blocked_by_car)
+    self.acc_enabled = self.long_active or self.long_override
+
+    stopping = self.long_active and CC.actuators.longControlState == LongCtrlState.stopping
+    starting_request = (self.long_active and CC.actuators.longControlState == LongCtrlState.pid and
+                        CS.esp_hold_confirmation)
+    if not self.long_active or stopping or CS.out.vEgo > self.CCP.STARTING_VEGO:
+      self.starting = False
+    elif starting_request:
+      self.starting = True
+
+    if not self.acc_enabled:
+      self.comfort_accel = 0.0
+    elif self.long_override:
+      self.comfort_accel = self.CCP.ACCEL_OVERRIDE
+    elif self.starting:
+      self.comfort_accel = self.CCP.STARTING_ACCEL
     else:
-      acc_hold_type = ACC_HMS_NO_REQUEST # overriding / no request
-  elif starting:
-    acc_hold_type = ACC_HMS_RELEASE # release request and startup
-  elif stopping or esp_hold:
-    acc_hold_type = ACC_HMS_HOLD # hold or hold request
-  else:
-    acc_hold_type = ACC_HMS_NO_REQUEST # no hold request
+      self.comfort_accel = accel
 
-  return acc_hold_type
+    # The adapter changes only the effective engagement/override/AEB policy and
+    # extends the fork's launch request. HMS transition ordering remains in the
+    # upstream implementation above.
+    effective_cs = SimpleNamespace(out=CS.out, esp_hold_confirmation=CS.esp_hold_confirmation or self.starting)
+    effective_cc = SimpleNamespace(
+      enabled=self.acc_enabled,
+      longActive=self.long_active,
+      cruiseControl=SimpleNamespace(override=self.long_override),
+      actuators=CC.actuators,
+    )
+    accel, acc_status, acc_hold_type, braking_to_stop, leaving_standstill = super().update(
+      effective_cs, effective_cc, self.comfort_accel,
+    )
+    held = acc_hold_type == self.acc_hold_type_vals['HALTEN'] and CS.esp_hold_confirmation
+    return accel, acc_status, acc_hold_type, braking_to_stop, leaving_standstill, held
 
 
-def create_acc_accel_control(packer, bus, CP, CCP, acc_type, acc_enabled, upper_jerk, lower_jerk, upper_control_limit, lower_control_limit,
-                             accel, acc_control, acc_hold_type, stopping, starting, esp_hold, speed, override, travel_assist_available):
+def create_acc_accel_control(packer, bus, CP, acc_type, acc_enabled, upper_jerk, lower_jerk, upper_control_limit, lower_control_limit,
+                             accel, acc_control, acc_hold_type, braking_to_stop, leaving_standstill, held, speed,
+                             travel_assist_available):
   # active longitudinal control disables one pedal driving (regen mode) while using overriding mechnism
   # error mitigation when stopping or stopped: (newer gen cars can be very sensitive)
   # - send 0 m stopping distance for cars in kind of parameterized stopping mode (stopping accel -0.2 seen for those cars)
   # -> this mode is seen for different cars with same firmware radars so could be a coded operational mode
   # - jerk and control limits values set to 0 when fully stopped
   # - set accel to 0 / no stop accel for full stop (seems to be compatible with old (non 0 stop accel) and new gen, because HMS state holds the car anyways)
-  # - stopping command sent as long as actually stopping
+  # - action bits are emitted only from the state machine's effective hold state
   commands = []
 
   # ACC_Anhalteweg: when stopping: MEB: values <> 0 the car can execute a hard brake probably if target is too close, MQBEvo: value 0 results in hard brake
   terminal_rollout = 0.5 if CP.flags & VolkswagenFlags.MQB_EVO else 0
 
-  full_stop = stopping and esp_hold
-  full_stop_no_start = esp_hold and not starting
-  actually_stopping = stopping and not esp_hold
-
-  if acc_enabled:
-    if override:  # the car expects a non-inactive accel while overriding
-      acceleration = CCP.ACCEL_OVERRIDE  # original ACC still sends active accel in this case (seamless experience)
-    elif full_stop:
-      acceleration = CCP.ACCEL_INACTIVE  # inactive accel, newer gen >2024 error of not neutral value
-    else:
-      acceleration = accel
-  else:
-    acceleration = CCP.ACCEL_INACTIVE  # inactive accel
+  full_stop_no_start = held and not leaving_standstill
 
   values = {
     "ACC_Typ":                    acc_type,
     "ACC_Status_ACC":             acc_control,
     "ACC_StartStopp_Info":        acc_enabled,
-    "ACC_Sollbeschleunigung_02":  acceleration,
+    "ACC_Sollbeschleunigung_02":  accel,
     "ACC_zul_Regelabw_unten":     lower_control_limit if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) and not full_stop_no_start else 0,
     "ACC_zul_Regelabw_oben":      upper_control_limit if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) and not full_stop_no_start else 0,
     "ACC_neg_Sollbeschl_Grad_02": lower_jerk if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) and not full_stop_no_start else 0,
     "ACC_pos_Sollbeschl_Grad_02": upper_jerk if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) and not full_stop_no_start else 0,
-    "ACC_Anfahren":               starting,
-    "ACC_Anhalten":               1 if actually_stopping else 0,
-    "ACC_Anhalteweg":             terminal_rollout if actually_stopping else 20.46,
+    "ACC_Anfahren":               leaving_standstill,
+    "ACC_Anhalten":               braking_to_stop,
+    "ACC_Anhalteweg":             terminal_rollout if braking_to_stop else 20.46,
     "ACC_Anforderung_HMS":        acc_hold_type,
     "ACC_AKTIV_regelt":           1 if acc_control == ACC_CTRL_ACTIVE else 0,
     "Speed":                      speed,
@@ -253,23 +363,6 @@ def create_acc_accel_control(packer, bus, CP, CCP, acc_type, acc_enabled, upper_
     commands.append(packer.make_can_msg("TA_01", bus, values_ta))
 
   return commands
-
-
-def get_acc_hud_status(main_switch_on, acc_faulted, long_active, override):
-
-  if acc_faulted:
-    acc_hud_control = ACC_HUD_ERROR # error state
-  elif long_active:
-    if override:
-      acc_hud_control = ACC_HUD_OVERRIDE # overriding
-    else:
-      acc_hud_control = ACC_HUD_ACTIVE # active
-  elif main_switch_on:
-    acc_hud_control = ACC_HUD_ENABLED # inactive
-  else:
-    acc_hud_control = ACC_HUD_DISABLED # deactivated
-
-  return acc_hud_control
 
 
 def get_acc_hud_event(acc_hud_control, esp_hold, speed_limit_predicative, speed_limit_predicative_type, speed_limit):
@@ -340,7 +433,8 @@ def create_aeb_control(packer, bus, CP):
   # default inactive values basically present for every plattform (MEB Gen 1/2, MQBevo Gen 1)
 
   values = {
-    "SET_ME_126":         126,
+    "AWV_Unavailable":    0,
+    "SET_ME_63":          63,
     "SET_ME_30":          30,
     "Timer_SET_ME_254":   254,
     "Speed_SET_ME_254":   254,

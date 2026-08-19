@@ -354,11 +354,41 @@ class CarState(CarStateBase, MadsCarState):
       # Speed limiter mode; ECM faults if we command ACC while not pcmCruise
       ret.cruiseState.nonAdaptive = bool(pt_cp.vl["Motor_51"]["TSK_Limiter_ausgewaehlt"])
 
-    accFaulted = (pt_cp.vl["Motor_51"]["TSK_Status"] in (6, 7) or
-                  ext_cp.vl["ACC_19"]["ACC_Status_ACC"] == 6)  # reversible fault in ACC system
-    ret.accFaulted = self.update_acc_fault(accFaulted, parking_brake=ret.parkingBrake, drive_mode=drive_mode)
+    tsk_status = pt_cp.vl["Motor_51"]["TSK_Status"]
+    tsk_faulted = tsk_status in (6, 7)
+    engine_off = pt_cp.vl["Motor_54"]["Engine_On"] == 0
 
-    ret_ic.radarDisableFailed = True if RADAR_DISABLE_STATE["error"] == True and self.CP.flags & VolkswagenFlags.DISABLE_RADAR else False
+    # Long_Control_Inhibit is currently identified only in the MEB DBC. MQB
+    # Evo uses the same brake_only TSK state below, but has no verified
+    # equivalent bit yet.
+    long_control_inhibit = (self.CP.flags & VolkswagenFlags.MEB and
+                            pt_cp.vl["VMM_02"]["Long_Control_Inhibit"] == 2)
+
+    aeb_unavailable = (not (self.CP.flags & VolkswagenFlags.DISABLE_RADAR) and
+                       bool(ext_cp.vl["AWV_03"]["AWV_Unavailable"]))
+    # MEB has verified leading indicators for the short TSK fault tail, so use
+    # upstream's measured 10-frame window. MQB Evo has no identified VMM
+    # inhibit signal; retain the fork's conservative brake-based 300-frame
+    # fallback until an equivalent signal is verified from logs.
+    if self.CP.flags & VolkswagenFlags.MEB:
+      transient_inhibit = engine_off or long_control_inhibit
+      recovery_frames = 10
+    else:
+      transient_inhibit = engine_off or (ret.parkingBrake and not drive_mode) or ret.brakePressed
+      recovery_frames = 300
+    ret.accFaulted = (self.update_acc_fault(tsk_faulted,
+                                            transient_inhibit=transient_inhibit,
+                                            recovery_frames=recovery_frames) or
+                      aeb_unavailable)
+
+    radar_disable_failed = bool(RADAR_DISABLE_STATE["error"] and self.CP.flags & VolkswagenFlags.DISABLE_RADAR)
+    ret_ic.radarDisableFailed = radar_disable_failed
+
+    # Stock refuses engagement while TSK is winding braking down. Requesting
+    # drive-off here can fault TSK. MEB additionally exposes the VMM inhibit
+    # after harsh braking. A failed camera-position radar disable must also
+    # prevent engaging a controller which intentionally emits no ACC frames.
+    ret.carNotReady = tsk_status == 5 or bool(long_control_inhibit) or radar_disable_failed
 
     if self.CP.flags & VolkswagenFlags.MQB_EVO:
       self.esp_hold_confirmation = bool(pt_cp.vl["ESP_21"]["ESP_Haltebestaetigung"])
@@ -532,18 +562,14 @@ class CarState(CarStateBase, MadsCarState):
     temp_fault = (drive_mode and hca_status in ("REJECTED", "PREEMPTED")) or not self.eps_init_complete
     return temp_fault, perm_fault, warning
     
-  def update_acc_fault(self, acc_fault, parking_brake=False, drive_mode=True, brake_pressed=False, recovery_frames_max=300):
-    # Ignore FAULT when not in drive mode and parked
-    # do not show misleading error during ignition in parked state
-    # grant a short time to recover a normal cruise state
-    # after hard brake, stock system prevents acc engage for ~3 seconds
-    fault = acc_fault
-    if (parking_brake and not drive_mode) or brake_pressed:
-      fault = False
+  def update_acc_fault(self, acc_fault, transient_inhibit=False, recovery_frames=10):
+    # TSK can temporarily report a fault while the car is off, after hard
+    # braking, or while VMM inhibits longitudinal control. Mask only that
+    # recovery tail; carNotReady separately prevents engagement throughout the
+    # brake_only/inhibit state.
+    if transient_inhibit:
       self.cruise_recovery_timer = self.frame
-    elif self.frame - self.cruise_recovery_timer < recovery_frames_max:
-      fault = False
-    return fault
+    return acc_fault and self.frame - self.cruise_recovery_timer >= recovery_frames
 
   @staticmethod
   def get_can_parsers(CP, CP_SP):

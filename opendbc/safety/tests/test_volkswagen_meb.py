@@ -23,6 +23,7 @@ ACC_OVERRIDE = 4
 
 # MEB message IDs
 MSG_LH_EPS_03  = 0x9F
+MSG_AWV_03     = 0xDB
 MSG_ESC_51     = 0xFC
 MSG_Motor_51   = 0x10B
 MSG_GRA_ACC_01 = 0x12B
@@ -150,6 +151,10 @@ class TestVolkswagenMebSafetyBase(common.CarSafetyTest, common.CurvatureSteering
               "ACC_Status_ACC": acc_status, "ACC_Anfahren": acc_anfahren,
               "ACC_Anhalten": acc_anhalten}
     return self.packer.make_can_msg_safety("ACC_18", 0, values)
+
+  def _aeb_msg(self, active, counter=0):
+    values = {"AEB_Active": active, "COUNTER": counter}
+    return self.packer.make_can_msg_safety("AWV_03", 2, values)
 
   def _tsk_status_msg(self, enable, main_switch=True):
     if main_switch:
@@ -314,7 +319,6 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
   RELAY_MALFUNCTION_ADDRS = {0: (MSG_HCA_03, MSG_LDW_02, MSG_EA_02, MSG_TA_01, MSG_MEB_ACC_01, MSG_ACC_18),
                              2: (MSG_KLR_01,)}
 
-  ALLOW_OVERRIDE = True
   ACCEL_OVERRIDE = 0
   INACTIVE_ACCEL = 3.01
 
@@ -363,24 +367,32 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
 
   def test_accel_safety_check(self):
     for controls_allowed in [True, False]:
-      extras = [0, self.INACTIVE_ACCEL]
-      if self.ALLOW_OVERRIDE and self.ACCEL_OVERRIDE not in extras:
-        extras.append(self.ACCEL_OVERRIDE)
-      for accel in np.concatenate((np.arange(MIN_ACCEL - 2, MAX_ACCEL + 2, 0.03), extras)):
+      for accel in np.concatenate((np.arange(MIN_ACCEL - 2, MAX_ACCEL + 2, 0.03), [0, self.INACTIVE_ACCEL])):
         accel = round(accel, 2)
         is_inactive_accel = accel == self.INACTIVE_ACCEL
-        is_override = self.ALLOW_OVERRIDE and accel == self.ACCEL_OVERRIDE
-        send = (controls_allowed and MIN_ACCEL <= accel <= MAX_ACCEL) or is_inactive_accel or is_override
+        send = (controls_allowed and MIN_ACCEL <= accel <= MAX_ACCEL) or is_inactive_accel
         self.safety.set_controls_allowed(controls_allowed)
         self.assertEqual(send, self._tx(self._accel_msg(accel)), (controls_allowed, accel))
 
   def test_accel_override_with_gas(self):
-    if not self.ALLOW_OVERRIDE:
-      pass
     self.safety.set_controls_allowed(True)
     self.safety.set_gas_pressed_prev(True)
     self.assertTrue(self._tx(self._accel_msg(self.ACCEL_OVERRIDE)))
     self.assertFalse(self._tx(self._accel_msg(MAX_ACCEL)))
+
+    self.safety.set_controls_allowed(False)
+    self.assertFalse(self._tx(self._accel_msg(self.ACCEL_OVERRIDE)))
+    self.assertTrue(self._tx(self._accel_msg(self.INACTIVE_ACCEL)))
+
+  def test_stock_aeb_blocks_longitudinal(self):
+    self.safety.set_controls_allowed(True)
+    self.assertTrue(self._rx(self._aeb_msg(False, counter=0)))
+    self.assertTrue(self._tx(self._accel_msg(MAX_ACCEL)))
+
+    self.assertTrue(self._rx(self._aeb_msg(True, counter=1)))
+    self.assertFalse(self._tx(self._accel_msg(MAX_ACCEL)))
+    self.assertFalse(self._tx(self._accel_msg(self.ACCEL_OVERRIDE)))
+    self.assertTrue(self._tx(self._accel_msg(self.INACTIVE_ACCEL)))
 
   def test_hold_type_safety_check(self):
     for controls_allowed in (True, False):

@@ -343,8 +343,6 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
     .max_accel = 2000,
     .min_accel = -3500,
     .inactive_accel = 3010,  // VW sends one increment above the max range when inactive
-	.override_accel = 0,
-	.allow_override = true,
   };
   
   bool tx = true;
@@ -371,7 +369,11 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
   if (msg->addr == MSG_ACC_18) {
     // WARNING: IF WE TAKE THE SIGNAL FROM THE CAR WHILE ACC ACTIVE AND BELOW ABOUT 3km/h, THE CAR ERRORS AND PUTS ITSELF IN PARKING MODE WITH EPB!
     int desired_accel = ((((msg->data[4] & 0x7U) << 8) | msg->data[3]) * 5U) - 7220U;
-    if (longitudinal_accel_checks(desired_accel, VOLKSWAGEN_MEB_LONG_LIMITS)) {
+    // VW keeps ACC in override while the driver presses the accelerator. It
+    // expects the neutral 0.0 m/s² command rather than the usual inactive
+    // 3.01 m/s² value in that state.
+    bool accel_override = controls_allowed && gas_pressed_prev && (desired_accel == 0);
+    if (!accel_override && longitudinal_accel_checks(desired_accel, VOLKSWAGEN_MEB_LONG_LIMITS)) {
       tx = false;
     }
 
