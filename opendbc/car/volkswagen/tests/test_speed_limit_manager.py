@@ -6,12 +6,12 @@ from unittest import mock
 from opendbc.car.common.conversions import Conversions as CV
 from opendbc.car.volkswagen.speed_limit_manager import (
   CURVE_PROFILE_STEP_M, DECELERATION_PREDICATIVE, MAX_PSD_SEGMENTS, NOT_SET, PSD_05_FIELDS,
-  PSD_TYPE_CURV_SPEED, PSD_TYPE_SPEED_LIMIT, SPEED_SEGMENT_PROTECTION_TIME_S, SpeedLimitManager,
+  PSD_CURVE_LATERAL_ACCEL, PSD_TYPE_CURV_SPEED, PSD_TYPE_SPEED_LIMIT, SPEED_SEGMENT_PROTECTION_TIME_S, SpeedLimitManager,
 )
 from opendbc.car.volkswagen.values import VolkswagenFlags
 
 
-CURVATURE_RAW_80_KPH = 36
+CURVATURE_RAW_80_KPH = 39
 CURVATURE_RAW_95_KPH = 47
 
 
@@ -96,6 +96,10 @@ class TestSpeedLimitManager(unittest.TestCase):
   def add_current_limit(self, segment_id=2, limit_raw=16, remaining=100, **segment_kwargs):
     self.update(100, segment(segment_id, **segment_kwargs), position(segment_id, remaining))
     self.update(100, psd_05=position(segment_id, remaining), psd_06=speed_attribute(segment_id, limit_raw))
+
+  def test_tuning_constants(self):
+    self.assertEqual(SPEED_SEGMENT_PROTECTION_TIME_S, 5.0)
+    self.assertEqual(PSD_CURVE_LATERAL_ACCEL, 2.8)
 
   def test_vw_calibrated_curvature_decode(self):
     expected = {
@@ -381,7 +385,7 @@ class TestSpeedLimitManager(unittest.TestCase):
   def test_curve_speed_matches_lateral_acceleration_envelope(self):
     curvature = self.manager._get_segment_curvature_psd(CURVATURE_RAW_95_KPH, 0)
     speed_kph = self.manager._calculate_curve_speed(curvature)
-    self.assertLessEqual((speed_kph * CV.KPH_TO_MS) ** 2 * curvature, 3.1)
+    self.assertLessEqual((speed_kph * CV.KPH_TO_MS) ** 2 * curvature, PSD_CURVE_LATERAL_ACCEL)
     self.assertTrue(math.isfinite(speed_kph))
 
   def test_curve_corridor_is_piecewise_and_keeps_five_kph_steps(self):

@@ -4,7 +4,6 @@ import time
 from dataclasses import dataclass, field
 
 from opendbc.car.common.conversions import Conversions as CV
-from opendbc.car.lateral import ISO_LATERAL_ACCEL
 from opendbc.car.volkswagen.values import VolkswagenFlags
 
 
@@ -16,8 +15,9 @@ STREET_TYPE_HIGHWAY = 3
 SPEED_LIMIT_UNLIMITED_VZE_KPH = 520
 DECELERATION_PREDICATIVE = 0.8
 CURVE_PROFILE_STEP_M = 5.0
+PSD_CURVE_LATERAL_ACCEL = 2.8  # m/s^2
 VZE_SANITY_MIN_RATIO = 0.30
-SPEED_SEGMENT_PROTECTION_TIME_S = 3.0
+SPEED_SEGMENT_PROTECTION_TIME_S = 5.0
 PSD_TYPE_SPEED_LIMIT = 1
 PSD_TYPE_CURV_SPEED = 2
 PSD_UNIT_KPH = 0
@@ -723,7 +723,7 @@ class SpeedLimitManager:
   def _calculate_curve_speed_continuous(self, curvature):
     if abs(curvature) < 1e-12:
       return float("inf")
-    return math.sqrt(ISO_LATERAL_ACCEL / abs(curvature)) * CV.MS_TO_KPH
+    return math.sqrt(PSD_CURVE_LATERAL_ACCEL / abs(curvature)) * CV.MS_TO_KPH
 
   def _calculate_curve_speed(self, curvature):
     curv_speed_kph = self._calculate_curve_speed_continuous(curvature)
