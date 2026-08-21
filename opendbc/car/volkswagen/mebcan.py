@@ -265,21 +265,15 @@ class SunnypilotMebLongStateMachine(MebLongStateMachine):
 
   def update(self, CS, CC, accel) -> tuple[float, int, int, bool, bool, bool]:
     blocked_by_car = CS.out.accFaulted or CS.out.stockAeb
-    self.long_active = CC.longActive and not blocked_by_car
+    # Keep the ACC session enabled through driver overrides.
+    self.acc_enabled = CC.enabled and not blocked_by_car
+    self.long_active = self.acc_enabled and CC.longActive
+    self.long_override = self.acc_enabled and CS.out.gasPressed and not CS.out.brakePressed
 
-    # CC.cruiseControl.override is also true for non-gas longitudinal override
-    # states in sunnypilot. Require the measured pedal to avoid treating MADS or
-    # another steady lateral-only state as active longitudinal control.
-    self.long_override = (CC.enabled and not CC.longActive and CC.cruiseControl.override and
-                          CS.out.gasPressed and not CS.out.brakePressed and not blocked_by_car)
-    self.acc_enabled = self.long_active or self.long_override
-
-    stopping = self.long_active and CC.actuators.longControlState == LongCtrlState.stopping
-    starting_request = (self.long_active and CC.actuators.longControlState == LongCtrlState.pid and
-                        CS.esp_hold_confirmation)
-    if not self.long_active or stopping or CS.out.vEgo > self.CCP.STARTING_VEGO:
+    long_state = CC.actuators.longControlState
+    if not self.long_active or long_state == LongCtrlState.stopping or CS.out.vEgo > self.CCP.STARTING_VEGO:
       self.starting = False
-    elif starting_request:
+    elif long_state == LongCtrlState.pid and CS.esp_hold_confirmation:
       self.starting = True
 
     if not self.acc_enabled:
@@ -291,9 +285,7 @@ class SunnypilotMebLongStateMachine(MebLongStateMachine):
     else:
       self.comfort_accel = accel
 
-    # The adapter changes only the effective engagement/override/AEB policy and
-    # extends the fork's launch request. HMS transition ordering remains in the
-    # upstream implementation above.
+    # Reuse the upstream HMS transitions with the fork states above.
     effective_cs = SimpleNamespace(out=CS.out, esp_hold_confirmation=CS.esp_hold_confirmation or self.starting)
     effective_cc = SimpleNamespace(
       enabled=self.acc_enabled,
