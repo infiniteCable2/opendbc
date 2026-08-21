@@ -23,6 +23,12 @@ class TestMebLongStateMachine(unittest.TestCase):
     CP = SimpleNamespace(carFingerprint=platform, flags=platform.config.flags)
     return mebcan.SunnypilotMebLongStateMachine(CP, CarControllerParams(CP))
 
+  def test_driver_torque_max_matches_three_nm(self):
+    for platform in self.PLATFORMS:
+      with self.subTest(platform=platform):
+        CP = SimpleNamespace(carFingerprint=platform, flags=platform.config.flags)
+        self.assertEqual(CarControllerParams(CP).STEER_DRIVER_MAX, 300)
+
   @staticmethod
   def make_car_state(v_ego=10.0, available=True, acc_faulted=False, stock_aeb=False,
                      gas_pressed=False, brake_pressed=False, esp_hold=False):
