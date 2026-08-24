@@ -387,7 +387,7 @@ class VWCarDocs(CarDocs):
 # FW_VERSIONS for that existing CAR.
 
 class CAR(Platforms):
-  config: VolkswagenMQBPlatformConfig | VolkswagenPQPlatformConfig | VolkswagenMEBPlatformConfig
+  config: VolkswagenMQBPlatformConfig | VolkswagenMQBevoPlatformConfig | VolkswagenPQPlatformConfig | VolkswagenMEBPlatformConfig
 
   FORD_EXPLORER_EV_MK1 = VolkswagenMEBPlatformConfig(
     [VWCarDocs("Ford Explorer EV Limited 2024-25")],
@@ -720,6 +720,12 @@ class CAR(Platforms):
     ],
     VolkswagenCarSpecs(mass=1388, wheelbase=2.68),
     chassis_codes={"NE"},
+    wmis={WMI.SKODA},
+  )
+  SKODA_OCTAVIA_MK4 = VolkswagenMQBevoPlatformConfig(
+    [VWCarDocs("Škoda Octavia 2020-24")],
+    VolkswagenCarSpecs(mass=1600, wheelbase=2.686),
+    chassis_codes={"NX"},
     wmis={WMI.SKODA},
   )
   SKODA_SUPERB_MK3 = VolkswagenMQBPlatformConfig(

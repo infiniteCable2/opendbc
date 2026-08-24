@@ -3353,6 +3353,20 @@
     ],
     "package": "Adaptive Cruise Control (ACC) & Lane Assist"
   },
+  "Škoda Octavia 2020-24": {
+    "platform": "SKODA_OCTAVIA_MK4",
+    "make": "Škoda",
+    "brand": "volkswagen",
+    "model": "Octavia",
+    "year": [
+      "2020",
+      "2021",
+      "2022",
+      "2023",
+      "2024"
+    ],
+    "package": "Adaptive Cruise Control (ACC) & Lane Assist"
+  },
   "Škoda Octavia RS 2016": {
     "platform": "SKODA_OCTAVIA_MK3",
     "make": "Škoda",
