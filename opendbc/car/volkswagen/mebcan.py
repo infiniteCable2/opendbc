@@ -321,7 +321,7 @@ def create_acc_accel_control(packer, bus, CP, acc_type, acc_enabled, upper_jerk,
   values = {
     "ACC_Typ":                    acc_type,
     "ACC_Status_ACC":             acc_control,
-    "ACC_StartStopp_Info":        2 if (acc_enabled and starting and (CP.flags & VolkswagenFlags.MQB_EVO)) else (1 if acc_enabled else 0),
+    "ACC_StartStopp_Info":        2 if (acc_enabled and leaving_standstill and (CP.flags & VolkswagenFlags.MQB_EVO)) else (1 if acc_enabled else 0),
     "ACC_Sollbeschleunigung_02":  accel,
     "ACC_zul_Regelabw_unten":     lower_control_limit if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) and not full_stop_no_start else 0,
     "ACC_zul_Regelabw_oben":      upper_control_limit if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) and not full_stop_no_start else 0,
