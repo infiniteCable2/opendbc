@@ -310,6 +310,7 @@ def create_acc_accel_control(packer, bus, CP, acc_type, acc_enabled, upper_jerk,
   # - jerk and control limits values set to 0 when fully stopped
   # - set accel to 0 / no stop accel for full stop (seems to be compatible with old (non 0 stop accel) and new gen, because HMS state holds the car anyways)
   # - action bits are emitted only from the state machine's effective hold state
+  # "ACC_StartStopp_Info": 2 = engine start mandatory (start request), 1 = auto stop prohibited, 0 = auto stop allowed.
   commands = []
 
   # ACC_Anhalteweg: when stopping: MEB: values <> 0 the car can execute a hard brake probably if target is too close, MQBEvo: value 0 results in hard brake
@@ -320,7 +321,7 @@ def create_acc_accel_control(packer, bus, CP, acc_type, acc_enabled, upper_jerk,
   values = {
     "ACC_Typ":                    acc_type,
     "ACC_Status_ACC":             acc_control,
-    "ACC_StartStopp_Info":        acc_enabled,
+    "ACC_StartStopp_Info":        2 if (acc_enabled and starting and (CP.flags & VolkswagenFlags.MQB_EVO)) else (1 if acc_enabled else 0),
     "ACC_Sollbeschleunigung_02":  accel,
     "ACC_zul_Regelabw_unten":     lower_control_limit if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) and not full_stop_no_start else 0,
     "ACC_zul_Regelabw_oben":      upper_control_limit if acc_control in (ACC_CTRL_ACTIVE, ACC_CTRL_OVERRIDE) and not full_stop_no_start else 0,
