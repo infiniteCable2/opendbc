@@ -1346,7 +1346,7 @@
     ],
     "package": "Honda Sensing"
   },
-  "Honda HR-V 2023-25": {
+  "Honda HR-V 2023-27": {
     "platform": "HONDA_HRV_3G",
     "make": "Honda",
     "brand": "honda",
@@ -1354,7 +1354,9 @@
     "year": [
       "2023",
       "2024",
-      "2025"
+      "2025",
+      "2026",
+      "2027"
     ],
     "package": "All"
   },
@@ -3454,7 +3456,7 @@
     ],
     "package": "All"
   },
-  "Tesla Model Y (with HW3) 2020-23": {
+  "Tesla Model Y (with HW3) 2020-24": {
     "platform": "TESLA_MODEL_Y",
     "make": "Tesla",
     "brand": "tesla",
@@ -3463,16 +3465,18 @@
       "2020",
       "2021",
       "2022",
-      "2023"
+      "2023",
+      "2024"
     ],
     "package": "All"
   },
-  "Tesla Model Y (with HW4) 2024-25": {
+  "Tesla Model Y (with HW4) 2023-25": {
     "platform": "TESLA_MODEL_Y",
     "make": "Tesla",
     "brand": "tesla",
     "model": "Model Y (with HW4)",
     "year": [
+      "2023",
       "2024",
       "2025"
     ],

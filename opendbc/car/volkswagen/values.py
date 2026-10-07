@@ -390,7 +390,7 @@ class CAR(Platforms):
   config: VolkswagenMQBPlatformConfig | VolkswagenMQBevoPlatformConfig | VolkswagenPQPlatformConfig | VolkswagenMEBPlatformConfig
 
   FORD_EXPLORER_EV_MK1 = VolkswagenMEBPlatformConfig(
-    [VWCarDocs("Ford Explorer EV Limited 2024-25")],
+    [VWCarDocs("Ford Explorer EV Limited 2024-25", car_parts=CarParts.common([CarHarness.vw_meb]), footnotes=[])],
     VolkswagenCarSpecs(mass=2090, wheelbase=2.77),
     chassis_codes={"EF"},
     wmis={WMI.FORD_EUROPE_CAR},
@@ -472,14 +472,14 @@ class CAR(Platforms):
     wmis={WMI.VOLKSWAGEN_EUROPE_CAR},
   )
   VOLKSWAGEN_ID3_MK1 = VolkswagenMEBPlatformConfig(
-    [VWCarDocs("Volkswagen ID.3 2020-23")],
+    [VWCarDocs("Volkswagen ID.3 2020-23", car_parts=CarParts.common([CarHarness.vw_meb]), footnotes=[])],
     VolkswagenCarSpecs(mass=1935, wheelbase=2.77),
     chassis_codes={"E1"},
     wmis={WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR},
     model_years={"L","M","N","P"},
   )
   VOLKSWAGEN_ID3_MK2 = VolkswagenMEBPlatformConfig(
-    [VWCarDocs("Volkswagen ID.3 2024-25")],
+    [VWCarDocs("Volkswagen ID.3 2024-25", car_parts=CarParts.common([CarHarness.vw_meb]), footnotes=[])],
     VolkswagenCarSpecs(mass=1935, wheelbase=2.77),
     chassis_codes={"E1"},
     wmis={WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR},
@@ -488,8 +488,8 @@ class CAR(Platforms):
   )
   VOLKSWAGEN_ID4_MK1 = VolkswagenMEBPlatformConfig(
     [
-      VWCarDocs("Volkswagen ID.4 2021-23"),
-      VWCarDocs("Volkswagen ID.5 2022-23"),
+      VWCarDocs("Volkswagen ID.4 2021-23", car_parts=CarParts.common([CarHarness.vw_meb]), footnotes=[]),
+      VWCarDocs("Volkswagen ID.5 2022-23", car_parts=CarParts.common([CarHarness.vw_meb]), footnotes=[]),
     ],
     VolkswagenCarSpecs(mass=2224, wheelbase=2.77),
     chassis_codes={"E2"},
@@ -497,7 +497,7 @@ class CAR(Platforms):
     #model_years={"M","N","P"},
   )
   VOLKSWAGEN_ID4_MK2 = VolkswagenMEBPlatformConfig(
-    [VWCarDocs("Volkswagen ID.4 2024-25")],
+    [VWCarDocs("Volkswagen ID.4 2024-25", car_parts=CarParts.common([CarHarness.vw_meb]), footnotes=[])],
     VolkswagenCarSpecs(mass=2224, wheelbase=2.77),
     chassis_codes={"E8"},
     wmis={WMI.VOLKSWAGEN_USA_SUV, WMI.VOLKSWAGEN_EUROPE_CAR, WMI.VOLKSWAGEN_EUROPE_SUV},
@@ -627,14 +627,14 @@ class CAR(Platforms):
     wmis={WMI.AUDI_EUROPE_MPV, WMI.AUDI_GERMANY_CAR, WMI.VOLKSWAGEN_CHINA_FAW},
   )
   AUDI_Q4_MK1 = VolkswagenMEBPlatformConfig(
-    [VWCarDocs("Audi Q4 2021-23")],
+    [VWCarDocs("Audi Q4 2021-23", car_parts=CarParts.common([CarHarness.vw_meb]), footnotes=[])],
     VolkswagenCarSpecs(mass=1965, wheelbase=2.764),
     chassis_codes={"FZ"},
     wmis={WMI.AUDI_EUROPE_MPV},
     model_years={"M","N","P"},
   )
   AUDI_Q4_MK2 = VolkswagenMEBPlatformConfig(
-    [VWCarDocs("Audi Q4 2024-25")],
+    [VWCarDocs("Audi Q4 2024-25", car_parts=CarParts.common([CarHarness.vw_meb]), footnotes=[])],
     VolkswagenCarSpecs(mass=1965, wheelbase=2.764),
     chassis_codes={"FZ"},
     wmis={WMI.AUDI_EUROPE_MPV},
@@ -672,21 +672,21 @@ class CAR(Platforms):
     wmis={WMI.SEAT},
   )
   CUPRA_BORN_MK1 = VolkswagenMEBPlatformConfig(
-    [VWCarDocs("CUPRA Born 2021-23"),],
+    [VWCarDocs("CUPRA Born 2021-23", car_parts=CarParts.common([CarHarness.vw_meb]), footnotes=[])],
     VolkswagenCarSpecs(mass=1956, wheelbase=2.766),
     chassis_codes={"K1"},
     model_years={"N","P"},
     wmis={WMI.SEAT},
   )
   SKODA_ENYAQ_MK1 = VolkswagenMEBPlatformConfig(
-    [VWCarDocs("Škoda Enyaq 2021-23"),],
+    [VWCarDocs("Škoda Enyaq 2021-23", car_parts=CarParts.common([CarHarness.vw_meb]), footnotes=[]),],
     VolkswagenCarSpecs(mass=1965, wheelbase=2.77),
     chassis_codes={"NY"},
     model_years={"M","N","P"},
     wmis={WMI.SKODA},
   )
   SKODA_ENYAQ_MK2 = VolkswagenMEBPlatformConfig(
-    [VWCarDocs("Škoda Enyaq 2024-25"),],
+    [VWCarDocs("Škoda Enyaq 2024-25", car_parts=CarParts.common([CarHarness.vw_meb]), footnotes=[]),],
     VolkswagenCarSpecs(mass=1965, wheelbase=2.77),
     chassis_codes={"NY"},
     model_years={"R", "S"},
