@@ -342,13 +342,15 @@ class CarState(CarStateBase, MadsCarState):
     ret.stockAeb = bool(ext_cp.vl["AWV_03"]["AEB_Active"]) if not (self.CP.flags & VolkswagenFlags.DISABLE_RADAR) else False
 
     self.acc_type = ext_cp.vl["ACC_18"]["ACC_Typ"] if not (self.CP.flags & VolkswagenFlags.DISABLE_RADAR) else 2 # 2: acc stop and go
-    self.esp_standstill = bool(pt_cp.vl["ESC_50"]["Standstill"])
     if self.CP.flags & VolkswagenFlags.MQB_EVO:
+      self.esp_standstill = bool(pt_cp.vl["ESC_50"]["Standstill"])
       self.esp_hold_confirmation = bool(pt_cp.vl["ESP_21"]["ESP_Haltebestaetigung"])
-    elif self.CP.flags & VolkswagenFlags.MEB_GEN2:
-      self.esp_hold_confirmation = pt_cp.vl["VMM_02"]["HMS_Status"] == 1
     else:
-      self.esp_hold_confirmation = self.esp_standstill
+      self.esp_standstill = pt_cp.vl["ESC_50"]["Motion_State"] == 3
+      if self.CP.flags & VolkswagenFlags.MEB_GEN2:
+        self.esp_hold_confirmation = pt_cp.vl["VMM_02"]["HMS_Status"] == 1
+      else:
+        self.esp_hold_confirmation = self.esp_standstill
     self.travel_assist_available = bool(cam_cp.vl["TA_01"]["Travel_Assist_Available"])
 
     ret.cruiseState.available = pt_cp.vl["Motor_51"]["TSK_Status"] in (2, 3, 4, 5)

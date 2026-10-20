@@ -2,11 +2,12 @@ import random
 import re
 import unittest
 
-from opendbc.car import DT_CTRL
+from opendbc.can import CANPacker
+from opendbc.car import Bus, DT_CTRL
 from opendbc.car.structs import CarParams
 from opendbc.car.volkswagen.carcontroller import HCAMitigation
 from opendbc.car.volkswagen.interface import CarInterface
-from opendbc.car.volkswagen.values import CAR, CarControllerParams as CCP, FW_QUERY_CONFIG, VolkswagenFlags, WMI
+from opendbc.car.volkswagen.values import CAR, DBC, CarControllerParams as CCP, FW_QUERY_CONFIG, VolkswagenFlags, WMI
 from opendbc.car.volkswagen.fingerprints import FW_VERSIONS
 
 Ecu = CarParams.Ecu
@@ -29,6 +30,40 @@ class TestVolkswagenHCAMitigation(unittest.TestCase):
         should_nudge = actuator_value != 0 and frame == self.STUCK_TORQUE_FRAMES
         expected_torque = actuator_value - (1, -1)[actuator_value < 0] if should_nudge else actuator_value
         assert hca_mitigation.update(actuator_value, actuator_value) == expected_torque, f"{frame=}"
+
+
+class TestVolkswagenStandstillSignals(unittest.TestCase):
+  @staticmethod
+  def make_interface(platform):
+    fingerprint = {bus: {} for bus in range(4)}
+    cp = CarInterface.get_params(platform, fingerprint, [], False, False, False)
+    cp_sp = CarInterface.get_params_sp(cp, platform, fingerprint, [], False, False, False)
+    cp_ic = CarInterface.get_params_ic(cp, platform, fingerprint, [], False, False, False)
+    return CarInterface(cp, cp_sp, cp_ic), CANPacker(DBC[platform][Bus.pt])
+
+  def test_meb_motion_state_and_gen2_hms(self):
+    for platform in (CAR.CUPRA_BORN_MK1, CAR.VOLKSWAGEN_ID3_MK2):
+      with self.subTest(platform=platform):
+        ci, packer = self.make_interface(platform)
+        for motion_state in range(4):
+          msg = packer.make_can_msg("ESC_50", 0, {"Motion_State": motion_state})
+          ci.update([(motion_state + 1, [msg])])
+          self.assertEqual(ci.CS.esp_standstill, motion_state == 3)
+          self.assertEqual(ci.CS.esp_hold_confirmation, motion_state == 3 if platform == CAR.CUPRA_BORN_MK1 else False)
+
+        if platform == CAR.VOLKSWAGEN_ID3_MK2:
+          for hms_status in (0, 1, 2):
+            msg = packer.make_can_msg("VMM_02", 0, {"HMS_Status": hms_status})
+            ci.update([(hms_status + 5, [msg])])
+            self.assertEqual(ci.CS.esp_hold_confirmation, hms_status == 1)
+
+  def test_mqb_evo_standstill(self):
+    ci, packer = self.make_interface(CAR.VOLKSWAGEN_GOLF_MK8)
+    for standstill in (0, 1):
+      msg = packer.make_can_msg("ESC_50", 0, {"Standstill": standstill})
+      ci.update([(standstill + 1, [msg])])
+      self.assertEqual(ci.CS.esp_standstill, bool(standstill))
+
 
 class TestVolkswagenPlatformConfigs(unittest.TestCase):
   def test_flag_values_are_unique(self):
