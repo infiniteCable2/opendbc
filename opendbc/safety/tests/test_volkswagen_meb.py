@@ -316,6 +316,27 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
   ACCEL_OVERRIDE = 0
   INACTIVE_ACCEL = 3.01
 
+  def test_radar_1hz_rx_check(self):
+    checked_messages = ("LH_EPS_03", "Motor_14", "GRA_ACC_01", "QFK_01", "ESP_21", "Motor_51", "ESC_51")
+    for name in checked_messages:
+      self.assertTrue(self._rx(self.packer.make_can_msg_safety(name, 0, {})))
+    self.assertTrue(self._rx(self._aeb_msg(False)))
+
+    # AWV_03 is a 1 Hz safety message: it must not fail the generic 10 Hz minimum.
+    self.safety.set_timer(1_000_000)
+    self.safety.set_controls_allowed(True)
+    self.safety.safety_tick()
+    self.assertTrue(self.safety.get_controls_allowed())
+    self.assertTrue(self.safety.safety_config_valid())
+
+    # The frequency exception must not disable the timeout for missing AWV_03.
+    self.safety.set_timer(11_000_001)
+    for name in checked_messages:
+      self.assertTrue(self._rx(self.packer.make_can_msg_safety(name, 0, {})))
+    self.safety.set_controls_allowed(True)
+    self.safety.safety_tick()
+    self.assertFalse(self.safety.get_controls_allowed())
+
   # stock cruise controls are entirely bypassed under openpilot longitudinal control
   def test_disable_control_allowed_from_cruise(self):
     pass
