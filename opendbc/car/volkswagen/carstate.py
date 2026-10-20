@@ -343,7 +343,9 @@ class CarState(CarStateBase, MadsCarState):
 
     self.acc_type = ext_cp.vl["ACC_18"]["ACC_Typ"] if not (self.CP.flags & VolkswagenFlags.DISABLE_RADAR) else 2 # 2: acc stop and go
     self.esp_standstill = bool(pt_cp.vl["ESC_50"]["Standstill"])
-    if self.CP.flags & VolkswagenFlags.MEB_GEN2:
+    if self.CP.flags & VolkswagenFlags.MQB_EVO:
+      self.esp_hold_confirmation = bool(pt_cp.vl["ESP_21"]["ESP_Haltebestaetigung"])
+    elif self.CP.flags & VolkswagenFlags.MEB_GEN2:
       self.esp_hold_confirmation = pt_cp.vl["VMM_02"]["HMS_Status"] == 1
     else:
       self.esp_hold_confirmation = self.esp_standstill
@@ -396,9 +398,6 @@ class CarState(CarStateBase, MadsCarState):
     # prevent engaging a controller which intentionally emits no ACC frames.
     ret.carNotReady = tsk_status == 5 or bool(long_control_inhibit) or radar_disable_failed
 
-    if self.CP.flags & VolkswagenFlags.MQB_EVO:
-      self.esp_hold_confirmation = bool(pt_cp.vl["ESP_21"]["ESP_Haltebestaetigung"])
-      
     ret.cruiseState.standstill = self.CP.pcmCruise and self.esp_hold_confirmation
 
     # Update ACC setpoint. When the setpoint is zero or there's an error, the

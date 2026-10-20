@@ -10,7 +10,6 @@ from opendbc.car.common.conversions import Conversions as CV
 LongCtrlState = structs.CarControl.Actuators.LongControlState
 
 ACCEL_INACTIVE = 3.01
-ACCEL_OVERRIDE = 0.00
 
 ACC_CTRL_ERROR    = 6
 ACC_CTRL_OVERRIDE = 4
@@ -249,55 +248,22 @@ class SunnypilotMebLongStateMachine(MebLongStateMachine):
 
   def __init__(self, CP, CCP):
     super().__init__(CP, CCP)
-    self.long_active = False
-    self.long_override = False
     self.acc_enabled = False
-    self.starting = False
-    self.comfort_accel = 0.0
 
   def reset(self):
     self.disengage_ramp_counter = 0
     self.prev_acc_hold_type = self.acc_hold_type_vals['KEINE_ANFORDERUNG']
     self.acc_status = self.acc_status_vals['ACC_OFF_HAUPTSCHALTER_AUS']
-    self.long_active = False
-    self.long_override = False
     self.acc_enabled = False
-    self.starting = False
-    self.comfort_accel = 0.0
 
   def update(self, CS, CC, accel) -> tuple[float, int, int, bool, bool, bool]:
-    blocked_by_car = CS.out.accFaulted or CS.out.stockAeb
-    # Keep the ACC session enabled through driver overrides.
-    self.acc_enabled = CC.enabled and not blocked_by_car
-    self.long_active = self.acc_enabled and CC.longActive
-    self.long_override = self.acc_enabled and CS.out.gasPressed and not CS.out.brakePressed
-
-    long_state = CC.actuators.longControlState
-    if not self.long_active or long_state == LongCtrlState.stopping or CS.out.vEgo > self.CCP.STARTING_VEGO:
-      self.starting = False
-    elif long_state == LongCtrlState.pid and CS.esp_hold_confirmation:
-      self.starting = True
-
-    if not self.acc_enabled:
-      self.comfort_accel = 0.0
-    elif self.long_override:
-      self.comfort_accel = self.CCP.ACCEL_OVERRIDE
-    elif self.starting:
-      self.comfort_accel = self.CCP.STARTING_ACCEL
-    else:
-      self.comfort_accel = accel
-
-    # Reuse the upstream HMS transitions with the fork states above.
-    effective_cs = SimpleNamespace(out=CS.out, esp_hold_confirmation=CS.esp_hold_confirmation or self.starting,
-                                   esp_standstill=CS.esp_standstill)
-    effective_cc = SimpleNamespace(
-      enabled=self.acc_enabled,
-      longActive=self.long_active,
-      cruiseControl=SimpleNamespace(override=self.long_override),
-      actuators=CC.actuators,
+    # Keep the upstream state machine unchanged except while stock AEB is active.
+    self.acc_enabled = CC.enabled and not CS.out.stockAeb
+    effective_cc = CC if not CS.out.stockAeb else SimpleNamespace(
+      enabled=False, longActive=False, cruiseControl=CC.cruiseControl, actuators=CC.actuators,
     )
     accel, acc_status, acc_hold_type, braking_to_stop, leaving_standstill = super().update(
-      effective_cs, effective_cc, self.comfort_accel,
+      CS, effective_cc, accel,
     )
     held = acc_hold_type == self.acc_hold_type_vals['HALTEN'] and CS.esp_hold_confirmation
     return accel, acc_status, acc_hold_type, braking_to_stop, leaving_standstill, held

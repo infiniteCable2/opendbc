@@ -31,7 +31,7 @@ class TestMebLongStateMachine(unittest.TestCase):
 
   @staticmethod
   def make_car_state(v_ego=10.0, available=True, acc_faulted=False, stock_aeb=False,
-                     gas_pressed=False, brake_pressed=False, esp_hold=False):
+                     gas_pressed=False, brake_pressed=False, esp_hold=False, esp_standstill=False):
     out = SimpleNamespace(
       vEgo=v_ego,
       cruiseState=SimpleNamespace(available=available),
@@ -40,7 +40,7 @@ class TestMebLongStateMachine(unittest.TestCase):
       gasPressed=gas_pressed,
       brakePressed=brake_pressed,
     )
-    return SimpleNamespace(out=out, esp_hold_confirmation=esp_hold)
+    return SimpleNamespace(out=out, esp_hold_confirmation=esp_hold, esp_standstill=esp_standstill)
 
   @staticmethod
   def make_car_control(enabled=True, long_active=True, override=False, long_state=LongCtrlState.pid):
@@ -82,19 +82,39 @@ class TestMebLongStateMachine(unittest.TestCase):
     for platform in self.PLATFORMS:
       with self.subTest(platform=platform):
         state = self.make_state_machine(platform)
-        CS = self.make_car_state(v_ego=0.0)
+        CS = self.make_car_state(v_ego=0.0, esp_standstill=True)
         CC = self.make_car_control(long_state=LongCtrlState.stopping)
         state.update(CS, CC, -1.0)
 
         CS.esp_hold_confirmation = True
+        accel, _, hold_type, _, _, held = state.update(CS, CC, -1.0)
+        self.assertEqual(accel, state.CCP.ACCEL_INACTIVE)
+        self.assertEqual(hold_type, mebcan.ACC_HMS_HOLD)
+        self.assertTrue(held)
+
         CC.actuators.longControlState = LongCtrlState.pid
-        accel, _, hold_type, _, leaving_standstill, _ = state.update(CS, CC, 0.2)
-        self.assertEqual(accel, state.CCP.STARTING_ACCEL)
+        accel, _, hold_type, _, leaving_standstill, held = state.update(CS, CC, 0.2)
+        self.assertEqual(accel, 0.2)
+        self.assertEqual(hold_type, mebcan.ACC_HMS_RELEASE)
+        self.assertTrue(leaving_standstill)
+        self.assertFalse(held)
+
+        CS.esp_hold_confirmation = False
+        # HMS leaves hold after ANFAHREN, while ESC still reports standstill.
+        _, _, hold_type, _, leaving_standstill, _ = state.update(CS, CC, 0.2)
         self.assertEqual(hold_type, mebcan.ACC_HMS_RELEASE)
         self.assertTrue(leaving_standstill)
 
-        CS.esp_hold_confirmation = False
-        CS.out.vEgo = 1.0  # 3.6 km/h, above the fork launch latch but below ramp release speed
+        # End ANFAHREN as soon as ESC reports motion, even below the old 0.5 m/s latch.
+        CS.esp_standstill = False
+        CS.out.vEgo = 0.2
+        accel, _, hold_type, braking_to_stop, leaving_standstill, _ = state.update(CS, CC, 0.2)
+        self.assertEqual(accel, 0.2)
+        self.assertEqual(hold_type, mebcan.ACC_HMS_RAMP_RELEASE)
+        self.assertFalse(braking_to_stop)
+        self.assertFalse(leaving_standstill)
+
+        CS.out.vEgo = 1.0  # 3.6 km/h, below upstream's ramp release speed
         _, _, hold_type, braking_to_stop, leaving_standstill, _ = state.update(CS, CC, 0.2)
         self.assertEqual(hold_type, mebcan.ACC_HMS_RAMP_RELEASE)
         self.assertFalse(braking_to_stop)
@@ -104,21 +124,32 @@ class TestMebLongStateMachine(unittest.TestCase):
         _, _, hold_type, _, _, _ = state.update(CS, CC, 0.2)
         self.assertEqual(hold_type, mebcan.ACC_HMS_NO_REQUEST)
 
+  def test_no_drive_off_without_hold_confirmation(self):
+    for platform in self.PLATFORMS:
+      with self.subTest(platform=platform):
+        state = self.make_state_machine(platform)
+        CS = self.make_car_state(v_ego=0.0, esp_standstill=True)
+        CC = self.make_car_control(long_state=LongCtrlState.pid)
+
+        accel, _, hold_type, _, leaving_standstill, _ = state.update(CS, CC, 0.2)
+        self.assertEqual(accel, 0.2)
+        self.assertEqual(hold_type, mebcan.ACC_HMS_NO_REQUEST)
+        self.assertFalse(leaving_standstill)
+
   def test_enabled_without_long_active_preserves_acc_session(self):
     for platform in self.PLATFORMS:
       with self.subTest(platform=platform):
         state = self.make_state_machine(platform)
         CS = self.make_car_state()
         CC = self.make_car_control(enabled=True, long_active=False, override=True)
-        accel, status, hold_type, braking_to_stop, leaving_standstill, _ = state.update(CS, CC, 0.5)
+        accel, status, hold_type, braking_to_stop, leaving_standstill, _ = state.update(CS, CC, 0.0)
 
-        self.assertEqual(accel, 0.5)
-        self.assertEqual(status, mebcan.ACC_CTRL_ACTIVE)
+        self.assertEqual(accel, 0.0)
+        self.assertEqual(status, mebcan.ACC_CTRL_OVERRIDE)
         self.assertEqual(hold_type, mebcan.ACC_HMS_NO_REQUEST)
         self.assertFalse(braking_to_stop)
         self.assertFalse(leaving_standstill)
         self.assertTrue(state.acc_enabled)
-        self.assertFalse(state.long_override)
 
   def test_gas_override_release_does_not_enter_standby(self):
     for platform in self.PLATFORMS:
@@ -134,40 +165,59 @@ class TestMebLongStateMachine(unittest.TestCase):
         CS.out.gasPressed = True
         CC.longActive = False
         CC.cruiseControl.override = True
-        accel, status, *_ = state.update(CS, CC, 0.4)
-        self.assertEqual(accel, state.CCP.ACCEL_OVERRIDE)
+        accel, status, *_ = state.update(CS, CC, 0.0)
+        self.assertEqual(accel, 0.0)
         self.assertEqual(status, mebcan.ACC_CTRL_OVERRIDE)
 
         # controlsd can clear the override before longActive resumes. CC.enabled
         # remains the stable ACC-session signal across this transition frame.
         CS.out.gasPressed = False
         CC.cruiseControl.override = False
-        accel, status, *_ = state.update(CS, CC, 0.2)
-        self.assertEqual(accel, 0.2)
+        accel, status, *_ = state.update(CS, CC, 0.0)
+        self.assertEqual(accel, 0.0)
         self.assertEqual(status, mebcan.ACC_CTRL_ACTIVE)
         self.assertNotEqual(accel, state.CCP.ACCEL_INACTIVE)
         self.assertTrue(state.acc_enabled)
-        self.assertFalse(state.long_active)
 
         CC.longActive = True
         accel, status, *_ = state.update(CS, CC, 0.3)
         self.assertEqual(accel, 0.3)
         self.assertEqual(status, mebcan.ACC_CTRL_ACTIVE)
 
-  def test_gas_override_and_stock_aeb(self):
+  def test_gas_override_from_hold_ramps_before_no_request(self):
+    for platform in self.PLATFORMS:
+      with self.subTest(platform=platform):
+        state = self.make_state_machine(platform)
+        CS = self.make_car_state(v_ego=0.0, esp_hold=True, esp_standstill=True)
+        CC = self.make_car_control(long_state=LongCtrlState.stopping)
+        state.update(CS, CC, -1.0)
+
+        CS.out.gasPressed = True
+        CC.longActive = False
+        CC.cruiseControl.override = True
+        for _ in range(state.RAMP_FRAMES):
+          accel, status, hold_type, braking_to_stop, leaving_standstill, _ = state.update(CS, CC, 0.0)
+          self.assertEqual(accel, 0.0)
+          self.assertEqual(status, mebcan.ACC_CTRL_OVERRIDE)
+          self.assertEqual(hold_type, mebcan.ACC_HMS_RAMP_RELEASE)
+          self.assertFalse(braking_to_stop)
+          self.assertFalse(leaving_standstill)
+
+        _, _, hold_type, _, _, _ = state.update(CS, CC, 0.0)
+        self.assertEqual(hold_type, mebcan.ACC_HMS_NO_REQUEST)
+
+  def test_upstream_override_and_stock_aeb(self):
     for platform in self.PLATFORMS:
       with self.subTest(platform=platform):
         state = self.make_state_machine(platform)
         CS = self.make_car_state(gas_pressed=True)
-        # The pedal can reach CarState before the override reaches CarControl.
-        CC = self.make_car_control(enabled=True, long_active=False, override=False)
-        accel, status, _, braking_to_stop, leaving_standstill, _ = state.update(CS, CC, 0.5)
-        self.assertEqual(accel, state.CCP.ACCEL_OVERRIDE)
+        CC = self.make_car_control(enabled=True, long_active=False, override=True)
+        accel, status, _, braking_to_stop, leaving_standstill, _ = state.update(CS, CC, 0.0)
+        self.assertEqual(accel, 0.0)
         self.assertEqual(status, mebcan.ACC_CTRL_OVERRIDE)
         self.assertFalse(braking_to_stop)
         self.assertFalse(leaving_standstill)
         self.assertTrue(state.acc_enabled)
-        self.assertEqual(state.comfort_accel, state.CCP.ACCEL_OVERRIDE)
 
         state = self.make_state_machine(platform)
         CS = self.make_car_state(stock_aeb=True)
@@ -178,7 +228,35 @@ class TestMebLongStateMachine(unittest.TestCase):
         self.assertFalse(braking_to_stop)
         self.assertFalse(leaving_standstill)
         self.assertFalse(state.acc_enabled)
-        self.assertEqual(state.comfort_accel, 0.0)
+
+  def test_acc_fault_uses_upstream_error_state(self):
+    for platform in self.PLATFORMS:
+      with self.subTest(platform=platform):
+        state = self.make_state_machine(platform)
+        CS = self.make_car_state(acc_faulted=True)
+        CC = self.make_car_control()
+
+        _, status, hold_type, _, _, _ = state.update(CS, CC, 0.0)
+        self.assertEqual(status, mebcan.ACC_CTRL_ERROR)
+        self.assertEqual(hold_type, mebcan.ACC_HMS_NO_REQUEST)
+        self.assertTrue(state.acc_enabled)
+
+  def test_stock_aeb_from_hold_ramps_and_disables_long(self):
+    for platform in self.PLATFORMS:
+      with self.subTest(platform=platform):
+        state = self.make_state_machine(platform)
+        CS = self.make_car_state(v_ego=0.0, esp_hold=True, esp_standstill=True)
+        CC = self.make_car_control(long_state=LongCtrlState.stopping)
+        state.update(CS, CC, -1.0)
+
+        CS.out.stockAeb = True
+        accel, status, hold_type, braking_to_stop, leaving_standstill, _ = state.update(CS, CC, 0.4)
+        self.assertEqual(accel, state.CCP.ACCEL_INACTIVE)
+        self.assertEqual(status, mebcan.ACC_CTRL_ENABLED)
+        self.assertEqual(hold_type, mebcan.ACC_HMS_RAMP_RELEASE)
+        self.assertFalse(braking_to_stop)
+        self.assertFalse(leaving_standstill)
+        self.assertFalse(state.acc_enabled)
 
   def test_aeb_inactive_field_split_preserves_wire_value(self):
     for platform in self.PLATFORMS:

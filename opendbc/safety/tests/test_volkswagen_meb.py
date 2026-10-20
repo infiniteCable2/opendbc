@@ -362,15 +362,16 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
         self.safety.set_controls_allowed(controls_allowed)
         self.assertEqual(send, self._tx(self._accel_msg(accel)), (controls_allowed, accel))
 
-  def test_accel_override_with_gas(self):
-    self.safety.set_controls_allowed(True)
-    self.safety.set_gas_pressed_prev(True)
-    self.assertTrue(self._tx(self._accel_msg(self.ACCEL_OVERRIDE)))
-    self.assertFalse(self._tx(self._accel_msg(MAX_ACCEL)))
+  def test_accel_override(self):
+    for gas_pressed in (False, True):
+      self.safety.set_controls_allowed(True)
+      self.safety.set_gas_pressed_prev(gas_pressed)
+      self.assertTrue(self._tx(self._accel_msg(self.ACCEL_OVERRIDE)))
+      self.assertEqual(not gas_pressed, self._tx(self._accel_msg(MAX_ACCEL)))
 
-    self.safety.set_controls_allowed(False)
-    self.assertFalse(self._tx(self._accel_msg(self.ACCEL_OVERRIDE)))
-    self.assertTrue(self._tx(self._accel_msg(self.INACTIVE_ACCEL)))
+      self.safety.set_controls_allowed(False)
+      self.assertFalse(self._tx(self._accel_msg(self.ACCEL_OVERRIDE)))
+      self.assertTrue(self._tx(self._accel_msg(self.INACTIVE_ACCEL)))
 
   def test_stock_aeb_blocks_longitudinal(self):
     self.safety.set_controls_allowed(True)

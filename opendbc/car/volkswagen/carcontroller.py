@@ -189,9 +189,10 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
 
         critical_state = hud_control.visualAlert == VisualAlert.fcw
         if CC_IC.longComfortMode:
-          self.long_jerk_control.update(self.meb_long_state.acc_enabled, self.meb_long_state.long_override,
+          driver_override = CS.out.gasPressed and not CS.out.brakePressed
+          self.long_jerk_control.update(self.meb_long_state.acc_enabled, driver_override,
                                         CC_IC.hudLeadDistance, hud_control.leadVisible,
-                                        self.meb_long_state.comfort_accel, critical_state)
+                                        accel_request if self.meb_long_state.acc_enabled and not driver_override else 0.0, critical_state)
           self.long_limit_control.update(self.meb_long_state.acc_enabled, CS.out.vEgoRaw, hud_control.setSpeed,
                                          CC_IC.hudLeadDistance, hud_control.leadVisible, critical_state)
 
