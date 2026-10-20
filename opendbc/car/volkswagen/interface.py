@@ -54,7 +54,6 @@ class CarInterface(CarInterfaceBase):
       
       if 0x24C in fingerprint[0]:  # MEB_Side_Assist_01
         ret.flags |= VolkswagenFlags.HAS_BSM.value
-        ret.enableBsm = True
       ret.transmissionType = TransmissionType.direct
       #ret.steerControlType = structs.CarParams.SteerControlType.angle
       ret.steerControlType = structs.CarParams.SteerControlType.curvature

@@ -260,7 +260,7 @@ class VolkswagenFlags(IntFlag):
   STOCK_EA_PRESENT          = 2 ** 14
   STOCK_VZE_PRESENT         = 2 ** 15
   CLUSTER_NO_TA_LANES       = 2 ** 16
-  HAS_BSM                   = 2 ** 8  # blind spot monitoring
+  HAS_BSM                   = 2 ** 18  # blind spot monitoring
 
   # Static flags
   PQ           = 2 ** 1

@@ -5,7 +5,8 @@ import unittest
 from opendbc.car import DT_CTRL
 from opendbc.car.structs import CarParams
 from opendbc.car.volkswagen.carcontroller import HCAMitigation
-from opendbc.car.volkswagen.values import CAR, CarControllerParams as CCP, FW_QUERY_CONFIG, WMI
+from opendbc.car.volkswagen.interface import CarInterface
+from opendbc.car.volkswagen.values import CAR, CarControllerParams as CCP, FW_QUERY_CONFIG, VolkswagenFlags, WMI
 from opendbc.car.volkswagen.fingerprints import FW_VERSIONS
 
 Ecu = CarParams.Ecu
@@ -30,6 +31,22 @@ class TestVolkswagenHCAMitigation(unittest.TestCase):
         assert hca_mitigation.update(actuator_value, actuator_value) == expected_torque, f"{frame=}"
 
 class TestVolkswagenPlatformConfigs(unittest.TestCase):
+  def test_flag_values_are_unique(self):
+    values = [flag.value for flag in VolkswagenFlags.__members__.values()]
+    self.assertEqual(len(values), len(set(values)))
+
+  def test_bsm_does_not_change_platform(self):
+    fingerprint = {bus: {} for bus in range(4)}
+    fingerprint[0][0x24C] = 8  # MEB_Side_Assist_01
+    meb_cp = CarInterface.get_params(CAR.CUPRA_BORN_MK1, fingerprint, [], False, False, False)
+    self.assertTrue(meb_cp.flags & VolkswagenFlags.HAS_BSM)
+    self.assertFalse(meb_cp.flags & VolkswagenFlags.MQB_EVO)
+
+    fingerprint[0].clear()
+    mqb_evo_cp = CarInterface.get_params(CAR.VOLKSWAGEN_GOLF_MK8, fingerprint, [], False, False, False)
+    self.assertTrue(mqb_evo_cp.flags & VolkswagenFlags.MQB_EVO)
+    self.assertFalse(mqb_evo_cp.flags & VolkswagenFlags.HAS_BSM)
+
   def test_spare_part_fw_pattern(self):
     # Relied on for determining if a FW is likely VW
     for platform, ecus in FW_VERSIONS.items():
