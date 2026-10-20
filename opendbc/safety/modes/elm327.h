@@ -34,7 +34,6 @@ static bool elm327_tx_hook(const CANPacket_t *msg) {
       tx = false;
     }
   }
-  
   // VW additionally uses custom diagnostic address range
   if ((msg->addr & VW_DIAG_29B_MASK) == VW_DIAG_17FC_BASE) {
 	// allow typical diagnostic request frames 
@@ -43,7 +42,7 @@ static bool elm327_tx_hook(const CANPacket_t *msg) {
       tx = false;
     }
   }
-  
+
   return tx;
 }
 

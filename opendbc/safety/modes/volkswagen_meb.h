@@ -75,7 +75,7 @@ static uint32_t volkswagen_meb_compute_crc(const CANPacket_t *msg) {
     crc = volkswagen_crc8_lut_8h2f[crc];
   }
   
-  uint8_t counter = volkswagen_mqb_meb_get_counter(msg);
+  uint8_t counter = volkswagen_mxb_get_counter(msg);
   if (msg->addr == MSG_LH_EPS_03) {
     crc ^= (uint8_t[]){0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5,0xF5}[counter];
   } else if (msg->addr == MSG_GRA_ACC_01) {
@@ -130,7 +130,7 @@ static uint32_t volkswagen_meb_gen2_compute_crc(const CANPacket_t *msg) {
     crc = volkswagen_crc8_lut_8h2f[crc];
   }
   
-  uint8_t counter = volkswagen_mqb_meb_get_counter(msg);
+  uint8_t counter = volkswagen_mxb_get_counter(msg);
   if (msg->addr == MSG_QFK_01) {
 	crc ^= (uint8_t[]){0x18,0x71,0x10,0x8D,0xD7,0xAA,0xB0,0x78,0xAC,0x12,0xAE,0x0C,0xDD,0xF1,0x85,0x68}[counter];
   } else if (msg->addr == MSG_ESC_51) {
@@ -349,7 +349,7 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
 
   // Safety check for HCA_03 Heading Control Assist curvature
   if (msg->addr == MSG_HCA_03) {
-    int desired_curvature_raw = GET_BYTES(msg, 3, 2) & 0x7FFFU;
+    int desired_curvature_raw = GET_BYTES_LE(msg, 3, 2) & 0x7FFFU;
 
     bool desired_curvature_sign = GET_BIT(msg, 39U);
     if (!desired_curvature_sign) {
@@ -422,7 +422,7 @@ static bool volkswagen_meb_tx_hook(const CANPacket_t *msg) {
 
   // UDS: Only tester present ("\x02\x3E\x80\x00\x00\x00\x00\x00") allowed on diagnostics address
   if (msg->addr == MSG_DIAGNOSTIC) {
-    if ((GET_BYTES(msg, 0, 4) != 0x00803E02U) || (GET_BYTES(msg, 4, 4) != 0x0U)) {
+    if ((GET_BYTES_LE(msg, 0, 4) != 0x00803E02U) || (GET_BYTES_LE(msg, 4, 4) != 0x0U)) {
       tx = false;
     }
   }
@@ -434,7 +434,7 @@ const safety_hooks volkswagen_meb_hooks = {
   .init = volkswagen_meb_init,
   .rx = volkswagen_meb_rx_hook,
   .tx = volkswagen_meb_tx_hook,
-  .get_counter = volkswagen_mqb_meb_get_counter,
-  .get_checksum = volkswagen_mqb_meb_get_checksum,
+  .get_counter = volkswagen_mxb_get_counter,
+  .get_checksum = volkswagen_mxb_get_checksum,
   .compute_checksum = volkswagen_meb_gen2_compute_crc,
 };

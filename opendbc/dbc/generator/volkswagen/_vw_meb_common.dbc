@@ -309,6 +309,7 @@ BO_ 313 VMM_02: 32 XXX
  SG_ FCW_Reaction_2 : 56|1@1+ (1,0) [0|1] "" XXX
  SG_ Brake_Pressure : 76|11@1+ (1,0) [0|100] "" XXX
  SG_ FCW_Reaction_3 : 88|5@1+ (1,0) [0|31] "" XXX
+ SG_ HMS_Status : 196|4@1+ (1,0) [0|15] "" XXX
 
 BO_ 317 QFK_01: 32 XXX
  SG_ CHECKSUM : 0|8@1+ (1,0) [0|255] "" XXX
@@ -2088,6 +2089,27 @@ BO_ 452984919 MEB_Unknown_01: 8 XXX
  SG_ NEW_SIGNAL_2 : 19|1@0+ (1,0) [0|1] "" XXX
  SG_ NEW_SIGNAL_3 : 24|1@0+ (1,0) [0|1] "" XXX
  SG_ NEW_SIGNAL_6 : 25|2@1+ (1,0) [0|3] "" XXX
+CM_ BO_ 184 "Motorsteuergerät";
+CM_ BO_ 192 "Motorsteuergerät";
+CM_ BO_ 219 "AEB_Object_Status and AEB_Object_Status_B values 4 and 5/6 coincide with AEB potentially activating";
+CM_ SG_ 219 AEB_Target_Decel "Scale is estimated. Lowest request seen was -6.99";
+CM_ SG_ 219 AEB_TTC_Countdown "Can count down to zero before AEB activates, but may not always precede an AEB or mean it will happen";
+CM_ SG_ 219 VRU_Detected "Commonly high when a pedestrian is seen. Also goes high with AWV_Unavailable";
+CM_ SG_ 219 AWV_Unavailable "High when the AWV function cannot operate, seen with the radar obstructed and with the powertrain ECU off the bus. MEB_AWV_01.AWV_Status carries the same state";
+CM_ SG_ 219 AWV_Init_Status "Power-up state only, reads 2 once running. Does not report whether AEB can operate, use AWV_Unavailable for that";
+CM_ SG_ 219 Unknown_192 "Constant per platform (0 on all gen1 ID.4/Born, 1 on all gen2 ID.4)";
+CM_ SG_ 219 Unknown_27 "Low bit tracks AWV_Unavailable, but is also set in 20-33% of normal driving";
+CM_ SG_ 219 Unknown_80 "Low bit is normally 1 and clears with AWV_Unavailable, but also clears in ~1% of normal driving";
+CM_ SG_ 313 Long_Control_Inhibit "Goes high after user brakes hard, causes temporary TSK_Status fault";
+CM_ SG_ 313 HMS_Status "Hold manager response to ACC_18.ACC_Anforderung_HMS and auto hold, 2024+ only";
+CM_ SG_ 333 SET_ME_0x2FE "Only set by stock ACC on 2024+; reads 0 on pre-2024 and is not packed by mebcan";
+CM_ SG_ 380196013 AWV_Status "Mirrors AWV_03.AWV_Unavailable, at a higher rate";
+CM_ BO_ 317 "Lenkungssteuergerät";
+CM_ BO_ 517 "Steuergerät für Motorstart";
+CM_ BO_ 522 "Steuergerät für Fahrzeugbewegung";
+CM_ BO_ 1622 "Steuergerät für Lenkungsverriegelung";
+CM_ BO_ 316495165 "Steuergerät ICAS1";
+CM_ BO_ 441800001 "Steuergerät für Fahrzeugbewegung";
 VAL_ 64 AB_RGS_Anst 4 "aktiv_Niveau_1" 5 "aktiv_Niveau_2" 6 "aktiv_Niveau_3" 7 "aktiv_Niveau_4" 8 "deaktiviert";
 VAL_ 64 AB_Front_Crash 0 "kein_Front_Crash" 1 "Front_Crash";
 VAL_ 64 AB_Heck_Crash 0 "kein_Heck_Crash" 1 "Heck_Crash";
@@ -2205,6 +2227,9 @@ VAL_ 299 GRA_Fehler 0 "kein_Fehler" 1 "Fehler";
 VAL_ 299 GRA_LIM_Taste_verfuegbar 0 "Limiter_Taste_nicht_vorhanden" 1 "Limiter_Taste_vorhanden";
 VAL_ 299 GRA_Tip_Stufe_2 0 "Tip_Stufe_1__keine_Betaetigung" 1 "Tip_Stufe_2";
 VAL_ 299 GRA_TravelAssist 0 "nicht_betaetigt" 1 "betaetigt";
+VAL_ 313 Long_Control_Inhibit 1 "not_inhibited" 2 "inhibited";
+VAL_ 313 HMS_Status 0 "not_holding" 1 "holding" 5 "starting" 6 "releasing" 9 "stopping";
+VAL_ 317 LatCon_HCA_Status 0 "disabled" 1 "initializing" 2 "ready" 3 "fault" 4 "active" 5 "preempted" 6 "fault" 7 "rejected";
 VAL_ 319 PreCrash_Charisma_FahrPr 0 "keine_Funktion" 1 "Programm_1" 2 "Programm_2" 3 "Programm_3" 4 "Programm_4" 5 "Programm_5" 6 "Programm_6" 7 "Programm_7" 8 "Programm_8" 9 "Programm_9" 10 "Programm_10" 11 "Programm_11" 12 "Programm_12" 13 "Programm_13" 14 "Programm_14" 15 "Programm_15";
 VAL_ 319 PreCrash_Charisma_Status 0 "Init" 1 "verfuegbar" 2 "nicht_verfuegbar" 3 "asynchron_durch_Fahrerwunsch";
 VAL_ 319 PreCrash_Schiebedach_schliessen 0 "keine_Schliessung" 1 "Schliessung_angefordert";

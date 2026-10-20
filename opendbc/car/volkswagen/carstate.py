@@ -22,6 +22,7 @@ class CarState(CarStateBase, MadsCarState):
     self.CCP = CarControllerParams(CP)
     self.button_states = {button.event_type: False for button in self.CCP.BUTTONS}
     self.esp_hold_confirmation = False
+    self.esp_standstill = False
     self.upscale_lead_car_signal = False
     self.eps_stock_values = False
     self.curvature = 0.
@@ -113,7 +114,7 @@ class CarState(CarStateBase, MadsCarState):
                         pt_cp.vl["Gateway_72"]["ZV_HBFS_offen"],
                         pt_cp.vl["Gateway_72"]["ZV_HD_offen"]])
 
-    if self.CP.enableBsm:
+    if self.CP.flags & VolkswagenFlags.HAS_BSM:
       # Infostufe: BSM LED on, Warnung: BSM LED flashing
       ret.leftBlindspot = bool(ext_cp.vl["SWA_01"]["SWA_Infostufe_SWA_li"]) or bool(ext_cp.vl["SWA_01"]["SWA_Warnung_SWA_li"])
       ret.rightBlindspot = bool(ext_cp.vl["SWA_01"]["SWA_Infostufe_SWA_re"]) or bool(ext_cp.vl["SWA_01"]["SWA_Warnung_SWA_re"])
@@ -209,7 +210,7 @@ class CarState(CarStateBase, MadsCarState):
 
     # Consume blind-spot monitoring info/warning LED states, if available.
     # Infostufe: BSM LED on, Warnung: BSM LED flashing
-    if self.CP.enableBsm:
+    if self.CP.flags & VolkswagenFlags.HAS_BSM:
       ret.leftBlindspot = bool(ext_cp.vl["SWA_1"]["SWA_Infostufe_SWA_li"]) or bool(ext_cp.vl["SWA_1"]["SWA_Warnung_SWA_li"])
       ret.rightBlindspot = bool(ext_cp.vl["SWA_1"]["SWA_Infostufe_SWA_re"]) or bool(ext_cp.vl["SWA_1"]["SWA_Warnung_SWA_re"])
 
@@ -325,7 +326,7 @@ class CarState(CarStateBase, MadsCarState):
     
     # Consume blind-spot monitoring info/warning LED states, if available.
     # Infostufe: BSM LED on, Warnung: BSM LED flashing
-    if self.CP.enableBsm:
+    if self.CP.flags & VolkswagenFlags.HAS_BSM:
       bsm_bus = pt_cp if (self.CP.flags & VolkswagenFlags.MEB_GEN2) else ext_cp
       blindspot_driver    = bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Info_Driver"]) or bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Warn_Driver"])
       blindspot_passenger = bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Info_Passenger"]) or bool(bsm_bus.vl["MEB_Side_Assist_01"]["Blind_Spot_Warn_Passenger"])
@@ -340,7 +341,12 @@ class CarState(CarStateBase, MadsCarState):
     ret.stockFcw = bool(ext_cp.vl["AWV_03"]["FCW_Active"]) if not (self.CP.flags & VolkswagenFlags.DISABLE_RADAR) else False # currently most plausible candidate
     ret.stockAeb = bool(ext_cp.vl["AWV_03"]["AEB_Active"]) if not (self.CP.flags & VolkswagenFlags.DISABLE_RADAR) else False
 
-    self.acc_type                = ext_cp.vl["ACC_18"]["ACC_Typ"] if not (self.CP.flags & VolkswagenFlags.DISABLE_RADAR) else 2 # 2: acc stop and go
+    self.acc_type = ext_cp.vl["ACC_18"]["ACC_Typ"] if not (self.CP.flags & VolkswagenFlags.DISABLE_RADAR) else 2 # 2: acc stop and go
+    self.esp_standstill = bool(pt_cp.vl["ESC_50"]["Standstill"])
+    if self.CP.flags & VolkswagenFlags.MEB_GEN2:
+      self.esp_hold_confirmation = pt_cp.vl["VMM_02"]["HMS_Status"] == 1
+    else:
+      self.esp_hold_confirmation = self.esp_standstill
     self.travel_assist_available = bool(cam_cp.vl["TA_01"]["Travel_Assist_Available"])
 
     ret.cruiseState.available = pt_cp.vl["Motor_51"]["TSK_Status"] in (2, 3, 4, 5)
@@ -392,10 +398,6 @@ class CarState(CarStateBase, MadsCarState):
 
     if self.CP.flags & VolkswagenFlags.MQB_EVO:
       self.esp_hold_confirmation = bool(pt_cp.vl["ESP_21"]["ESP_Haltebestaetigung"])
-    else:
-      # for hold detection: VMM_02 ESP_Hold Signal is off timing and probably wrong
-      # use a motion state signal instead for now
-      self.esp_hold_confirmation = pt_cp.vl["ESC_50"]["Motion_State"] == 3 # full stop
       
     ret.cruiseState.standstill = self.CP.pcmCruise and self.esp_hold_confirmation
 
@@ -438,7 +440,6 @@ class CarState(CarStateBase, MadsCarState):
     main_cruise_latching = not bool(pt_cp.vl["GRA_ACC_01"]["GRA_Typ_Hauptschalter"])
     buttons = self.CCP.BUTTONS_ALT if main_cruise_latching else self.CCP.BUTTONS
     ret.buttonEvents = self.create_button_events(pt_cp, buttons)
-    
     self.gra_stock_values = pt_cp.vl["GRA_ACC_01"]
     
     # Additional safety checks performed in CarInterface.
@@ -507,7 +508,7 @@ class CarState(CarStateBase, MadsCarState):
 
     # Consume blind-spot monitoring info/warning LED states, if available.
     # Infostufe: BSM LED on, Warnung: BSM LED flashing
-    if self.CP.enableBsm:
+    if self.CP.flags & VolkswagenFlags.HAS_BSM:
       ret.leftBlindspot = bool(ext_cp.vl["SWA_01"]["SWA_Infostufe_SWA_li"]) or bool(ext_cp.vl["SWA_01"]["SWA_Warnung_SWA_li"])
       ret.rightBlindspot = bool(ext_cp.vl["SWA_01"]["SWA_Infostufe_SWA_re"]) or bool(ext_cp.vl["SWA_01"]["SWA_Warnung_SWA_re"])
 
