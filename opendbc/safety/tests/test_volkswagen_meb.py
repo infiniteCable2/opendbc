@@ -316,6 +316,9 @@ class TestVolkswagenMebLongSafety(TestVolkswagenMebSafetyBase):
   ACCEL_OVERRIDE = 0
   INACTIVE_ACCEL = 3.01
 
+  def _ignore_frequency_check_msgs(self):
+    return [self._aeb_msg(False)]
+
   def test_radar_1hz_rx_check(self):
     checked_messages = ("LH_EPS_03", "Motor_14", "GRA_ACC_01", "QFK_01", "ESP_21", "Motor_51", "ESC_51")
     for name in checked_messages:
