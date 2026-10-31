@@ -141,6 +141,15 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
         self.apply_torque_last = apply_torque
         can_sends.append(self.CCS.create_steering_control(self.packer_pt, self.CAN.pt, apply_torque, hca_enabled))
 
+        if self.CP.flags & VolkswagenFlags.STOCK_HCA_PRESENT:
+          # Pacify VW Emergency Assist driver inactivity detection by changing its view of driver steering input torque
+          # to the greatest of actual driver input or 2x openpilot's output (1x openpilot output is not enough to
+          # consistently reset inactivity detection on straight level roads). See commaai/openpilot#23274 for background.
+          ea_simulated_torque = float(np.clip(apply_torque * 2, -self.CCP.STEER_MAX, self.CCP.STEER_MAX))
+          if abs(CS.out.steeringTorque) > abs(ea_simulated_torque):
+            ea_simulated_torque = CS.out.steeringTorque
+          can_sends.append(self.CCS.create_eps_update(self.packer_pt, self.CAN.cam, CS.eps_stock_values, ea_simulated_torque))
+
     # Emergency Assist mitigation
     if self.CP.flags & (VolkswagenFlags.MEB | VolkswagenFlags.MQB_EVO):
       if self.CP.flags & VolkswagenFlags.STOCK_KLR_PRESENT:
@@ -153,15 +162,6 @@ class CarController(CarControllerBase, IntelligentCruiseButtonManagementInterfac
           can_sends.append(mebcan.create_capacitive_wheel_touch(self.packer_pt, self.CAN.cam, lat_active, CS.klr_stock_values))
           can_sends.append(mebcan.create_capacitive_wheel_touch(self.packer_pt, self.CAN.pt, lat_active, CS.klr_stock_values))
         self.klr_counter_last = CS.klr_stock_values["COUNTER"]
-    else:
-      if self.CP.flags & VolkswagenFlags.STOCK_HCA_PRESENT:
-        # Pacify VW Emergency Assist driver inactivity detection by changing its view of driver steering input torque
-        # to the greatest of actual driver input or 2x openpilot's output (1x openpilot output is not enough to
-        # consistently reset inactivity detection on straight level roads). See commaai/openpilot#23274 for background.
-        ea_simulated_torque = float(np.clip(apply_torque * 2, -self.CCP.STEER_MAX, self.CCP.STEER_MAX))
-        if abs(CS.out.steeringTorque) > abs(ea_simulated_torque):
-          ea_simulated_torque = CS.out.steeringTorque
-        can_sends.append(self.CCS.create_eps_update(self.packer_pt, self.CAN.cam, CS.eps_stock_values, ea_simulated_torque))
 
     # **** Blinker Controls ************************************************** #
     # "Wechselblinken" has to be allowed in assistance blinker functions in gateway

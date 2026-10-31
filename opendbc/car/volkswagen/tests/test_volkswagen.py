@@ -2,8 +2,8 @@ import random
 import re
 import unittest
 
-from opendbc.can import CANPacker
-from opendbc.car import Bus, DT_CTRL
+from opendbc.can import CANPacker, CANParser
+from opendbc.car import Bus, DT_CTRL, structs
 from opendbc.car.structs import CarParams
 from opendbc.car.volkswagen.carcontroller import HCAMitigation
 from opendbc.car.volkswagen.interface import CarInterface
@@ -30,6 +30,50 @@ class TestVolkswagenHCAMitigation(unittest.TestCase):
         should_nudge = actuator_value != 0 and frame == self.STUCK_TORQUE_FRAMES
         expected_torque = actuator_value - (1, -1)[actuator_value < 0] if should_nudge else actuator_value
         assert hca_mitigation.update(actuator_value, actuator_value) == expected_torque, f"{frame=}"
+
+
+class TestVolkswagenTorqueController(unittest.TestCase):
+  def test_steering_and_emergency_assist_cadence(self):
+    platform = CAR.VOLKSWAGEN_GOLF_MK7
+    for stock_hca in (False, True):
+      for lat_active in (False, True):
+        for direction in (-1, 1):
+          with self.subTest(stock_hca=stock_hca, lat_active=lat_active, direction=direction):
+            fingerprint = {bus: {} for bus in range(4)}
+            if stock_hca:
+              fingerprint[2][0x126] = 8  # Stock HCA_01 enables Emergency Assist mitigation
+            cp = CarInterface.get_params(platform, fingerprint, [], False, False, False)
+            cp_sp = CarInterface.get_params_sp(cp, platform, fingerprint, [], False, False, False)
+            cp_ic = CarInterface.get_params_ic(cp, platform, fingerprint, [], False, False, False)
+            ci = CarInterface(cp, cp_sp, cp_ic)
+            cc = structs.CarControl(latActive=lat_active)
+            cc.actuators.torque = direction * 0.5
+            cc = cc.as_reader()
+            cc_sp, cc_ic = structs.CarControlSP(), structs.CarControlIC()
+            eps_parser = CANParser(DBC[platform][Bus.pt], [("LH_EPS_03", 0)], ci.CC.CAN.cam)
+
+            for frame in range(100):
+              now_nanos = int(frame * DT_CTRL * 1e9)
+              ci.update([])
+              # Exercise both simulated torque and larger real driver input.
+              ci.CS.out.steeringTorque = direction * (250 if frame >= 50 else 0)
+              ci.CS.eps_stock_values["COUNTER"] = (frame // ci.CC.CCP.STEER_STEP) % 16
+              actuators, sends = ci.apply(cc, cc_sp, cc_ic, now_nanos)
+              steer_frame = frame % ci.CC.CCP.STEER_STEP == 0
+              hca = [msg for msg in sends if msg[0] == 0x126 and msg[2] == ci.CC.CAN.pt]
+              eps = [msg for msg in sends if msg[0] == 0x9F and msg[2] == ci.CC.CAN.cam]
+              self.assertEqual(len(hca), int(steer_frame))
+              self.assertEqual(len(eps), int(steer_frame and stock_hca))
+              if not lat_active:
+                self.assertEqual(actuators.torqueOutputCan, 0)
+              if eps:
+                eps_parser.update([(now_nanos, eps)])
+                simulated = min(abs(actuators.torqueOutputCan * 2), ci.CC.CCP.STEER_MAX)
+                expected = max(simulated, abs(ci.CS.out.steeringTorque))
+                self.assertEqual(eps_parser.vl["LH_EPS_03"]["COUNTER"], ci.CS.eps_stock_values["COUNTER"])
+                self.assertEqual(eps_parser.vl["LH_EPS_03"]["EPS_Lenkmoment"], expected)
+                if expected:
+                  self.assertEqual(eps_parser.vl["LH_EPS_03"]["EPS_VZ_Lenkmoment"], int(direction < 0))
 
 
 class TestVolkswagenStandstillSignals(unittest.TestCase):
